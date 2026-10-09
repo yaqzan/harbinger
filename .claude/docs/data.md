@@ -118,6 +118,7 @@ as digits.
 - Steam tools (public test, beta client, dedicated server, demo...) are never matched.
 - `harbinger/titles.toml` (tracked, shared) settles the rest: `[same]` maps a title to a sheet
   title (or a list, for a forecast bundle), `[different]` blocks a match or a suggestion.
+  `[first_party] playstation` lists Sony's own PS Plus games (model.md, PS Plus).
 - `title_match.target` is the catalogue matched against: `xbox`, or `playstation` (your PS Plus
   tier's games, from Steam and from the Game Pass games). Cross-service matching is strict like
   Steam ("BLACK" prefix-matched Black Desert). An alias aimed at the other catalogue falls

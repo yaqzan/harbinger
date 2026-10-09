@@ -80,11 +80,21 @@ cohorts = [12, 18, 24, 36]  # removals land on the third Monday of the month (30
 # Leave probability at each anniversary, measured from the PS Plus sheet on 2026-10-09 with the
 # Game Pass method: 12-month from 2024+ adds (166 games; all history gives 24%), the rest from
 # all history.
-[playstation.base_rates.extra]
+[playstation.base_rates.extra]   # third-party; Sony's own games are measured apart (2026-10-09)
 12 = 0.35
 18 = 0.05
-24 = 0.16
-36 = 0.02
+24 = 0.17
+36 = 0.03
+
+# Sony first-party on Extra or Premium (titles.toml [first_party]), measured 2026-10-09 over 110
+# games: 1 of 100 left at 12 months, 2 of 96 at 18, none at 24 or 36. The few removals were
+# flagships pulled before a new entry or edition went on sale (Spider-Man GOTY, Horizon Zero
+# Dawn Complete, Forbidden West); both series came back as the newer edition ~2 years later.
+[playstation.base_rates.sony]
+12 = 0.01
+18 = 0.02
+24 = 0.0
+36 = 0.0
 
 [playstation.base_rates.premium]    # Premium Classics, Remasters, VR
 12 = 0.05

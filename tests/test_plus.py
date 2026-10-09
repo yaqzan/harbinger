@@ -155,3 +155,26 @@ class PsQueue(unittest.TestCase):
         self.assertEqual(alerts_due(d["queue"], TODAY, cfg, set()), [])
         self.assertEqual(q["No Such Game"]["state"], "Not found")
         self.assertIn("PS Plus tier", q["No Such Game"]["note"])
+
+
+class SonyFirstParty(unittest.TestCase):
+    """Sony's own games almost never leave at an anniversary (measured 2026-10-09)."""
+
+    def test_sony_games_use_their_own_rates(self):
+        cfg = dict(CFG_PS, titles=dict(CFG_PS["titles"], first_party={"playstation": ["Horizon Zero Dawn: Remastered"]}))
+        master = [ps("Horizon Zero Dawn: Remastered", "Extra", added="2026-04-21", hours=23.0),
+                  ps("Third Party Game", "Extra", added="2026-04-21"),
+                  ps("Horizon Zero Dawn: Remastered", "Essential", added="2026-04-07")]
+        games = {(g.name, g.tier): g for g in plus.catalogue({"master": master}, "extra", plus.first_party(cfg))}
+        hzd, other = games[("Horizon Zero Dawn: Remastered", "Extra")], games[("Third Party Game", "Extra")]
+        self.assertEqual((hzd.kind, other.kind), ("sony", "extra"))
+        out = lambda g: plus.outlook(g, TODAY, cfg, set())
+        self.assertEqual((out(hzd)["wave"], out(hzd)["p"], out(hzd)["band"]), (date(2027, 4, 19), 0.01, "Thin"))
+        self.assertIn("Sony game", out(hzd)["why"])
+        self.assertEqual(out(other)["p"], 0.35)
+
+    def test_shared_list_loads(self):
+        fp = plus.first_party(CFG)
+        self.assertIn(norm("The Last of Us: Part I"), fp)
+        self.assertIn(norm("Marvel’s Spider-Man 2"), fp)
+        self.assertNotIn(norm("Risk of Rain 2"), fp)

@@ -9,6 +9,8 @@ Pure functions: rows in, dicts out.
   cohort ([playstation.base_rates.<family>], measured from the sheet), no forecast signals.
 - Essential monthly games are claim-to-keep: the date is a claim deadline, not a play deadline.
 - Ubisoft+ Classics (Extra) are not scored, like on Game Pass.
+- Sony first-party games (titles.toml [first_party] playstation) use their own base rates
+  ([playstation.base_rates.sony]): they almost never leave at an anniversary.
 """
 
 from __future__ import annotations
@@ -30,6 +32,11 @@ def family(tier: str | None) -> str | None:
         if t.startswith(f):
             return f
     return None
+
+
+def first_party(cfg: dict) -> set[str]:
+    """Sony's own games, as sheet keys (titles.toml [first_party] playstation)."""
+    return {norm(t) for t in cfg.get("titles", {}).get("first_party", {}).get("playstation", [])}
 
 
 def kind(tier: str | None) -> str | None:
@@ -64,9 +71,10 @@ class PsGame:
     hours: float | None
 
 
-def catalogue(tabs: dict[str, list[dict]], your_tier: str) -> list[PsGame]:
+def catalogue(tabs: dict[str, list[dict]], your_tier: str, first_party=frozenset()) -> list[PsGame]:
     """Master List games on the service now (Active or Leaving Soon) that your tier includes.
-    A game with several stints counts once, as its newest stint."""
+    A game with several stints counts once, as its newest stint. Keys in `first_party` (Sony's
+    own games) on Extra or Premium get kind "sony"."""
     rank = TIERS.get((your_tier or "none").lower(), 0)
     newest: dict[str, dict] = {}
     for r in tabs.get("master", []):
@@ -77,8 +85,12 @@ def catalogue(tabs: dict[str, list[dict]], your_tier: str) -> list[PsGame]:
             continue
         if r["key"] not in newest or str(r.get("added") or "") > str(newest[r["key"]].get("added") or ""):
             newest[r["key"]] = r
+    def kind_of(r):
+        k = kind(r.get("tier"))
+        return "sony" if k in ("extra", "premium") and norm(r["title"]) in first_party else k
+
     return [PsGame(name=r["title"], key=norm(r["title"]), system=r.get("system") or "", tier=r.get("tier") or "",
-                   kind=kind(r.get("tier")), status=r["status"], added=_iso(r.get("added")),
+                   kind=kind_of(r), status=r["status"], added=_iso(r.get("added")),
                    removed=_iso(r.get("removed")), hours=r.get("completion_h") if isinstance(r.get("completion_h"), float) else None)
             for r in newest.values()]
 
@@ -107,5 +119,7 @@ def outlook(g: PsGame, today: date, cfg: dict, waves_out: set[date]) -> dict:
     n, wave = nxt
     p = ps["base_rates"][g.kind][str(n)]
     anniv = model.anniversary(g.added, n, dpm)
+    rate = ("Sony game: these leave mostly before a new entry or remaster goes on sale" if g.kind == "sony"
+            else f"{g.tier} base rate")
     return {"state": "scored", "wave": wave, "n": n, "p": p, "band": model.band(p, cfg["bands"]),
-            "why": f"{n}-month anniversary {anniv:%b} {anniv.day}; {g.tier} base rate"}
+            "why": f"{n}-month anniversary {anniv:%b} {anniv.day}; {rate}"}

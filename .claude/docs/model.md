@@ -71,9 +71,17 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   below). The owner is on Extra (config.local.toml). "none" leaves PlayStation off.
 - Waves: the third Monday of the month (308 of 351 removals since 2024; `model.month_waves(cal=
   "playstation")`). Leaving Soon rows carry the exact date. Same cohorts; announced-wave rule too.
-- Base rates per tier family, measured 2026-10-09 like Game Pass option C: Extra 35/5/16/2%
-  (12-mo from 2024+ adds; all history 24%), Premium Classics/Remasters/VR 5/1/1/0%, Streaming
-  Only 0. No forecast signals. Ubisoft+ Classics not scored.
+- Base rates per tier family, measured 2026-10-09 like Game Pass option C: Extra 35/5/17/3%
+  third-party (12-mo from 2024+ adds; all history 25%), Premium Classics/Remasters/VR 5/1/1/0%
+  (doesn't reproduce: see the Premium ticket), Streaming Only 0. No forecast signals. Ubisoft+
+  Classics not scored.
+- **Sony first-party** (owner, 2026-10-09): titles.toml `[first_party] playstation` (108 titles, by
+  hand: the sheet has no studio column) get kind "sony", rates 1/2/0/0% (110 games: 1 of 100
+  left at 12 mo, 2 of 96 at 18, none later; third-party Extra loses 52% overall, Sony 13%).
+  The few removals were flagships pulled before a new entry or edition sold (Spider-Man GOTY
+  May 2023, HZD Complete May 2024, Forbidden West Sep 2024), back as the newer edition ~2 years
+  on. The row says so instead of a number. Moved HZD Remastered 35% -> 1% (its push went).
+  A new Sony game on Extra needs a line in the list, else it's scored as third-party.
 - Essential monthly games are claim-to-keep: "Claim by <date>", sorted with the confirmed.
 
 ## Only on one service (`build.one_service_rows`)

@@ -52,7 +52,7 @@ def _ps(db, cfg: dict) -> dict | None:
     tabs, fetched = sheet_mod.load_rows(db, "playstation")
     if not fetched:
         return None
-    return {"games": plus.catalogue(tabs, tier), "fetched": fetched, "tier": tier.title()}
+    return {"games": plus.catalogue(tabs, tier, plus.first_party(cfg)), "fetched": fetched, "tier": tier.title()}
 
 
 def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, today: date | None = None) -> dict:
