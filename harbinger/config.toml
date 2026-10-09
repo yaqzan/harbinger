@@ -1,0 +1,66 @@
+# Harbinger model settings, shared by everyone who runs it. Every tunable number lives here.
+# Your own settings (Steam account, watched games, push) go in config.local.toml at the repo
+# root, which is merged over this file and never committed. See config.local.example.toml.
+# Change a value, then `py -3.11 -m harbinger build` to re-score without re-fetching.
+
+[sheet]
+id = "1kspw-4paT-eE5-mrCrc4R9tg70lH2ZTFrJOUmOtOytg"
+# Tab gids (the CSV export by tab name silently falls back to the first tab).
+master = 0
+leaving_soon = 780334990
+removed = 2013959266
+premium = 1511487110
+first_party = 637826911    # "Xbox Game Studios": Microsoft, Bethesda, Activision Blizzard
+ea_play = 630545187
+days_per_month = 30.4375   # add date = as_of - Months * this
+
+[waves]
+cohorts = [12, 18, 24, 36]  # anniversary months that can trigger a removal
+horizon = 4                 # waves shown on the watchlist and chart
+notice_days = 13            # official notice lands about this long before a wave
+
+[base_rates]
+# Leave probability at each anniversary, measured from the sheet on 2026-10-09 (option C in
+# .claude/docs/model.md): 12-month from 2025 adds only, since recent deals set current contract lengths;
+# the rest from all third-party history. Prototype values were 0.38 / 0.20 / 0.35 / 0.30.
+12 = 0.39
+18 = 0.19
+24 = 0.33
+36 = 0.13
+
+[multipliers]
+# Applied to the odds (p / (1 - p)), then converted back.
+# 1.77 on a 12-month game gives ~53% (tuned to ~52% on the old 38% base; spec said "~2.0").
+forecast_listed = 1.77
+forecast_unlikely = 0.45    # listed but flagged unlikely to leave
+forecast_absent = 0.5       # the wave's month has a forecast and the game isn't on it
+on_premium = 0.8            # also in the Premium tier catalogue
+premium_readd = 0.6         # joined Premium months after Ultimate (a fresh deal)
+premium_readd_gap_months = 2
+
+[bands]
+likely = 0.45
+possible = 0.25
+
+[play]
+hours_per_week = 9
+buffer_weeks = 2
+doable_share = 0.75   # Doable if hours <= this share of the hours available; Tight up to all of them
+soon_weeks = 4        # "Start within 4 wks"
+
+[exclude]
+# Owner-notes markers for collections that are not a normal third-party deal.
+ubisoft_note = "Ubisoft games joining with price increase"
+retro_note = "Retro Classics"
+ea_note = "Joined EA Play"
+
+# Your watched games: set them in config.local.toml, not here.
+[queue]
+gone = []
+tracking = []
+
+# Leavers reported somewhere but not on the sheet. Shown, flagged unverified.
+[[manual_confirmed]]
+game = "Superball"
+wave = "2026-10-15"
+source = "Insider Gaming only; not on the sheet"

@@ -1,0 +1,13 @@
+# Optional: publish Harbinger through a Cloudflare tunnel.
+# Copy to ops/cloudflared-config.yml (gitignored) and fill in your own tunnel:
+#   cloudflared tunnel create harbinger
+#   cloudflared tunnel route dns <tunnel-uuid> radar.example.com
+#
+# Run: cloudflared tunnel --config ops/cloudflared-config.yml run harbinger
+tunnel: <tunnel-uuid>
+credentials-file: <path-to-your-.cloudflared>/<tunnel-uuid>.json
+
+ingress:
+  - hostname: radar.example.com
+    service: http://127.0.0.1:5006
+  - service: http_status:404

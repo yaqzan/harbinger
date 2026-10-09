@@ -1,0 +1,37 @@
+# Your own Harbinger settings. Copy this file to config.local.toml (same folder) and fill it in.
+# config.local.toml is gitignored, so your Steam account and game list never get committed.
+# Anything here is merged over harbinger/config.toml, so you can also override a model number.
+
+[steam]
+# Your SteamID64 (17 digits) or the custom name from your profile URL
+# (steamcommunity.com/id/<this part>). In the Steam app: click your name, then Account details.
+id = ""
+# Your Steam Web API key, from https://steamcommunity.com/dev/apikey (needs a browser; the domain
+# you enter there can be anything). Leave it empty if you'd rather set the STEAM_API_KEY
+# environment variable instead. Environment variables win over this file.
+api_key = ""
+# Steam only shares your library if your profile's "Game details" privacy setting is Public.
+
+[queue]
+# Watched games. These get their own "Your queue" table with the next date each one could leave,
+# even when the model doesn't rate them as likely to go.
+#
+# tracking: Game Pass games you are playing now, or plan to play and would mind losing.
+#   A good rule of thumb: anything you'd be annoyed to find gone halfway through.
+# gone: games you were tracking that already left. Kept so the page notices if one comes back.
+#
+# Titles are matched loosely against the Game Pass sheet ("Metaphor" finds
+# "Metaphor: ReFantazio"); the page tells you if one can't be found.
+tracking = [
+  # "Hollow Knight: Silksong",
+  # "Clair Obscur: Expedition 33",
+]
+gone = []
+
+[push]
+# Optional phone summary after each ingest, sent through Pharos (github.com/yaqzan/pharos).
+# Leave dir empty to look for a Pharos folder next to this repo; set enabled = false to skip.
+enabled = true
+dir = ""
+# Link the push opens. Leave empty for no link.
+url = ""

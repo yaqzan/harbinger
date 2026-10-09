@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+# Run state: sheet cache, forecast runs, Steam data, snapshots, data.json
+harbinger/state/
+ops/windows/logs/
+# Machine config (holds the tunnel UUID)
+ops/cloudflared-config.yml
+# Your own settings: Steam account, watched games, push (template: config.local.example.toml)
+config.local.toml

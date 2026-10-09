@@ -1,0 +1,127 @@
+<!doctype html>
+<!-- hand-written html · no framework, no build step -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbinger · Game Pass exit radar</title>
+<meta name="description" content="Which Game Pass games are leaving or likely to leave, how long each takes to finish, and the latest day to start.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/harbinger.css?v=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23b91c1c'/%3E%3Cpath d='M16 6v11M16 22v3' stroke='%23fff' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <span class="mark">harbinger</span>
+    <button id="theme" aria-label="Toggle color theme">◐</button>
+  </nav>
+
+  <header>
+    <h1>Game Pass exit radar</h1>
+    <p class="take" id="takeaway">Loading…</p>
+    <p class="meta" id="meta"></p>
+  </header>
+
+  <section class="kpis" aria-label="Key numbers">
+    <div class="kpi"><span class="n" data-k="days_to_next_wave">–</span><span class="l" id="kpi-wave">days to the next wave</span></div>
+    <div class="kpi"><span class="n" data-k="hours_available">–</span><span class="l">playable hours before it</span></div>
+    <div class="kpi"><span class="n" data-k="confirmed_count">–</span><span class="l">confirmed leaving</span></div>
+    <div class="kpi"><span class="n" data-k="finishable_count">–</span><span class="l">still finishable at 100%</span></div>
+    <div class="kpi"><span class="n" data-k="likely_count">–</span><span class="l">likely leaving, next 4 waves</span></div>
+    <div class="kpi"><span class="n" data-k="next_notice">–</span><span class="l">next notice expected</span></div>
+  </section>
+
+  <ul class="caveats">
+    <li>Evidence % is a model estimate and can be wrong. Dates are good to about a day.</li>
+    <li>Completion hours come from the sheet and nobody has checked them.</li>
+    <li>Assumes Game Pass Ultimate or PC Game Pass. Premium has its own catalogue.</li>
+  </ul>
+
+  <section class="card" id="confirmed">
+    <h2>Confirmed leaving</h2>
+    <p class="note">Verdict compares hours to 100% with the hours you have before the wave at 9 hours a week.</p>
+    <div class="box"><table id="t-conf"><thead><tr><th>Game</th><th>Leaves</th><th class="num">Hours</th><th>Verdict</th><th>Platform</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="card" id="horizon">
+    <h2>Games per wave</h2>
+    <p class="note">Removals land on the 15th and the last day of each month. Hatched bars are thin evidence.</p>
+    <div class="legend">
+      <span><i class="sw sw-c"></i>Confirmed</span>
+      <span><i class="sw sw-l"></i>Likely (45%+)</span>
+      <span><i class="sw sw-p"></i>Possible (25 to 44%)</span>
+      <span><i class="sw sw-t"></i>Thin (under 25%)</span>
+    </div>
+    <div class="chart" id="chart"><div class="tip" id="tip" role="tooltip"></div></div>
+  </section>
+
+  <section class="card" id="watch">
+    <h2>Watchlist</h2>
+    <p class="note">Start by is the wave, minus the weeks of play at 9 hours a week, minus a 2-week buffer. The small number by the evidence is the change since the previous ingest.</p>
+    <div class="ctl">
+      <input id="q" type="search" placeholder="Search games" aria-label="Search games">
+      <select id="fb" aria-label="Band"><option value="">All bands</option><option>Likely</option><option>Possible</option><option>Thin</option></select>
+      <select id="fw" aria-label="Wave"><option value="">All waves</option></select>
+      <select id="fu" aria-label="Urgency"><option value="">Any urgency</option><option>Start now</option><option>Start within 4 wks</option><option>Comfortable</option><option>Too late</option><option>Hours unknown</option></select>
+      <span class="count" id="wcount"></span>
+    </div>
+    <div class="box tall"><table id="t-watch"><thead><tr><th>Game</th><th>Wave</th><th>Notice</th><th>Evidence</th><th>Band</th><th class="num">Hours</th><th>Start by</th><th>Urgency</th><th>Tier</th><th>Why</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="card" id="owned" hidden>
+    <details>
+      <summary>You own these elsewhere</summary>
+      <p class="note">On your Steam account, so a Game Pass exit doesn't cost you anything. Hours are what's left to 100% from your playtime and achievements.</p>
+      <div class="box"><table id="t-owned"><thead><tr><th>Game</th><th>On Game Pass</th><th class="num">Hours left</th><th>Progress</th></tr></thead><tbody></tbody></table></div>
+    </details>
+  </section>
+
+  <section class="card" id="queue">
+    <h2>Your queue</h2>
+    <p class="note">Games you're tracking, with the next point they could leave.</p>
+    <div class="box"><table id="t-queue"><thead><tr><th>Game</th><th>State</th><th>Next check</th><th>Odds</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Passed a checkpoint quietly</summary>
+      <p class="note">Hit an anniversary in the last six weeks and weren't named in that wave's notice.</p>
+      <div class="box"><table id="t-surv"><thead><tr><th>Game</th><th>Checkpoint</th><th>Next risk</th><th>Why</th></tr></thead><tbody></tbody></table></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Ubisoft+ Classics bundle</summary>
+      <p class="note">About 50 games added together on Oct 1, 2025. The contract length isn't public, so these aren't scored.</p>
+      <div class="box"><table id="t-ubi"><thead><tr><th>Game</th><th>Next anniversary</th><th class="num">Hours</th></tr></thead><tbody></tbody></table></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>How to read this</summary>
+      <div class="prose">
+        <p>Each third-party game has a candidate exit at the wave nearest its 12, 18, 24 and 36 month anniversary. The starting odds are how often games have left at that anniversary on the sheet. A listing on Pure Xbox's monthly forecast raises them, missing from a month that has a forecast lowers them, and a place in the Premium catalogue lowers them too.</p>
+        <p>Bands: Likely is 45% or more, Possible is 25 to 44%, Thin is under 25%. Microsoft, Bethesda and Activision Blizzard games are assumed to stay. EA Play and Retro Classics games are left out.</p>
+        <p>Urgency: Too late means the hours don't fit before the wave even if you start today. Start now means the start-by date has arrived.</p>
+      </div>
+      <div class="box"><table id="t-cal"><thead><tr><th>Measure</th><th>Value</th><th>Sample</th><th>Source</th></tr></thead><tbody></tbody></table></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Runs and sources</summary>
+      <div class="box"><table id="t-hist"><thead><tr><th>Ingest</th><th class="num">Confirmed</th><th class="num">Likely</th><th class="num">Possible</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+      <ul class="sources" id="sources"></ul>
+    </details>
+  </section>
+
+  <footer>Data from u/ABattleVet's Game Pass Master List, Pure Xbox and the Steam Web API.</footer>
+</div>
+<script src="/harbinger.js?v=1"></script>
+</body>
+</html>
