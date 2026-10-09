@@ -44,6 +44,7 @@ class Context:
                 key = self.match.key(r.get("name") or k, loose=False) or k
                 self.owned.setdefault(key, {"where": where, **r})
         self.claimed = list((psn or {}).get("claimed", []))  # PS Plus games claimed into the library
+        self.playing = (psn or {}).get("playing", {})          # every PS game you've played, owned or not
         self.dpm = cfg["sheet"]["days_per_month"]
         self.cohorts = cfg["waves"]["cohorts"]
         self.play = cfg["play"]
@@ -88,11 +89,15 @@ class Context:
         s = self.owned.get(key)
         if not s:
             return {"owned": False, "where": "", "hours": hours, "progress": ""}
-        share = s["ach_done"] / s["ach_total"] if s.get("ach_total") else None
+        share = s.get("share")  # Sony's grade-weighted trophy progress, when PlayStation has it
+        if share is None and s.get("ach_total"):
+            share = s["ach_done"] / s["ach_total"]
         left = model.remaining_hours(hours, s.get("played_h"), share)
         bits = [f"{s['played_h']:g} h played"] if s.get("played_h") else []
         if share is not None:
             bits.append(f"{s['ach_done']}/{s['ach_total']} {'trophies' if s['where'] != 'Steam' else 'achievements'}")
+        if s.get("hard"):
+            bits.append(s["hard"])
         return {"owned": True, "where": s["where"], "hours": left,
                 "progress": ", ".join([f"owned on {s['where']}"] + bits) if s["where"] != "Steam"
                 else ", ".join(bits) or "not started"}
@@ -393,7 +398,14 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     claimed_ps = {pm.key(n, loose=False) for n in cx.claimed} if pm else set()
     rows = []
 
-    def add(game, service, out, hours, platform):
+    playing_ps = {}
+    if pm:
+        for r in cx.playing.values():
+            k = pm.key(r["name"], loose=False)
+            if k:
+                playing_ps.setdefault(k, r)
+
+    def add(game, service, out, hours, platform, progress=""):
         wave = out["wave"]
         if out["state"] == "claim":
             act = f"Claim by {fmt(wave, today)}"
@@ -407,10 +419,10 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             "p": round(out["p"], 3) if out["p"] is not None else None,
             "odds": "Confirmed" if out["band"] == "Confirmed" else
                     (f"{round(out['p'] * 100)}%" if out["p"] is not None else ""),
-            "band": out["band"], "hours": hours, "action": act, "why": out["why"],
+            "band": out["band"], "hours": hours, "action": act, "why": out["why"], "progress": progress,
         })
 
-    skipped = {"owned": 0, "both": 0, "claimed": 0}
+    skipped = {"owned": 0, "both": 0, "claimed": 0, "finished": 0}
     for key, g in on_xbox.items():
         if key in cx.owned:
             skipped["owned"] += 1
@@ -435,11 +447,24 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             continue  # already claimed: yours while you subscribe
         if g.key in ps_backup:
             continue  # counted once, on the Game Pass side
-        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), g.hours, g.system)
+        hours, progress = g.hours, ""
+        r = playing_ps.get(g.key)
+        if r and (r.get("share") or 0) >= 1:
+            skipped["finished"] += 1
+            continue  # every trophy earned: nothing left to lose
+        if r and (r.get("played_h") or r.get("share")):
+            hours = model.remaining_hours(g.hours, r.get("played_h"), r.get("share"))
+            bits = [f"{r['played_h']:g} h played"] if r.get("played_h") else []
+            if r.get("share") is not None:
+                bits.append(f"{round(r['share'] * 100)}% of trophies")
+            if r.get("hard"):
+                bits.append(r["hard"])
+            progress = ", ".join(bits)
+        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), hours, g.system, progress)
     rows.sort(key=lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower()))
     tier = ps["tier"] if ps else "none"
     return {"rows": rows, "ps_tier": tier, "skipped_owned": skipped["owned"], "skipped_both": skipped["both"],
-            "skipped_claimed": skipped["claimed"]}
+            "skipped_claimed": skipped["claimed"], "skipped_finished": skipped["finished"]}
 
 
 def new_leavers(confirmed: list[dict], before: set[str] | None) -> list[dict]:

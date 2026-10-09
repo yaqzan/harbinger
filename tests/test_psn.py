@@ -30,7 +30,9 @@ def trophies(npid, name, progress, earned, defined):
 
 RAW = {
     "purchased": [bought("E1", "Evil West"), bought("E2", "Hunt: Showdown 1896", membership="PS_PLUS"),
-                  bought("E3", "Some Pre-Order", preorder=True)],
+                  bought("E3", "Some Pre-Order", preorder=True), bought("E4", "Spotify"), bought("E5", "YouTube"),
+                  bought("E6", "Kena: Bridge of Spirits Soundtrack"), bought("E7", "NBA LIVE 16 DEMO"),
+                  bought("E8", "Call of Duty: Black Ops III Multiplayer Beta")],
     "played": [played("PPSA1", "Evil West", "PT4H30M"), played("PPSA2", "Far Game", "PT1H", service="ps_plus"),
                played("PPSA3", "Elden Ring", "PT200H", service="other"),          # a disc
                played("PPSA4", "Split Fiction", "PT2H", service="none(purchased)")],
@@ -54,9 +56,33 @@ class Import(unittest.TestCase):
         self.assertEqual(set(lib["games"]), {"evil west", "demon s souls", "elden ring", "split fiction"})
         self.assertEqual(lib["games"]["elden ring"]["where"], "PS disc")
         self.assertEqual(lib["games"]["evil west"], {"name": "Evil West", "where": "PlayStation", "played_h": 4.5,
-                                                     "ach_done": 10, "ach_total": 20})
+                                                     "ach_done": 10, "ach_total": 20, "share": 0.5, "hard": ""})
         self.assertEqual(lib["games"]["demon s souls"]["where"], "PS disc")
         self.assertEqual(lib["claimed"], ["Hunt: Showdown 1896"])
+
+    def test_apps_and_non_games_never_land(self):
+        names = {n for (n,) in self.db.execute("SELECT name FROM psn_game")}
+        self.assertFalse(names & {"Spotify", "YouTube", "Kena: Bridge of Spirits Soundtrack", "NBA LIVE 16 DEMO",
+                                  "Call of Duty: Black Ops III Multiplayer Beta"})
+        self.assertTrue(psn.is_game("Alphabet Soup"))                # "beta" inside a word is fine
+        self.assertTrue(psn.is_game("Demon's Souls"))
+
+    def test_trophy_detail_and_hard_flag(self):
+        trophies = [{"trophyId": 1, "trophyName": "Start", "trophyType": "bronze", "earned": True,
+                     "earnedDateTime": "2026-05-07T17:25:46Z", "trophyEarnedRate": "63.9", "trophyRare": 3},
+                    {"trophyId": 2, "trophyName": "Flawless", "trophyType": "gold", "earned": False,
+                     "trophyEarnedRate": "0.8", "trophyRare": 0},
+                    {"trophyId": 3, "trophyName": "Online 1000", "trophyType": "gold", "earned": False,
+                     "trophyEarnedRate": "1.5", "trophyRare": 0}]
+        psn.save_detail(self.db, "NPWR1", trophies, "2026-10-01T00:00:00Z")
+        row = self.db.execute("SELECT name, earned, earned_at, rate FROM psn_trophy_detail WHERE trophy_id = 1").fetchone()
+        self.assertEqual(row, ("Start", 1, "2026-05-07T17:25:46Z", 63.9))
+        lib = psn.load(self.db, {"playstation": {"hard_trophy_rate": 2.0}})
+        self.assertEqual(lib["games"]["evil west"]["hard"], "2 trophies left that fewer than 2% of players have")
+        # fetched for this list version: not fetched again until the list changes
+        todo = self.db.execute("SELECT COUNT(*) FROM psn_trophy WHERE detail_for IS NULL"
+                               " OR detail_for != COALESCE(last_updated, '')").fetchone()[0]
+        self.assertEqual(todo, 0)
 
     def test_history_only_on_change(self):
         psn.save(self.db, RAW, "2026-10-10T06:30:00")
@@ -88,6 +114,25 @@ class Ownership(unittest.TestCase):
         self.assertNotIn(("Grand Theft Auto V", "PS"), names)   # on disc
         self.assertNotIn(("Hunt: Showdown 1896", "PS"), names)  # already claimed
         self.assertEqual(d["one_service"]["skipped_claimed"], 1)
+
+    def test_played_ps_plus_game_shows_progress_and_fewer_hours(self):
+        lib = dict(self.lib, playing={"grand theft auto v": {"name": "Grand Theft Auto V", "played_h": 8.0,
+                                                              "share": 0.25, "hard": "", "ach_done": 10, "ach_total": 70}})
+        lib["games"] = {}  # not owned: played through PS Plus
+        d = assemble(CFG_PS, sheet.parse(TABS, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY,
+                     ps_input(), lib)
+        gta = [r for r in d["one_service"]["rows"] if r["game"] == "Grand Theft Auto V"][0]
+        self.assertEqual(gta["hours"], 24.0)   # 32 h to 100%, a quarter of the trophies done
+        self.assertEqual(gta["progress"], "8 h played, 25% of trophies")
+
+    def test_a_finished_game_drops_off(self):
+        lib = dict(self.lib, playing={"grand theft auto v": {"name": "Grand Theft Auto V", "played_h": 90.0,
+                                                              "share": 1.0, "hard": "", "ach_done": 70, "ach_total": 70}})
+        lib["games"] = {}
+        d = assemble(CFG_PS, sheet.parse(TABS, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY,
+                     ps_input(), lib)
+        self.assertNotIn("Grand Theft Auto V", [r["game"] for r in d["one_service"]["rows"]])
+        self.assertEqual(d["one_service"]["skipped_finished"], 1)
 
 
 class FakePharos:

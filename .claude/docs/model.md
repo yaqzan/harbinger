@@ -51,7 +51,11 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   start-by on. Unknown hours count as 0. Each queued game is judged alone; nothing sequences the
   queue yet, so overlapping windows aren't flagged (Play plan ticket).
 - Owned anywhere (Steam, PSN purchase, PS disc; `Context.owned`, Steam wins a tie) works like
-  Steam ownership below; the verdict says where ("Owned on PlayStation"), trophies count as achievements.
+  Steam ownership below; the verdict says where ("Owned on PlayStation"). PlayStation progress uses
+  Sony's progress % (weighted by grade), not trophy counts. "N trophies left that fewer than X% of
+  players have" (`[playstation] hard_trophy_rate`, 2%) flags a hard 100%.
+- PS Plus games you play without owning: their trophy progress / playtime shrink their hours on
+  the one-service list; every trophy earned drops them off it ("finished").
 - Steam: an owned game leaves the confirmed verdicts, the watchlist and the KPIs and shows under
   "You own these elsewhere". Remaining hours = hours x (1 - achievement share), else hours - playtime.
 

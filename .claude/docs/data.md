@@ -59,6 +59,11 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 - Expiry alert (`psn.alert`): a refused sign-in pushes once on Pharos `ops` ("PlayStation sign-in
   expired"), latched in `state/psn_alert.json`; the first good sync after pushes the recovery with
   how long it was down. Network/API errors never push.
+- Media apps (`psn.MEDIA_APPS`: Spotify, YouTube, Crunchyroll, Media Player, ...) and non-games
+  (soundtrack, demo, beta, playtest) are never imported (8 on the owner's account, 2026-10-09).
+- `psn_trophy_detail`: every trophy (name, grade, earned + date, rarity % of players, Sony's
+  rarity tier). Fetched only for lists whose `last_updated` moved since `psn_trophy.detail_for`
+  (up to 120 lists a run, 2 calls each, 0.2 s apart). First fetch: 90 lists, 4,164 trophies, 94 s.
 - `psn_game`: purchased (membership NONE = bought, PS_PLUS = claimed through PS Plus) and played
   (playtime, service none / none_purchased / ps_plus). `psn_trophy`: progress and counts per
   trophy list. `psn_history`: playtime / progress moves.

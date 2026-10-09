@@ -67,7 +67,7 @@
     const tierNote = one.ps_tier === "none"
       ? "Set your PS Plus tier under [playstation] in config.local.toml to add PlayStation."
       : `Game Pass on console and PS Plus ${one.ps_tier}.`;
-    $("one-note").textContent = `Games you can only play through one subscription. ${tierNote} Left out: ${one.skipped_owned} you own (Steam, PlayStation or disc), ${one.skipped_both} on both services${one.skipped_claimed ? ` and ${one.skipped_claimed} PS Plus games you already claimed` : ""}. Confirmed and claim deadlines come first, then Likely, Possible and Thin, each soonest first. PS Plus leaves on the third Monday of the month.`;
+    $("one-note").textContent = `Games you can only play through one subscription. ${tierNote} Left out: ${one.skipped_owned} you own (Steam, PlayStation or disc), ${one.skipped_both} on both services${one.skipped_claimed ? `, ${one.skipped_claimed} PS Plus games you already claimed` : ""}${one.skipped_finished ? `, ${one.skipped_finished} you finished (every trophy)` : ""}. Confirmed and claim deadlines come first, then Likely, Possible and Thin, each soonest first. PS Plus leaves on the third Monday of the month.`;
     const drawOne = () => {
       const q = $("oq").value.trim().toLowerCase(), fs = $("os").value, fb = $("ob").value;
       const rows = one.rows.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
@@ -76,7 +76,7 @@
       fill("t-one", rows.slice(0, 300), (r, tr) => {
         if (r.band === "Thin" || !r.band) tr.className = "thin";
         return [td(r.game, "game"), td(r.service, "nowrap"), td(r.leaves, "nowrap"), td(r.odds, r.band ? `band-${r.band}` : ""),
-          td(hrs(r.hours), "num"), td(r.action, `nowrap ${urgCls(r.action)}`), td(r.why, "why")];
+          td(hrs(r.hours), "num"), td(r.action, `nowrap ${urgCls(r.action)}`), td(r.progress || "", "why"), td(r.why, "why")];
       });
     };
     ["oq", "os", "ob"].forEach((id) => $(id).addEventListener("input", drawOne));
