@@ -70,8 +70,11 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 - Owned = bought and not a pre-order, or played with service `none(purchased)` (what Sony sends;
   psn-api documents `none_purchased`), or played with service `other` (discs and bundled games:
   Demon's Souls on disc arrived this way, 2026-10-09), or listed under `[playstation] discs`
-  (an unplayed disc is invisible to the API). Claimed PS Plus games are not owned (they go with the
-  subscription) but drop their "Claim by" row. A failed sync keeps the last library.
+  (an unplayed disc is invisible to the API). A PS_PLUS entry whose title is an Essential row on the
+  PS Plus sheet (any status: the claim window closes) is a monthly claim and counts as owned
+  (`where` "PS Plus claim"; Crash 4, Evil West, Nine Sols showed as unowned, 2026-10-09), only
+  while `[playstation] tier` is set. Other PS_PLUS entries are Extra/Premium catalogue adds and
+  stay unowned. A failed sync keeps the last library.
 
 ## Cover art (`art.py`, ingest and steam; build only reads the cache)
 

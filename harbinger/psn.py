@@ -443,6 +443,15 @@ def load(db: sqlite3.Connection, cfg: dict) -> dict:
         own(name, "PS disc")
     for name in cfg.get("playstation", {}).get("discs", []):
         own(name, "PS disc")
+    # Monthly Essential claims are yours for as long as you subscribe, so they count as owned: the
+    # PS Plus sheet's Essential rows (any status, a claim window closes) say which PS_PLUS entries
+    # were claims rather than Extra/Premium catalogue adds. Needs a tier: with none, nothing plays.
+    if cfg.get("playstation", {}).get("tier", "none") != "none":
+        for (name,) in db.execute(
+                "SELECT DISTINCT g.name FROM psn_game g JOIN sheet_row s ON s.key = g.key AND s.service = 'playstation'"
+                " AND lower(s.tier) LIKE 'essential%' WHERE g.present = 1 AND g.kind = 'purchased'"
+                " AND g.membership = 'PS_PLUS'"):
+            own(name, "PS Plus claim")
     claimed = [n for (n,) in db.execute("SELECT DISTINCT name FROM psn_game WHERE kind = 'purchased'"
                                         " AND membership = 'PS_PLUS' AND present = 1")]
     playing = {}

@@ -60,6 +60,20 @@ class Import(unittest.TestCase):
         self.assertEqual(lib["games"]["demon s souls"]["where"], "PS disc")
         self.assertEqual(lib["claimed"], ["Hunt: Showdown 1896"])
 
+    def test_essential_claims_count_as_owned_while_subscribed(self):
+        from harbinger import sheet
+        from harbinger.sheet import FIELDS, norm
+        r = {"title": "Hunt: Showdown 1896", "key": norm("Hunt: Showdown 1896"), "stint": 1, "row": 3,
+             **{f: None for f in FIELDS}, "tier": "Essential", "status": "Removed"}
+        sheet.import_rows(self.db, {"master": [r]}, "2026-10-09T06:30:00", None, "playstation")
+        lib = psn.load(self.db, {"playstation": {"tier": "extra"}})
+        self.assertEqual(lib["games"]["hunt showdown 1896"]["where"], "PS Plus claim")
+        self.assertNotIn("hunt showdown 1896", psn.load(self.db, {"playstation": {"tier": "none"}})["games"])
+        # a PS_PLUS entry the sheet doesn't list as an Essential claim (an Extra add) stays unowned
+        r["tier"] = "Extra"
+        sheet.import_rows(self.db, {"master": [r]}, "2026-10-10T06:30:00", None, "playstation")
+        self.assertNotIn("hunt showdown 1896", psn.load(self.db, {"playstation": {"tier": "extra"}})["games"])
+
     def test_apps_and_non_games_never_land(self):
         names = {n for (n,) in self.db.execute("SELECT name FROM psn_game")}
         self.assertFalse(names & {"Spotify", "YouTube", "Kena: Bridge of Spirits Soundtrack", "NBA LIVE 16 DEMO",
