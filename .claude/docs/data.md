@@ -73,6 +73,17 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   (an unplayed disc is invisible to the API). Claimed PS Plus games are not owned (they go with the
   subscription) but drop their "Claim by" row. A failed sync keeps the last library.
 
+## Cover art (`art.py`, ingest and steam; build only reads the cache)
+
+- `game_art` (one row per sheet key) + files in `state/art/` (name = sha1(key)[:16], shrunk to
+  `[art] max_px` when Pillow is installed, else kept as downloaded). Served at `/art/<file>`.
+- Source order, every name match exact on `norm()` after dropping "(2020)" / "(Game Preview)":
+  Steam library appid, PSN `image_url`, Steam store search, Microsoft Store autosuggest. Steam
+  art is `library_600x900.jpg`, else `header.jpg`.
+- `[art] budget` caps new lookups per run (first fill takes a few daily runs); a miss is retried
+  after `retry_days`. `build` never touches the network, it only attaches what is on disk.
+- Rows get an `art` path; the page draws it in the game cell (`gameTd` in `web/harbinger.js`).
+
 ## Title matching (`titles.py`, every run)
 
 `Matcher` resolves a title to a sheet key, rung by rung (`sheet.Index`): exact, compact (no

@@ -62,6 +62,7 @@ table { width: 100%; border-collapse: collapse; font-size: .84rem; font-variant-
 th { position: sticky; top: 0; background: var(--card); text-align: left; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; z-index: 1; }
 td { padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 td.game { font-weight: 500; min-width: 10rem; }
+img.art { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 8px; background: var(--card); }
 .num { text-align: right; }
 td.why { color: var(--muted); min-width: 14rem; }
 td.nowrap { white-space: nowrap; }

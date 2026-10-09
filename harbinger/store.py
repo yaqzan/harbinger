@@ -32,12 +32,12 @@ CREATE TABLE IF NOT EXISTS queue_alert (
 
 def connect(path=DB_FILE) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
-    from . import psn, sheet, steam, titles
+    from . import art, psn, sheet, steam, titles
     db = sqlite3.connect(path)
     db.execute("PRAGMA foreign_keys = ON")
     sheet.migrate(db)
     titles.migrate(db)
-    for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, psn.SCHEMA, titles.SCHEMA):
+    for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, psn.SCHEMA, titles.SCHEMA, art.SCHEMA):
         db.executescript(schema)
     psn.migrate(db)
     return db

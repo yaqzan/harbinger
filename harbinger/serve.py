@@ -11,7 +11,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
-from . import OUTPUT_FILE, WEB_DIR, __version__
+from . import OUTPUT_FILE, WEB_DIR, __version__, art
 
 HOST, PORT = "127.0.0.1", 5006
 STALE_HOURS = 40  # the daily Steam job rebuilds data.json; older than this means a job is failing
@@ -35,11 +35,11 @@ def health() -> dict:
 class Handler(BaseHTTPRequestHandler):
     server_version = "harbinger"
 
-    def _send(self, code: int, body: bytes, ctype: str):
+    def _send(self, code: int, body: bytes, ctype: str, cache: str = "no-cache"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Cache-Control", cache)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.end_headers()
@@ -55,6 +55,13 @@ class Handler(BaseHTTPRequestHandler):
             if not OUTPUT_FILE.exists():
                 return self._send(404, b'{"error": "no data yet"}', "application/json")
             return self._send(200, OUTPUT_FILE.read_bytes(), "application/json; charset=utf-8")
+        if path.startswith(art.URL_PREFIX):
+            name = path[len(art.URL_PREFIX):]
+            f = art.ART_DIR / name
+            if not art.FILE_RE.match(name) or not f.is_file():
+                return self._send(404, b"Not found", "text/plain; charset=utf-8")
+            ctype = "image/png" if name.endswith(".png") else "image/jpeg"
+            return self._send(200, f.read_bytes(), ctype, "public, max-age=86400")
         rel = "index.html" if path in ("/", "") else path.lstrip("/")
         target = (WEB_DIR / rel).resolve()
         if WEB_DIR.resolve() not in target.parents or not target.is_file():

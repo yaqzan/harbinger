@@ -93,6 +93,14 @@ cohorts = [12, 18, 24, 36]  # removals land on the third Monday of the month (30
 24 = 0.0
 36 = 0.0
 
+# Cover art next to each game, cached in harbinger/state/art/ and served by this server.
+[art]
+enabled = true
+budget = 150      # new lookups per ingest (a first run fills in over a few days)
+retry_days = 14   # look again for a game nothing had art for
+max_px = 240      # longest side kept, when Pillow is installed
+pause_s = 0.2     # between lookups
+
 # Your watched games: set them in config.local.toml, not here.
 [queue]
 gone = []

@@ -49,12 +49,22 @@
     tb.replaceChildren(...rows.map((r) => { const tr = el("tr"); build(r, tr).forEach((td) => tr.appendChild(td)); return tr; }));
   };
   const td = (text, cls) => el("td", cls, text);
+  // a game's name cell, with its cover when we have one (path comes from our own data.json)
+  const gameTd = (r) => {
+    const c = td(null, "game");
+    if (/^\/art\/[0-9a-f]{16}\.(jpg|png)$/.test(r.art || "")) {
+      const i = el("img", "art"); i.src = r.art; i.alt = ""; i.loading = "lazy"; i.width = 32; i.height = 32;
+      c.appendChild(i);
+    }
+    c.appendChild(document.createTextNode(r.game));
+    return c;
+  };
   const urgCls = (u) => (u === "Start now" || /^Claim/.test(u || "") ? "urg-now" : u === "Too late" ? "urg-late" : "");
 
   // confirmed
   const verdictCls = (v) => (v === "Doable" || v === "Tight" ? v : v === "Too late for 100%" ? "late" : "quiet");
   fill("t-conf", data.confirmed, (r) => {
-    const g = td(r.game, "game");
+    const g = gameTd(r);
     if (!r.verified) g.appendChild(el("span", "chip unv", "unverified"));
     const v = el("td"); v.appendChild(el("span", `chip ${verdictCls(r.verdict)}`, r.verdict));
     return [g, td(r.wave_label, "nowrap"), td(hrs(r.hours), "num"), v, td(r.platform, "nowrap"),
@@ -75,7 +85,7 @@
       $("ocount").textContent = `${rows.length} of ${one.rows.length}`;
       fill("t-one", rows.slice(0, 300), (r, tr) => {
         if (r.band === "Thin" || !r.band) tr.className = "thin";
-        return [td(r.game, "game"), td(r.service, "nowrap"), td(r.leaves, "nowrap"), td(r.odds, r.band ? `band-${r.band}` : ""),
+        return [gameTd(r), td(r.service, "nowrap"), td(r.leaves, "nowrap"), td(r.odds, r.band ? `band-${r.band}` : ""),
           td(hrs(r.hours), "num"), td(r.action, `nowrap ${urgCls(r.action)}`), td(r.progress || "", "why"), td(r.why, "why")];
       });
     };
@@ -146,7 +156,7 @@
       ev.appendChild(bar); ev.appendChild(el("span", null, r.evidence));
       if (r.delta === "new") ev.appendChild(el("span", "delta", "new"));
       else if (r.delta) ev.appendChild(el("span", `delta ${r.delta > 0 ? "up" : "down"}`, `${r.delta > 0 ? "▲" : "▼"}${Math.abs(r.delta)}`));
-      return [td(r.game, "game"), td(r.wave_label, "nowrap"), td(r.notice, "nowrap"), ev, td(r.band, `band-${r.band}`),
+      return [gameTd(r), td(r.wave_label, "nowrap"), td(r.notice, "nowrap"), ev, td(r.band, `band-${r.band}`),
         td(hrs(r.hours), "num"), td(r.start_by, "nowrap"), td(r.urgency, `nowrap ${urgCls(r.urgency)}`), td(r.tier, "nowrap"), td(r.why, "why")];
     });
   };
@@ -156,10 +166,10 @@
   // owned elsewhere
   if (data.owned.length) {
     $("owned").hidden = false;
-    fill("t-owned", data.owned, (r) => [td(r.game, "game"), td(r.where, "nowrap"), td(hrs(r.hours), "num"), td(r.progress, "why")]);
+    fill("t-owned", data.owned, (r) => [gameTd(r), td(r.where, "nowrap"), td(hrs(r.hours), "num"), td(r.progress, "why")]);
   }
 
-  fill("t-queue", data.queue, (r) => [td(r.game, "game"), td(r.state, "nowrap"), td(r.next_check, "nowrap"), td(r.odds, "nowrap"), td(r.note, "why")]);
+  fill("t-queue", data.queue, (r) => [gameTd(r), td(r.state, "nowrap"), td(r.next_check, "nowrap"), td(r.odds, "nowrap"), td(r.note, "why")]);
   if (!data.queue.length) {
     $("queue").querySelector(".note").textContent = "No watched games yet. List the Game Pass games you're playing or plan to play under [queue] in config.local.toml (config.local.example.toml explains it), and they show up here with the next date each could leave.";
     $("t-queue").hidden = true;

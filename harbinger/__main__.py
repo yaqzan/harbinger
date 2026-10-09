@@ -18,6 +18,7 @@ from pathlib import Path
 from datetime import date, datetime
 
 from . import OUTPUT_FILE, STATE_DIR, load_config, store
+from . import art as art_mod
 from . import forecast as fc_mod
 from . import plus
 from . import psn as psn_mod
@@ -89,6 +90,9 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
             notes.append(pushed)
     notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
     data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg))
+    if sync_steam:  # network lookups only on ingest and steam; build shows what is already cached
+        notes.append(art_mod.fetch(db, art_mod.wanted(data), cfg))
+    art_mod.attach(data, art_mod.load(db))
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have
