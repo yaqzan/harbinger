@@ -1,6 +1,6 @@
 # Runs one Harbinger job from Task Scheduler and logs it.
-#   -Job ingest  sheet + forecast subagent + Steam + rebuild, then the Pharos summary push
-#   -Job steam   Steam progress + rebuild from cached inputs (daily)
+#   -Job ingest  sheet + forecast subagent + Steam + rebuild; pushes newly confirmed leavers (daily)
+#   -Job steam   Steam progress + rebuild from cached inputs (manual)
 # A failed run pages through Pharos (if it sits next to this repo, or -PharosModule points at it)
 # so a dead schedule doesn't go unnoticed.
 param(

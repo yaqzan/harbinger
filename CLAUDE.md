@@ -18,15 +18,15 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 ## Commands
 
 - `py -3.11 -m harbinger ingest [--no-forecast] [--push]`: import sheet + forecast subagent +
-  Steam, reconcile titles, rebuild, snapshot. `--push` sends the Pharos summary (scheduled task).
-- `py -3.11 -m harbinger steam`: Steam import + rebuild from the database (daily job)
+  Steam, reconcile titles, rebuild, snapshot (daily task). `--push` alerts on newly confirmed leavers.
+- `py -3.11 -m harbinger steam`: Steam import + rebuild from the database
 - `py -3.11 -m harbinger build [--today YYYY-MM-DD]`: re-score the database after a config or
   titles.toml change. `show`: print the summary. `titles`: match issues. `changes [--game X]`:
   what the last sheet imports changed.
 - `py -3.11 -m unittest`: tests (model rules, a whole run pinned to Oct 9, 2026, config merge).
   Tests load the shared config only (`load_config(local=None)`).
 - `C:\Development\server.ps1 start|status|logs -Service harbinger`: server (:5006) + tunnel
-- `ops\windows\install-tasks.ps1 -Controller C:\Development\server.ps1`: watchdog, ingest, Steam tasks
+- `ops\windows\install-tasks.ps1 -Controller C:\Development\server.ps1`: watchdog + daily ingest
 
 ## Invariants
 

@@ -51,6 +51,14 @@ def baseline(db: sqlite3.Connection, kind: str):
     return pick[1], scores
 
 
+def confirmed_keys(db: sqlite3.Connection) -> set[str] | None:
+    """Verified confirmed leavers in the last ingest run; None if there's no ingest yet."""
+    last = db.execute("SELECT id FROM runs WHERE kind = 'ingest' ORDER BY id DESC LIMIT 1").fetchone()
+    if not last:
+        return None
+    return {k for (k,) in db.execute("SELECT key FROM scores WHERE run_id = ? AND list = 'confirmed'", last)}
+
+
 def record(db: sqlite3.Connection, kind: str, as_of: str, note: str, rows: list[dict]) -> int:
     cur = db.execute("INSERT INTO runs (at, kind, as_of, note) VALUES (?, ?, ?, ?)",
                      (datetime.now().isoformat(timespec="seconds"), kind, as_of, note))

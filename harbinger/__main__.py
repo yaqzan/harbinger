@@ -1,7 +1,7 @@
 """py -3.11 -m harbinger ingest|steam|build|show|titles|changes|serve
 
 ingest   import the sheet, refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
-steam    sync Steam into the database and rebuild from the imported sheet (the daily job)
+steam    sync Steam into the database and rebuild from the imported sheet
 build    rebuild data.json from the database (after a config.toml or titles.toml change)
 show     print the current summary
 titles   re-match titles across sources and list the weak matches and near misses
@@ -22,7 +22,7 @@ from . import forecast as fc_mod
 from . import sheet as sheet_mod
 from . import steam as steam_mod
 from . import titles as titles_mod
-from .build import assemble
+from .build import assemble, leaver_alert, new_leavers
 
 
 def _wanted(data: dict) -> set[str]:
@@ -67,6 +67,8 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of)
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
+    # what the push alerts on: verified leavers the previous ingest didn't have
+    data["new_confirmed"] = new_leavers(data["confirmed"], store.confirmed_keys(db)) if kind == "ingest" else []
     rows = ([{"game": r["game"], "key": r["key"], "list": "confirmed", "wave": r["wave"], "hours": r["hours"],
               "owned": int(r["owned"])} for r in data["confirmed"] if r["verified"]] +
             [{"game": r["game"], "key": r["key"], "list": "watchlist", "wave": r["wave"], "cohort": r["cohort"],
@@ -100,24 +102,19 @@ def _pharos(cfg: dict):
 
 
 def push(data: dict, cfg: dict) -> str:
-    """One-line summary to the phone via Pharos (no project name, no commands)."""
+    """Alert the phone via Pharos when an ingest finds newly confirmed leavers; quiet otherwise."""
     p = cfg.get("push", {})
     if not p.get("enabled", True):
         return "push disabled in config"
+    new = data.get("new_confirmed", [])
+    if not new:
+        return "push: no new confirmed leavers"
     pharos = _pharos(cfg)
     if pharos is None:
         return "push skipped: Pharos not found"
-    s = data["summary"]
-    starts = [r["game"] for r in data["watchlist"] if r["urgency"] == "Start now"][:3]
-    if s["confirmed_count"]:
-        title = f"{s['finishable_count']} of {s['confirmed_count']} Game Pass leavers still finishable"
-    else:
-        title = "No Game Pass leavers confirmed"
-    body = [f"{s['likely_count']} likely next", f"{s['hours_available']:g} h before {s['next_wave']}"]
-    if starts:
-        body.append("start now: " + ", ".join(starts))
+    title, body = leaver_alert(new, date.fromisoformat(data["today"]))
     link = {"url": p["url"], "url_title": "Open the radar"} if p.get("url") else {}
-    result = pharos.send(title, " · ".join(body), source="harbinger", channel="digest", **link)
+    result = pharos.send(title, body, source="harbinger", channel="digest", **link)
     return f"push: {getattr(result, 'status', result)}"
 
 
@@ -144,7 +141,7 @@ def main(argv=None) -> int:
     ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "serve"])
     ap.add_argument("--game", help="changes: only this title")
     ap.add_argument("--no-forecast", action="store_true", help="ingest: keep the last forecast")
-    ap.add_argument("--push", action="store_true", help="ingest: send the Pharos summary (optional, see config.local.example.toml)")
+    ap.add_argument("--push", action="store_true", help="ingest: push newly confirmed leavers via Pharos (optional, see config.local.example.toml)")
     ap.add_argument("--today", type=date.fromisoformat, help="score as of this date (testing)")
     a = ap.parse_args(argv)
     if a.command == "serve":

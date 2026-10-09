@@ -29,7 +29,7 @@ tracking = [
 gone = []
 
 [push]
-# Optional phone summary after each ingest, sent through Pharos (github.com/yaqzan/pharos).
+# Optional phone alert when an ingest finds a newly confirmed leaver, via Pharos (github.com/yaqzan/pharos).
 # Leave dir empty to look for a Pharos folder next to this repo; set enabled = false to skip.
 enabled = true
 dir = ""

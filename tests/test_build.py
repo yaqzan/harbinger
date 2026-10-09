@@ -2,9 +2,11 @@
 
 import unittest
 from datetime import date, datetime
+from pathlib import Path
 
 from harbinger import load_config
-from harbinger.build import assemble
+from harbinger import store
+from harbinger.build import assemble, leaver_alert, new_leavers
 from harbinger.sheet import FIELDS, norm, parse
 
 CFG = load_config(local=None)
@@ -131,6 +133,42 @@ class SteamOwnership(unittest.TestCase):
         self.assertEqual(ew["verdict"], "Owned on Steam")
         self.assertEqual(d["summary"]["confirmed_count"], 8)
         self.assertTrue(d["summary"]["takeaway"].startswith("8 games leave Oct 15 and you own 1 of them on Steam."))
+
+
+class NewLeaverPush(unittest.TestCase):
+    def setUp(self):
+        self.d = run()
+        self.keys = {r["key"] for r in self.d["confirmed"] if r["verified"]}
+
+    def test_only_games_the_last_ingest_did_not_have(self):
+        new = new_leavers(self.d["confirmed"], self.keys - {norm("Pacific Drive")})
+        self.assertEqual([r["game"] for r in new], ["Pacific Drive"])
+        self.assertEqual(new_leavers(self.d["confirmed"], self.keys), [])
+
+    def test_first_ingest_and_unverified_and_owned_stay_quiet(self):
+        self.assertEqual(new_leavers(self.d["confirmed"], None), [])
+        names = [r["game"] for r in new_leavers(self.d["confirmed"], set())]
+        self.assertNotIn("Superball", names)  # only an untrusted outlet reported it
+        steam = {"games": {"evil west": {"name": "Evil West", "appid": 2, "played_h": 0,
+                                         "ach_done": None, "ach_total": None}}}
+        self.assertNotIn("Evil West", [r["game"] for r in new_leavers(run(steam)["confirmed"], set())])
+
+    def test_alert_text(self):
+        one = [r for r in self.d["confirmed"] if r["game"] == "Donut County"]
+        self.assertEqual(leaver_alert(one, TODAY), ("Donut County confirmed leaving in 6 days",
+                                                    "Donut County 2 h, doable"))
+        title, body = leaver_alert(new_leavers(self.d["confirmed"], set()), TODAY)
+        self.assertEqual(title, "8 games confirmed leaving in 6 days")
+        self.assertTrue(body.endswith("+4 more"))
+        self.assertNotIn("—", title + body)
+
+    def test_store_reads_the_last_ingest(self):
+        db = store.connect(Path(":memory:"))
+        self.assertIsNone(store.confirmed_keys(db))
+        store.record(db, "ingest", "2026-10-09", "", [{"game": "Evil West", "key": "evil west", "list": "confirmed"},
+                                                       {"game": "Far Game", "key": "far game", "list": "watchlist"}])
+        store.record(db, "steam", "2026-10-09", "", [{"game": "Donut County", "key": "donut county", "list": "confirmed"}])
+        self.assertEqual(store.confirmed_keys(db), {"evil west"})
 
 
 if __name__ == "__main__":

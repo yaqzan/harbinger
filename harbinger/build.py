@@ -331,6 +331,30 @@ def summary(cx: Context, confirmed: list[dict], watch: list[dict]) -> dict:
     }
 
 
+def new_leavers(confirmed: list[dict], before: set[str] | None) -> list[dict]:
+    """Verified leavers you don't own that the previous ingest didn't list: what the push alerts on.
+    No previous ingest (None) alerts on nothing, so a first run doesn't flood the phone."""
+    if before is None:
+        return []
+    return [r for r in confirmed if r["verified"] and not r["owned"] and r["key"] not in before]
+
+
+def _in_days(n: int) -> str:
+    return "today" if n <= 0 else "tomorrow" if n == 1 else f"in {n} days"
+
+
+def leaver_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]:
+    """Push title and body for newly confirmed leavers (Pharos style: short, relative times)."""
+    days = sorted({(date.fromisoformat(r["wave"]) - today).days for r in rows})
+    when = _in_days(days[0]) if len(days) == 1 else "starting " + _in_days(days[0])
+    who = rows[0]["game"] if len(rows) == 1 else f"{len(rows)} games"
+    items = [f"{r['game']} {r['hours']:g} h, {r['verdict'].lower()}" if r["hours"] is not None
+             else f"{r['game']} hours unknown" for r in rows[:show]]
+    if len(rows) > show:
+        items.append(f"+{len(rows) - show} more")
+    return f"{who} confirmed leaving {when}", " · ".join(items)
+
+
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date) -> dict:
     cx = Context(cfg, sheet, forecast, steam, today, as_of)
     confirmed = confirmed_rows(cx)

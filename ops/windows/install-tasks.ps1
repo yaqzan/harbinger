@@ -1,8 +1,8 @@
-# Registers Harbinger's three scheduled tasks. All run through hidden_run.vbs (no console flash).
+# Registers Harbinger's scheduled tasks. All run through hidden_run.vbs (no console flash).
 #   "Harbinger Watchdog"  every 5 min: restart the server / tunnel if down
-#   "Harbinger Ingest"    3rd and 18th at 08:46: sheet + forecast + Steam, then the summary push
-#                         (the 3rd and 18th dodge weekend postings on the 1st and 15th)
-#   "Harbinger Steam"     daily at 06:30: Steam progress, rebuild from cached inputs
+#   "Harbinger Ingest"    daily at 14:46: sheet + forecast + Steam, then a push only if a game is
+#                         newly confirmed to leave (after Xbox Wire's usual midday ET posts)
+# It also removes the old "Harbinger Steam" task: the daily ingest syncs Steam itself.
 #
 # This machine:  .\install-tasks.ps1 -Controller C:\Development\server.ps1
 # Times are the machine's local time (Eastern here, so America/Toronto).
@@ -52,21 +52,19 @@ try {
     Write-Host 'Registered task: Harbinger Watchdog (every 5 min, current user)'
 }
 
-# schtasks /sc monthly takes one day only, so the ingest task comes from XML (two days,
-# every month). StartWhenAvailable runs a missed tick once the machine is back.
+# XML rather than schtasks /sc daily for StartWhenAvailable (a missed tick runs once the
+# machine is back) and the 1 h time limit.
 $ingestArgs = "//B //Nologo `"$vbs`" " + (Quote @('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $runJob, '-Job', 'ingest'))
-$months = (('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
-    'October', 'November', 'December') | ForEach-Object { "<$_ />" }) -join ''
-$start = (Get-Date -Format 'yyyy-MM-dd') + 'T08:46:00'
+$start = (Get-Date -Format 'yyyy-MM-dd') + 'T14:46:00'
 $xml = @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <RegistrationInfo><Description>Harbinger: sheet, forecast and Steam refresh, then the summary push</Description></RegistrationInfo>
+  <RegistrationInfo><Description>Harbinger: sheet, forecast and Steam refresh, push on newly confirmed leavers</Description></RegistrationInfo>
   <Triggers>
     <CalendarTrigger>
       <StartBoundary>$start</StartBoundary>
       <Enabled>true</Enabled>
-      <ScheduleByMonth><DaysOfMonth><Day>3</Day><Day>18</Day></DaysOfMonth><Months>$months</Months></ScheduleByMonth>
+      <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>
     </CalendarTrigger>
   </Triggers>
   <Settings>
@@ -87,9 +85,10 @@ $xmlPath = Join-Path $env:TEMP 'harbinger-ingest-task.xml'
 schtasks /create /tn "Harbinger Ingest" /xml $xmlPath /f
 if ($LASTEXITCODE -ne 0) { throw "Harbinger Ingest: schtasks exit $LASTEXITCODE" }
 Remove-Item $xmlPath -ErrorAction SilentlyContinue
-Write-Host 'Registered task: Harbinger Ingest (3rd and 18th, 08:46)'
+Write-Host 'Registered task: Harbinger Ingest (daily, 14:46)'
 
-$steamLine = "//B //Nologo `"$vbs`" " + (Quote @('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $runJob, '-Job', 'steam'))
-schtasks /create /tn "Harbinger Steam" /sc daily /st 06:30 /tr "wscript.exe $steamLine" /f
-if ($LASTEXITCODE -ne 0) { throw "Harbinger Steam: schtasks exit $LASTEXITCODE" }
-Write-Host 'Registered task: Harbinger Steam (daily, 06:30)'
+schtasks /query /tn "Harbinger Steam" 2>$null | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    schtasks /delete /tn "Harbinger Steam" /f | Out-Null
+    Write-Host 'Removed old task: Harbinger Steam (the daily ingest covers it)'
+}

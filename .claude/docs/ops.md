@@ -13,12 +13,16 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
   (holds the UUID and hostname); the repo ships `cloudflared-config.example.yml`.
 - **Tasks** (`ops/windows/install-tasks.ps1 -Controller C:\Development\server.ps1`):
   - "Harbinger Watchdog" every 5 min (unelevated falls back to schtasks, no at-logon trigger).
-  - "Harbinger Ingest" 3rd and 18th at 08:46 local (Eastern). Registered from XML because
-    `schtasks /sc monthly` takes one day only. The dates dodge weekend postings on the 1st/15th.
-  - "Harbinger Steam" daily 06:30.
+  - "Harbinger Ingest" daily 14:46 local (Eastern), after Xbox Wire's usual midday posts. Daily
+    since 2026-10-09 (was the 3rd and 18th) so a confirmed leaver pushes within a day. It syncs
+    Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it). Costs one
+    forecast subagent run (~90 s) a day.
   - Jobs run `ops/windows/run-job.ps1`; logs in `ops/windows/logs/{ingest,steam}.log`.
-- **Push**: ingest sends one line via Pharos (`source="harbinger"`, channel `digest`, added to
-  Pharos policy.json 2026-10-09), linking to `[push] url` from config.local.toml. Pharos is found
+- **Push**: only when an ingest finds verified leavers the previous ingest didn't list (owned
+  ones excluded; no previous ingest = no push), so daily runs stay quiet until there's news.
+  `build.new_leavers` + `leaver_alert`, baseline `store.confirmed_keys`. Via Pharos
+  (`source="harbinger"`, channel `digest`, own Pushover app with the raven icon), linking to
+  `[push] url` from config.local.toml. Pharos is found
   installed, at `[push] dir`, or as a `Pharos` folder next to the repo; missing = no push, no error.
   A failed job pages through Pharos (`run-job.ps1 -PharosModule`, default the sibling folder).
 - **Icon**: 8-bit raven (owner-picked 2026-10-09). `ops/icon.py` holds the pixel grid and writes
