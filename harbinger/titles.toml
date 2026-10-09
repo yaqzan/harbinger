@@ -29,6 +29,16 @@
 "The Elder Scrolls IV: Oblivion Game of the Year Edition (2009)" = "The Elder Scrolls IV: Oblivion"
 "The Walking Dead" = "The Walking Dead: The Complete First Season"
 "Valiant Hearts: The Great War / Soldats Inconnus : Memoires de la Grande Guerre" = "Valiant Hearts: The Great War"
+# PS Plus titles (Steam or Game Pass spelling = PS Plus spelling)
+"Bad North: Jotunn Edition" = "Bad North"
+"Cat Quest II" = "Cat Quest II: The Lupus Empire"
+"Far Cry 3" = "Far Cry 3: Classic Edition"
+"Far Cry 3: Blood Dragon" = "Far Cry 3: Blood Dragon - Classic Edition"
+"For Honor: Marching Fire Edition" = "For Honor"
+"The Elder Scrolls Online" = "The Elder Scrolls Online: Tamriel Unlimited"
+"This War of Mine" = "This War of Mine: Final Cut"
+"Warhammer: Chaosbane" = "Warhammer: Chaosbane - Slayer Edition"
+"World War Z: Aftermath" = "World War Z"
 # Forecast spellings (checked loose matches)
 "Bounty Star" = "Bounty Star: The Morose Tale of Graveyard Clem"
 "MechWarriror 5: Clans" = "Mechwarrior 5: Clans"
@@ -64,3 +74,10 @@
 "Tomb Raider: Legend" = ["Tomb Raider"]
 "We Were Here Together" = ["We Were Here"]
 "We Were Here Too" = ["We Were Here"]
+"Assassin's Creed II" = ["Assassin's Creed Unity"]
+"Assassin's Creed IV Black Flag: Freedom Cry" = ["Assassin's Creed IV: Black Flag"]
+"Magicka 2: Spell Balance Beta" = ["Magicka 2"]
+"Resident Evil" = ["Resident Evil: Village"]
+"Sniper Elite V2" = ["Sniper Elite 5", "Sniper Elite 4"]
+"The Talos Principle 2: Road to Elysium" = ["The Talos Principle 2"]
+"WWE 2K23" = ["WWE 2K26"]

@@ -37,13 +37,25 @@
   <ul class="caveats">
     <li>Evidence % is a model estimate and can be wrong. Dates are good to about a day.</li>
     <li>Completion hours come from the sheet and nobody has checked them.</li>
-    <li>Assumes Game Pass Ultimate or PC Game Pass. Premium has its own catalogue.</li>
+    <li>Assumes Game Pass Ultimate on an Xbox console. Games only on PC Game Pass are left out.</li>
   </ul>
 
   <section class="card" id="confirmed">
     <h2>Confirmed leaving</h2>
     <p class="note">Verdict compares hours to 100% with the hours you have before the wave at 9 hours a week.</p>
     <div class="box"><table id="t-conf"><thead><tr><th>Game</th><th>Leaves</th><th class="num">Hours</th><th>Verdict</th><th>Platform</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="card" id="one">
+    <h2>Only on one service</h2>
+    <p class="note" id="one-note"></p>
+    <div class="ctl">
+      <input id="oq" type="search" placeholder="Search games" aria-label="Search games">
+      <select id="os" aria-label="Service"><option value="">Both services</option><option value="Game Pass">Game Pass</option><option value="PS Plus">PS Plus</option></select>
+      <select id="ob" aria-label="Band"><option value="">All bands</option><option>Confirmed</option><option>Likely</option><option>Possible</option><option>Thin</option><option value="-">Not scored</option></select>
+      <span class="count" id="ocount"></span>
+    </div>
+    <div class="box tall"><table id="t-one"><thead><tr><th>Game</th><th>Service</th><th>Leaves</th><th>Odds</th><th class="num">Hours</th><th>Action</th><th>Why</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <section class="card" id="horizon">

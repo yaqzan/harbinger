@@ -1,6 +1,6 @@
 """py -3.11 -m harbinger ingest|steam|build|show|titles|changes|serve
 
-ingest   import the sheet, refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
+ingest   import the sheets (Game Pass, PS Plus), refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
 steam    sync Steam into the database and rebuild from the imported sheet
 build    rebuild data.json from the database (after a config.toml or titles.toml change)
 show     print the current summary
@@ -19,6 +19,7 @@ from datetime import date, datetime
 
 from . import OUTPUT_FILE, STATE_DIR, load_config, store
 from . import forecast as fc_mod
+from . import plus
 from . import sheet as sheet_mod
 from . import steam as steam_mod
 from . import titles as titles_mod
@@ -41,6 +42,17 @@ def _apply_deltas(data: dict, base_at: str | None, base: dict) -> None:
             r["delta"] = round((r["p"] - prev[0]) * 100)
 
 
+def _ps(db, cfg: dict) -> dict | None:
+    """Your PS Plus tier's catalogue, or None when the tier is "none" or no PS sheet is imported."""
+    tier = str(cfg.get("playstation", {}).get("tier", "none")).lower()
+    if plus.TIERS.get(tier, 0) == 0:
+        return None
+    tabs, fetched = sheet_mod.load_rows(db, "playstation")
+    if not fetched:
+        return None
+    return {"games": plus.catalogue(tabs, tier), "fetched": fetched, "tier": tier.title()}
+
+
 def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, today: date | None = None) -> dict:
     cfg = load_config()
     STATE_DIR.mkdir(exist_ok=True)
@@ -49,7 +61,10 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     db = store.connect()
     if fetch:
         notes.append(sheet_mod.ingest(db, cfg))
+        if sheet_mod.sheet_id(cfg, "playstation"):
+            notes.append(sheet_mod.ingest(db, cfg, "playstation"))
     sh = sheet_mod.load(db, cfg)
+    ps = _ps(db, cfg)
     as_of = datetime.fromisoformat(sh.fetched).date()
     from .model import next_waves
     if refresh_forecast:
@@ -63,8 +78,8 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         keys = _wanted(draft) | {g.key for g in sh.games if g.status in ("Active", "Leaving Soon")}
         match = titles_mod.Matcher((g.key for g in sh.games), cfg.get("titles"), sh.out_of_scope)
         notes.append(steam_mod.sync(db, cfg, lambda name: match.key(name, loose=False) in keys))
-    notes.append(titles_mod.reconcile(db, sh, fc, cfg))
-    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of)
+    notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
+    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps)
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have
@@ -120,7 +135,7 @@ def push(data: dict, cfg: dict) -> str:
 
 def _changes(game: str | None, imports: int = 5) -> int:
     db = store.connect()
-    q = ("SELECT i.fetched_at, c.tab, c.title, c.kind, c.field, c.old, c.new FROM sheet_change c"
+    q = ("SELECT i.fetched_at, c.service || ' ' || c.tab, c.title, c.kind, c.field, c.old, c.new FROM sheet_change c"
          " JOIN sheet_import i ON i.id = c.import_id WHERE c.import_id IN"
          " (SELECT id FROM sheet_import ORDER BY id DESC LIMIT ?)")
     args: list = [imports]
@@ -132,7 +147,7 @@ def _changes(game: str | None, imports: int = 5) -> int:
         print("no sheet changes recorded" + (f" for {game}" if game else ""))
     for at, tab, title, kind, fld, old, new in rows:
         what = f"{fld}: {old!r} -> {new!r}" if kind == "changed" else kind
-        print(f"{at[:10]}  {tab:<14} {title}  {what}")
+        print(f"{at[:10]}  {tab:<26} {title}  {what}")
     return 0
 
 
@@ -151,7 +166,8 @@ def main(argv=None) -> int:
     if a.command == "titles":
         cfg = load_config()
         db = store.connect()
-        print(titles_mod.reconcile(db, sheet_mod.load(db, cfg), fc_mod.load(), cfg))
+        ps = _ps(db, cfg)
+        print(titles_mod.reconcile(db, sheet_mod.load(db, cfg), fc_mod.load(), cfg, ps["games"] if ps else ()))
         titles_mod.print_report(db)
         return 0
     if a.command == "changes":

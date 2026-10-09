@@ -1,7 +1,7 @@
 # Harbinger
 
-Game Pass exit radar (Xbox console Game Pass; PC-only games are out of scope via `[scope]`):
-which Game Pass games are leaving (confirmed) or likely leaving (modelled),
+Game Pass exit radar (Xbox console Game Pass; PC-only games are out of scope via `[scope]`), plus
+PS Plus at the tier in `[playstation] tier`: which games are leaving (confirmed) or likely leaving (modelled),
 hours to 100%, and the latest day to start. Read-only page, no auth, no input surface.
 
 **Public, plug-and-play repo (github.com/yaqzan/harbinger).** Anyone clones it, adds their own
@@ -44,6 +44,6 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 
 ## Docs
 
-Model rules, signals and calibration: `.claude/docs/model.md` · database tables, imports and
+Model rules, signals, PS Plus, the one-service list and calibration: `.claude/docs/model.md` · database tables, imports and
 title matching: `.claude/docs/data.md` · hosting, tasks, push:
 `.claude/docs/ops.md` · kanban: vault `Engineering Wiki/Projects/Harbinger/`.

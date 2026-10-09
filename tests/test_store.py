@@ -148,7 +148,7 @@ class Titles(unittest.TestCase):
         r = titles.report(d)
         self.assertEqual([i["title"] for i in r["near"]], ["Evil Wesst"])
         self.assertEqual([i["title"] for i in r["unmatched"]], ["Not A Real Game"])
-        self.assertEqual(r["counts"]["steam"], (3, 1))
+        self.assertEqual(r["counts"]["steam->xbox"], (3, 1))
 
 
 class Matching(unittest.TestCase):

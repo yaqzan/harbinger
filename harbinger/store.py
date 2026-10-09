@@ -31,6 +31,8 @@ def connect(path=DB_FILE) -> sqlite3.Connection:
     from . import sheet, steam, titles
     db = sqlite3.connect(path)
     db.execute("PRAGMA foreign_keys = ON")
+    sheet.migrate(db)
+    titles.migrate(db)
     for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, titles.SCHEMA):
         db.executescript(schema)
     return db

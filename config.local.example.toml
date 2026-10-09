@@ -12,6 +12,11 @@ id = ""
 api_key = ""
 # Steam only shares your library if your profile's "Game details" privacy setting is Public.
 
+[playstation]
+# Your PS Plus tier: none | essential | extra | premium. Each includes the tiers below it, so
+# "extra" covers the Essential monthly games too. "none" keeps PlayStation off the page.
+tier = "none"
+
 [queue]
 # Watched games. These get their own "Your queue" table with the next date each one could leave,
 # even when the model doesn't rate them as likely to go.

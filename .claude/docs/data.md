@@ -6,6 +6,15 @@ only the database (plus `forecast.json`). Schemas live with their module: `sheet
 
 ## Sheet import (`sheet.py`, every ingest)
 
+Two sheets by the same author, same layout, one `service` column apart: `xbox` (Game Pass,
+`[sheet] id`) and `playstation` (PS Plus, `[playstation] sheet_id`, added 2026-10-09). Each import
+replaces only its own service's rows. PS tabs imported: Master List, Leaving Soon, Removed,
+Likely Leaving (the rest are filtered views); its Tier column (Essential / Extra / Extra
+(Ubisoft+ Classics) / Premium (Classics|Streaming Only|Remasters|VR) / discontinued PS Now and
+old PS Plus) and User score, Streaming, Local Multiplayer land in `tier`, `user_score`,
+`streaming`, `local_multiplayer`. The sheet tables from before (no `service` column) were dropped
+and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again there.
+
 - Downloads the whole public workbook as xlsx (`/export?format=xlsx`, ~1.9 MB, no Google login,
   verified 2026-10-09) and reads it with the stdlib (zipfile + ElementTree, no openpyxl).
   The last one is kept at `state/sheet/latest.xlsx`.
@@ -56,6 +65,10 @@ as digits.
 - Steam tools (public test, beta client, dedicated server, demo...) are never matched.
 - `harbinger/titles.toml` (tracked, shared) settles the rest: `[same]` maps a title to a sheet
   title (or a list, for a forecast bundle), `[different]` blocks a match or a suggestion.
+- `title_match.target` is the catalogue matched against: `xbox`, or `playstation` (your PS Plus
+  tier's games, from Steam and from the Game Pass games). Cross-service matching is strict like
+  Steam ("BLACK" prefix-matched Black Desert). An alias aimed at the other catalogue falls
+  through and isn't reported missing. Game Pass games absent from PS Plus are normal, not issues.
 - `reconcile()` rebuilds `title_match` (one row per outside title: source, key, rung,
   near-miss candidates) each run. `py -3.11 -m harbinger titles` lists loose matches, near
   misses and outside titles not on the sheet. First import: 127 issues, down to 1 (Superball,

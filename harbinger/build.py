@@ -8,10 +8,10 @@ from __future__ import annotations
 import difflib
 from datetime import date
 
-from . import model
+from . import model, plus
 from .forecast import for_model
 from .sheet import Game, Sheet, norm
-from .titles import Matcher
+from .titles import Matcher, ps_matcher
 
 BANDS = ("Confirmed", "Likely", "Possible", "Thin")
 FINISHABLE = ("Doable", "Tight")
@@ -331,6 +331,96 @@ def summary(cx: Context, confirmed: list[dict], watch: list[dict]) -> dict:
     }
 
 
+# ── only on one service ─────────────────────────────────────────────
+
+ORDER = {"Confirmed": 0, "Likely": 1, "Possible": 2, "Thin": 3, "": 4}
+
+
+def xbox_outlook(cx: Context, g: Game) -> dict:
+    """When a Game Pass game could leave and how likely, any distance ahead (the watchlist
+    stops at the horizon)."""
+    why = cx.excluded(g)
+    if why:
+        return {"state": "not scored", "wave": None, "p": None, "band": "", "why": f"{why}: assumed to stay"}
+    if cx.is_ubisoft(g):
+        return {"state": "not scored", "wave": None, "p": None, "band": "", "why": "Ubisoft+ Classics bundle"}
+    if g.months is None:
+        return {"state": "not scored", "wave": None, "p": None, "band": "", "why": "No add date"}
+    added = cx.added(g)
+    nxt = model.next_checkpoint(added, cx.today, cx.cohorts, cx.dpm, cx.announced)
+    if not nxt:
+        return {"state": "none left", "wave": None, "p": None, "band": "",
+                "why": f"Past {cx.cohorts[-1]} months, no checkpoint left in the model"}
+    n, wave = nxt
+    p, reasons = cx.score(g, n, wave)
+    anniv = model.anniversary(added, n, cx.dpm)
+    return {"state": "scored", "wave": wave, "n": n, "p": p, "band": model.band(p, cx.cfg["bands"]),
+            "why": "; ".join([f"{n}-month anniversary {fmt(anniv, cx.today)}"] + reasons)}
+
+
+def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dict:
+    """Games you can play on exactly one service (Game Pass console, or PS Plus at your tier)
+    and don't own on Steam. Confirmed leavers and claim deadlines first, then Likely,
+    Possible and Thin, each soonest first."""
+    today, play = cx.today, cx.play
+    ps_games = ps["games"] if ps else []
+    pm = ps_matcher(ps_games, cx.cfg) if ps_games else None
+    on_xbox = {g.key: g for g in cx.by_key.values() if g.status in ("Active", "Leaving Soon")}
+    conf = {r["key"]: r for r in confirmed if r["verified"]}
+    # The same game on both services. A copy that is itself leaving is no backup, so then
+    # both copies stay on the list.
+    ps_leaving = {g.key for g in ps_games if g.status == "Leaving Soon"}
+    both = {k: pk for k, pk in ((g.key, pm.key(g.name, loose=False)) for g in on_xbox.values()) if pk} if pm else {}
+    xbox_backup = {k for k, pk in both.items() if pk not in ps_leaving}   # Game Pass games safe on PS Plus
+    ps_backup = {pk for k, pk in both.items() if k not in conf}           # PS Plus games safe on Game Pass
+    steam_ps = {pm.key(r.get("name") or "", loose=False) for r in cx.steam.values()} if pm else set()
+    rows = []
+
+    def add(game, service, out, hours, platform):
+        wave = out["wave"]
+        if out["state"] == "claim":
+            act = f"Claim by {fmt(wave, today)}"
+        elif wave:
+            act = model.urgency(today, wave, hours, play)
+        else:
+            act = ""
+        rows.append({
+            "game": game, "service": service, "platform": platform, "state": out["state"],
+            "wave": wave.isoformat() if wave else "", "leaves": fmt(wave, today) if wave else "",
+            "p": round(out["p"], 3) if out["p"] is not None else None,
+            "odds": "Confirmed" if out["band"] == "Confirmed" else
+                    (f"{round(out['p'] * 100)}%" if out["p"] is not None else ""),
+            "band": out["band"], "hours": hours, "action": act, "why": out["why"],
+        })
+
+    skipped = {"steam": 0, "both": 0}
+    for key, g in on_xbox.items():
+        if key in cx.steam:
+            skipped["steam"] += 1
+            continue
+        if key in xbox_backup:
+            skipped["both"] += 1
+            continue
+        if key in conf:
+            c = conf[key]
+            out = {"state": "confirmed", "wave": date.fromisoformat(c["wave"]), "p": 1.0, "band": "Confirmed",
+                   "why": c["note"]}
+        else:
+            out = xbox_outlook(cx, g)
+        add(g.name, "Game Pass", out, g.hours, g.system)
+    waves_out = plus.announced(ps_games, today)
+    for g in ps_games:
+        if g.key in steam_ps:
+            skipped["steam"] += 1
+            continue
+        if g.key in ps_backup:
+            continue  # counted once, on the Game Pass side
+        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), g.hours, g.system)
+    rows.sort(key=lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower()))
+    tier = ps["tier"] if ps else "none"
+    return {"rows": rows, "ps_tier": tier, "skipped_steam": skipped["steam"], "skipped_both": skipped["both"]}
+
+
 def new_leavers(confirmed: list[dict], before: set[str] | None) -> list[dict]:
     """Verified leavers you don't own that the previous ingest didn't list: what the push alerts on.
     No previous ingest (None) alerts on nothing, so a first run doesn't flood the phone."""
@@ -355,7 +445,8 @@ def leaver_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str
     return f"{who} confirmed leaving {when}", " · ".join(items)
 
 
-def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date) -> dict:
+def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
+             ps: dict | None = None) -> dict:
     cx = Context(cfg, sheet, forecast, steam, today, as_of)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
@@ -376,11 +467,13 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "survivors": survivors,
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),
+        "one_service": one_service_rows(cx, confirmed, ps),
         "sources": {
             "sheet_fetched": sheet.fetched,
             "forecast_checked": forecast.get("checked_at"),
             "forecast_covers": forecast.get("covers", []),
             "forecast_sources": forecast.get("sources", []),
             "steam_synced": steam.get("synced_at"),
+            "ps_sheet_fetched": ps["fetched"] if ps else None,
         },
     }

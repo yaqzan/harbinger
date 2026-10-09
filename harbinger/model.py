@@ -10,7 +10,9 @@ import calendar
 import math
 from datetime import date, timedelta
 
-# ── removal waves: the 15th and the last day of each month ───────────────
+# ── removal waves ─────────────────────────────────────────────────────────
+# Game Pass ("xbox"): the 15th and the last day of each month.
+# PS Plus ("playstation"): the third Monday of each month (308 of 351 removals since 2024).
 
 
 def month_end(year: int, month: int) -> date:
@@ -22,35 +24,46 @@ def _shift_month(year: int, month: int, delta: int) -> tuple[int, int]:
     return m // 12, m % 12 + 1
 
 
-def waves_near(d: date) -> list[date]:
-    """Every wave from the end of last month to the 15th of next month, sorted."""
+def third_monday(year: int, month: int) -> date:
+    first = date(year, month, 1)
+    return first + timedelta(days=(7 - first.weekday()) % 7 + 14)
+
+
+def month_waves(year: int, month: int, cal: str = "xbox") -> list[date]:
+    if cal == "playstation":
+        return [third_monday(year, month)]
+    return [date(year, month, 15), month_end(year, month)]
+
+
+def waves_near(d: date, cal: str = "xbox") -> list[date]:
+    """Every wave of last month, this month and next month, sorted."""
     out = []
     for delta in (-1, 0, 1):
         y, m = _shift_month(d.year, d.month, delta)
-        out += [date(y, m, 15), month_end(y, m)]
+        out += month_waves(y, m, cal)
     return sorted(out)
 
 
-def nearest_wave(d: date) -> date:
+def nearest_wave(d: date, cal: str = "xbox") -> date:
     """The wave closest to `d`. A tie goes to the earlier wave."""
-    return min(waves_near(d), key=lambda w: (abs((w - d).days), w))
+    return min(waves_near(d, cal), key=lambda w: (abs((w - d).days), w))
 
 
-def next_waves(today: date, n: int) -> list[date]:
+def next_waves(today: date, n: int, cal: str = "xbox") -> list[date]:
     """The next `n` waves on or after `today`."""
     out: list[date] = []
     y, m = today.year, today.month
     while len(out) < n:
-        for w in (date(y, m, 15), month_end(y, m)):
+        for w in month_waves(y, m, cal):
             if w >= today and len(out) < n:
                 out.append(w)
         y, m = _shift_month(y, m, 1)
     return out
 
 
-def first_wave_in_month(year: int, month: int, today: date) -> date | None:
-    """The first wave of that month that hasn't happened yet (None if both passed)."""
-    for w in (date(year, month, 15), month_end(year, month)):
+def first_wave_in_month(year: int, month: int, today: date, cal: str = "xbox") -> date | None:
+    """The first wave of that month that hasn't happened yet (None if all passed)."""
+    for w in month_waves(year, month, cal):
         if w >= today:
             return w
     return None
@@ -72,26 +85,28 @@ def anniversary(added: date, months: int, days_per_month: float) -> date:
     return added + timedelta(days=round(months * days_per_month))
 
 
-def checkpoints(added: date, cohorts, days_per_month: float) -> list[tuple[int, date]]:
+def checkpoints(added: date, cohorts, days_per_month: float, cal: str = "xbox") -> list[tuple[int, date]]:
     """(cohort months, candidate wave) for every anniversary, oldest first."""
-    return [(n, nearest_wave(anniversary(added, n, days_per_month))) for n in cohorts]
+    return [(n, nearest_wave(anniversary(added, n, days_per_month), cal)) for n in cohorts]
 
 
-def next_checkpoint(added: date, today: date, cohorts, days_per_month: float, announced=frozenset()):
+def next_checkpoint(added: date, today: date, cohorts, days_per_month: float, announced=frozenset(),
+                    cal: str = "xbox"):
     """The first checkpoint still open, or None. Never a past date.
 
     A wave in `announced` already has its official leaving list: a game it didn't
     name survived that checkpoint, so it moves on to the next one.
     """
-    for n, wave in checkpoints(added, cohorts, days_per_month):
+    for n, wave in checkpoints(added, cohorts, days_per_month, cal):
         if wave >= today and wave not in announced:
             return n, wave
     return None
 
 
-def last_checkpoint(added: date, today: date, cohorts, days_per_month: float, announced=frozenset()):
+def last_checkpoint(added: date, today: date, cohorts, days_per_month: float, announced=frozenset(),
+                    cal: str = "xbox"):
     """The most recent checkpoint already survived (wave passed or announced without it)."""
-    passed = [(n, w) for n, w in checkpoints(added, cohorts, days_per_month) if w < today or w in announced]
+    passed = [(n, w) for n, w in checkpoints(added, cohorts, days_per_month, cal) if w < today or w in announced]
     return passed[-1] if passed else None
 
 

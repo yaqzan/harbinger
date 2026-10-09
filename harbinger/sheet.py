@@ -1,7 +1,7 @@
-"""u/ABattleVet's "XBOX Game Pass Master List": download the workbook, import it into SQLite.
+"""u/ABattleVet's Game Pass and PS Plus master lists: download each workbook, import into SQLite.
 
-Each ingest downloads the public sheet as one xlsx (no Google login, no gids), reads the tabs
-in TABS with the stdlib, checks every mapped column still has the header we expect, and
+Each ingest downloads each public sheet as one xlsx (no Google login, no gids), reads the tabs
+in SERVICES[service] with the stdlib, checks every mapped column still has the header we expect, and
 replaces the `sheet_row` table in one transaction. Differences from the previous import go to
 `sheet_change`, so the database remembers when a game flipped to Leaving Soon or its
 Completion changed. Build reads `sheet_row`; it never touches the workbook.
@@ -26,7 +26,7 @@ from . import STATE_DIR
 
 XLSX_URL = "https://docs.google.com/spreadsheets/d/{id}/export?format=xlsx"
 SHEET_DIR = STATE_DIR / "sheet"
-LATEST_FILE = SHEET_DIR / "latest.xlsx"  # the last workbook imported, for debugging a bad import
+# The last workbook imported per service is kept as state/sheet/<service>.xlsx, for debugging.
 
 
 _FOLD = str.maketrans({"ø": "o", "Ø": "O", "æ": "ae", "Æ": "AE", "œ": "oe", "Œ": "OE", "ß": "ss", "ł": "l",
@@ -161,12 +161,33 @@ TABS = {
 # Not imported: Tiers, PC, xCloud, Series X|S and Xbox are filtered views of the Master List;
 # Copy of Removed duplicates Removed; Suggestions holds reader names; Cross Play has no use yet.
 
+# The PS Plus list ("Complete NA Playstation Plus Master List", same author). Its Tier column
+# (Essential / Extra / Premium (...)) replaces Game Pass's per-tier tabs.
+_PS = [("A", "title", "Game"), ("B", "system", "System"), ("C", "tier", "Tier"), ("D", "status", "Status"),
+       ("E", "added", "Added"), ("F", "removed", "Removed"), ("G", "months", "Months"),
+       ("H", "release", "Release"), ("I", "age_years", "Age"), ("J", "metacritic", "Metacritic"),
+       ("K", "user_score", "User"), ("L", "completion_h", "Completion"), ("M", "genre", "Genre"),
+       ("N", "owner_notes", "Notes"), ("O", "streaming", "Streaming"), ("P", "local_multiplayer", "Local Multiplayer")]
+PS_TABS = {
+    "master": Tab("Master List", 2, _PS),
+    "leaving_soon": Tab("Leaving Soon", 2, _PS),
+    "removed": Tab("Removed", 2, _PS),
+    "likely_leaving": Tab("Likely Leaving", 2, _PS),
+}
+# Not imported: Monthly, Extra, Premium, Classics, Remasters, VR, PS5/PS4 Download, PS3,
+# Cloud/PC Streaming and Vita Monthly are filtered views of the Master List; Suggestions holds
+# reader names.
+
+SERVICES = {"xbox": TABS, "playstation": PS_TABS}
+
 FIELDS = ["system", "xcloud", "status", "added", "removed", "months", "release", "age_years", "metacritic",
           "completion_h", "genre", "series_xs", "owner_notes", "esrb", "esrb_descriptors", "community_notes",
           "public_notes", "premium_status", "premium_added", "premium_delay", "essential_added",
-          "essential_delay", "essential_months", "studio"]
+          "essential_delay", "essential_months", "studio", "tier", "user_score", "streaming",
+          "local_multiplayer"]
 DATES = {"added", "removed", "release", "premium_added", "essential_added"}
-NUMBERS = {"months", "age_years", "metacritic", "completion_h", "premium_delay", "essential_delay", "essential_months"}
+NUMBERS = {"months", "age_years", "metacritic", "completion_h", "premium_delay", "essential_delay", "essential_months",
+           "user_score"}
 VOLATILE = {"months", "essential_months"}  # live formulas off TODAY(): not logged as changes
 
 
@@ -258,10 +279,10 @@ class SheetLayoutError(RuntimeError):
     """A tab is missing or a header moved."""
 
 
-def extract(book: dict) -> dict[str, list[dict]]:
+def extract(book: dict, tabs: dict[str, Tab] = TABS) -> dict[str, list[dict]]:
     """Workbook cells -> {tab key: [row dicts with FIELDS]}, checking every header first."""
     out = {}
-    for tab, spec in TABS.items():
+    for tab, spec in tabs.items():
         cells = book.get(spec.sheet)
         if cells is None:
             raise SheetLayoutError(f"tab '{spec.sheet}' is missing")
@@ -292,8 +313,12 @@ def extract(book: dict) -> dict[str, list[dict]]:
     return out
 
 
-def fetch(cfg: dict) -> bytes:
-    url = XLSX_URL.format(id=cfg["sheet"]["id"])
+def sheet_id(cfg: dict, service: str) -> str | None:
+    return cfg["sheet"]["id"] if service == "xbox" else cfg.get("playstation", {}).get("sheet_id")
+
+
+def fetch(cfg: dict, service: str = "xbox") -> bytes:
+    url = XLSX_URL.format(id=sheet_id(cfg, service))
     req = urllib.request.Request(url, headers={"User-Agent": "harbinger/1"})
     with urllib.request.urlopen(req, timeout=120) as r:
         return r.read()
@@ -303,41 +328,51 @@ def fetch(cfg: dict) -> bytes:
 
 SCHEMA = f"""
 CREATE TABLE IF NOT EXISTS sheet_import (
-  id INTEGER PRIMARY KEY, fetched_at TEXT NOT NULL, bytes INTEGER, sha256 TEXT,
+  id INTEGER PRIMARY KEY, service TEXT NOT NULL, fetched_at TEXT NOT NULL, bytes INTEGER, sha256 TEXT,
   tabs TEXT,          -- JSON {{tab: rows}}
   changes INTEGER     -- rows written to sheet_change (NULL for the first, baseline import)
 );
 -- The latest import, one row per game per tab (a game back for a second stint has two rows).
 -- Dates: 'YYYY-MM-DD', 'YYYY-MM' when the sheet only gives a month, or the sheet's own text.
 CREATE TABLE IF NOT EXISTS sheet_row (
-  import_id INTEGER NOT NULL REFERENCES sheet_import(id), tab TEXT NOT NULL, row INTEGER NOT NULL,
-  title TEXT NOT NULL, key TEXT NOT NULL, stint INTEGER NOT NULL,
+  import_id INTEGER NOT NULL REFERENCES sheet_import(id), service TEXT NOT NULL,  -- xbox | playstation
+  tab TEXT NOT NULL, row INTEGER NOT NULL, title TEXT NOT NULL, key TEXT NOT NULL, stint INTEGER NOT NULL,
   {", ".join(f + (" REAL" if f in NUMBERS else " TEXT") for f in FIELDS)},
-  PRIMARY KEY (tab, key, stint)
+  PRIMARY KEY (service, tab, key, stint)
 );
 CREATE INDEX IF NOT EXISTS sheet_row_key ON sheet_row(key);
 -- What changed between one import and the one before it.
 CREATE TABLE IF NOT EXISTS sheet_change (
-  import_id INTEGER NOT NULL REFERENCES sheet_import(id), tab TEXT NOT NULL, key TEXT NOT NULL,
-  stint INTEGER NOT NULL, title TEXT NOT NULL,
+  import_id INTEGER NOT NULL REFERENCES sheet_import(id), service TEXT NOT NULL, tab TEXT NOT NULL,
+  key TEXT NOT NULL, stint INTEGER NOT NULL, title TEXT NOT NULL,
   kind TEXT NOT NULL,  -- added | dropped | changed
   field TEXT, old TEXT, new TEXT
 );
 CREATE INDEX IF NOT EXISTS sheet_change_key ON sheet_change(key);
 """
 
-_COLS = ["import_id", "tab", "row", "title", "key", "stint"] + FIELDS
+_COLS = ["import_id", "service", "tab", "row", "title", "key", "stint"] + FIELDS
+
+
+def migrate(db: sqlite3.Connection) -> None:
+    """Sheet tables from before the PS Plus import (no service column) are dropped: they hold
+    re-importable data, and the next ingest rebuilds them."""
+    cols = {r[1] for r in db.execute("PRAGMA table_info(sheet_row)")}
+    if cols and "service" not in cols:
+        db.executescript("DROP TABLE sheet_row; DROP TABLE sheet_change; DROP TABLE sheet_import;")
 
 
 def import_rows(db: sqlite3.Connection, tabs: dict[str, list[dict]], fetched_at: str,
-                raw: bytes | None = None) -> str:
-    """Replace sheet_row with these rows and log the differences, in one transaction."""
+                raw: bytes | None = None, service: str = "xbox") -> str:
+    """Replace this service's sheet_row rows and log the differences, in one transaction."""
     # Re-key the old rows with today's norm(), so a matching tweak never reads as a sheet change.
-    old = {(r["tab"], norm(r["title"]), r["stint"]): r for r in _select(db, "SELECT * FROM sheet_row")}
-    first = not old and not db.execute("SELECT 1 FROM sheet_import").fetchone()
+    old = {(r["tab"], norm(r["title"]), r["stint"]): r
+           for r in _select(db, "SELECT * FROM sheet_row WHERE service = ?", (service,))}
+    first = not old and not db.execute("SELECT 1 FROM sheet_import WHERE service = ?", (service,)).fetchone()
     with db:
-        cur = db.execute("INSERT INTO sheet_import (fetched_at, bytes, sha256, tabs) VALUES (?, ?, ?, ?)",
-                         (fetched_at, len(raw) if raw else None, hashlib.sha256(raw).hexdigest() if raw else None,
+        cur = db.execute("INSERT INTO sheet_import (service, fetched_at, bytes, sha256, tabs) VALUES (?, ?, ?, ?, ?)",
+                         (service, fetched_at, len(raw) if raw else None,
+                          hashlib.sha256(raw).hexdigest() if raw else None,
                           json.dumps({t: len(rs) for t, rs in tabs.items()})))
         imp = cur.lastrowid
         changes = []
@@ -350,24 +385,24 @@ def import_rows(db: sqlite3.Connection, tabs: dict[str, list[dict]], fetched_at:
                 if first:
                     continue
                 if prev is None:
-                    changes.append((imp, tab, r["key"], r["stint"], r["title"], "added", None, None, None))
+                    changes.append((imp, service, tab, r["key"], r["stint"], r["title"], "added", None, None, None))
                     continue
                 for f in FIELDS:
                     if f not in VOLATILE and _same(prev[f], r[f]) is False:
-                        changes.append((imp, tab, r["key"], r["stint"], r["title"], "changed", f,
+                        changes.append((imp, service, tab, r["key"], r["stint"], r["title"], "changed", f,
                                         _txt(prev[f]), _txt(r[f])))
         for ident, prev in old.items():
             if ident not in new_ids and ident[0] in tabs:
-                changes.append((imp, *ident, prev["title"], "dropped", None, None, None))
-        db.execute("DELETE FROM sheet_row")
+                changes.append((imp, service, *ident, prev["title"], "dropped", None, None, None))
+        db.execute("DELETE FROM sheet_row WHERE service = ?", (service,))
         db.executemany(f"INSERT INTO sheet_row ({', '.join(_COLS)}) VALUES ({', '.join('?' * len(_COLS))})",
-                       [(imp, tab, *[r[c] for c in _COLS[2:]]) for tab, rows in tabs.items() for r in rows])
-        db.executemany("INSERT INTO sheet_change VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", changes)
+                       [(imp, service, tab, *[r[c] for c in _COLS[3:]]) for tab, rows in tabs.items() for r in rows])
+        db.executemany("INSERT INTO sheet_change VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", changes)
         db.execute("UPDATE sheet_import SET changes = ? WHERE id = ?", (None if first else len(changes), imp))
     total = sum(len(rs) for rs in tabs.values())
     if first:
-        return f"sheet imported: {total} rows across {len(tabs)} tabs (baseline)"
-    return f"sheet imported: {total} rows, {len(changes)} changes since the last import"
+        return f"{service} sheet imported: {total} rows across {len(tabs)} tabs (baseline)"
+    return f"{service} sheet imported: {total} rows, {len(changes)} changes since the last import"
 
 
 def _same(a, b) -> bool:
@@ -385,18 +420,19 @@ def _txt(v) -> str | None:
     return f"{v:g}" if isinstance(v, float) else str(v)
 
 
-def ingest(db: sqlite3.Connection, cfg: dict) -> str:
-    """Download, check and import the workbook. A failure keeps the previous import."""
+def ingest(db: sqlite3.Connection, cfg: dict, service: str = "xbox") -> str:
+    """Download, check and import one service's workbook. A failure keeps the previous import."""
+    spec = SERVICES[service]
     try:
-        raw = fetch(cfg)
-        tabs = extract(read_xlsx(raw, {t.sheet for t in TABS.values()}))
+        raw = fetch(cfg, service)
+        tabs = extract(read_xlsx(raw, {t.sheet for t in spec.values()}), spec)
     except (OSError, zipfile.BadZipFile, ET.ParseError, SheetLayoutError) as e:
-        if not db.execute("SELECT 1 FROM sheet_import").fetchone():
+        if service == "xbox" and not db.execute("SELECT 1 FROM sheet_import WHERE service = 'xbox'").fetchone():
             raise SystemExit(f"sheet import failed and there is no earlier one: {e}")
-        return f"sheet import failed ({e}); kept the previous one"
+        return f"{service} sheet import failed ({e}); kept the previous one"
     SHEET_DIR.mkdir(parents=True, exist_ok=True)
-    LATEST_FILE.write_bytes(raw)
-    return import_rows(db, tabs, datetime.now().isoformat(timespec="seconds"), raw)
+    (SHEET_DIR / f"{service}.xlsx").write_bytes(raw)
+    return import_rows(db, tabs, datetime.now().isoformat(timespec="seconds"), raw, service)
 
 
 def _select(db: sqlite3.Connection, q: str, args=()) -> list[dict]:
@@ -405,14 +441,15 @@ def _select(db: sqlite3.Connection, q: str, args=()) -> list[dict]:
     return [dict(zip(names, r)) for r in cur]
 
 
-def load_rows(db: sqlite3.Connection) -> tuple[dict[str, list[dict]], str]:
-    imp = db.execute("SELECT fetched_at FROM sheet_import ORDER BY id DESC LIMIT 1").fetchone()
-    if not imp:
+def load_rows(db: sqlite3.Connection, service: str = "xbox") -> tuple[dict[str, list[dict]], str | None]:
+    imp = db.execute("SELECT fetched_at FROM sheet_import WHERE service = ? ORDER BY id DESC LIMIT 1",
+                     (service,)).fetchone()
+    if not imp and service == "xbox":
         raise SystemExit("no sheet in the database yet: run `py -3.11 -m harbinger ingest` first")
-    tabs: dict[str, list[dict]] = {t: [] for t in TABS}
-    for r in _select(db, "SELECT * FROM sheet_row ORDER BY tab, row"):
+    tabs: dict[str, list[dict]] = {t: [] for t in SERVICES[service]}
+    for r in _select(db, "SELECT * FROM sheet_row WHERE service = ? ORDER BY tab, row", (service,)):
         tabs.setdefault(r["tab"], []).append(r)
-    return tabs, imp[0]
+    return tabs, imp[0] if imp else None
 
 
 def load(db: sqlite3.Connection, cfg: dict) -> "Sheet":

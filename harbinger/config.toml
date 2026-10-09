@@ -56,6 +56,35 @@ ubisoft_note = "Ubisoft games joining with price increase"
 retro_note = "Retro Classics"
 ea_note = "Joined EA Play"
 
+[playstation]
+# u/ABattleVet's "Complete NA Playstation Plus Master List" (public, same author as [sheet]).
+sheet_id = "19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw"
+# Your PS Plus tier: none | essential | extra | premium (each includes the tiers below it).
+# Set yours in config.local.toml. "none" leaves PlayStation off the page.
+tier = "none"
+cohorts = [12, 18, 24, 36]  # removals land on the third Monday of the month (308 of 351 since 2024)
+
+# Leave probability at each anniversary, measured from the PS Plus sheet on 2026-10-09 with the
+# Game Pass method: 12-month from 2024+ adds (166 games; all history gives 24%), the rest from
+# all history.
+[playstation.base_rates.extra]
+12 = 0.35
+18 = 0.05
+24 = 0.16
+36 = 0.02
+
+[playstation.base_rates.premium]    # Premium Classics, Remasters, VR
+12 = 0.05
+18 = 0.01
+24 = 0.01
+36 = 0.0
+
+[playstation.base_rates.streaming]  # Premium (Streaming Only): none has left at an anniversary
+12 = 0.0
+18 = 0.0
+24 = 0.0
+36 = 0.0
+
 # Your watched games: set them in config.local.toml, not here.
 [queue]
 gone = []

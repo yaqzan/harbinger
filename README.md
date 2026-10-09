@@ -22,6 +22,9 @@ Python 3.11, standard library only.
    - `[steam]`: your SteamID64 or profile name, and a Steam Web API key from
      https://steamcommunity.com/dev/apikey. Or set `STEAM_ID` / `STEAM_API_KEY` in the environment.
      Your Steam profile's "Game details" privacy setting must be Public.
+   - `[playstation]`: your PS Plus tier (`essential`, `extra` or `premium`), to add PS Plus to the
+     page and see which games you can only play through one subscription. Leave it `none` if
+     you don't have PS Plus.
    - `[queue]`: the Game Pass games you're playing or plan to play. The example file explains
      what counts as a watched game.
 2. Run it:

@@ -50,6 +50,26 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 - Steam: an owned game leaves the confirmed verdicts, the watchlist and the KPIs and shows under
   "You own these elsewhere". Remaining hours = hours x (1 - achievement share), else hours - playtime.
 
+## PS Plus (`plus.py`, since 2026-10-09)
+
+- Tier from `[playstation] tier` (none | essential | extra | premium; each includes the ones
+  below). The owner is on Extra (config.local.toml). "none" leaves PlayStation off.
+- Waves: the third Monday of the month (308 of 351 removals since 2024; `model.month_waves(cal=
+  "playstation")`). Leaving Soon rows carry the exact date. Same cohorts; announced-wave rule too.
+- Base rates per tier family, measured 2026-10-09 like Game Pass option C: Extra 35/5/16/2%
+  (12-mo from 2024+ adds; all history 24%), Premium Classics/Remasters/VR 5/1/1/0%, Streaming
+  Only 0. No forecast signals. Ubisoft+ Classics not scored.
+- Essential monthly games are claim-to-keep: "Claim by <date>", sorted with the confirmed.
+
+## Only on one service (`build.one_service_rows`)
+
+Games playable through exactly one subscription (Game Pass console, PS Plus at your tier) that
+you don't own on Steam. A game on both services drops out when the other copy is a backup; a
+copy that is itself leaving (Leaving Soon / confirmed) is no backup, so then it stays. Shown
+once, on the Game Pass side, when both are safe. Order: Confirmed and claims, Likely, Possible,
+Thin, unscored; soonest first in each. Game Pass odds reach any distance ahead here (the
+watchlist stops at the horizon).
+
 ## Calibration (shown on the page)
 
 `calibration_rows()` measures leave rates from the sheet: of third-party games that resolved a

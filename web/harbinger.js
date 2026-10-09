@@ -40,7 +40,7 @@
   const s = data.summary;
   $("takeaway").textContent = s.takeaway;
   const src = data.sources;
-  $("meta").textContent = `Updated ${ago(data.generated_at)} · sheet read ${ago(src.sheet_fetched)} · forecast checked ${ago(src.forecast_checked)} · Steam synced ${ago(src.steam_synced)}`;
+  $("meta").textContent = `Updated ${ago(data.generated_at)} · sheet read ${ago(src.sheet_fetched)}${src.ps_sheet_fetched ? ` · PS Plus sheet read ${ago(src.ps_sheet_fetched)}` : ""} · forecast checked ${ago(src.forecast_checked)} · Steam synced ${ago(src.steam_synced)}`;
   document.querySelectorAll(".kpi .n").forEach((n) => { const v = s[n.dataset.k]; n.textContent = v === "" || v === undefined ? "–" : v; });
   $("kpi-wave").textContent = `days to the ${s.next_wave} wave`;
 
@@ -49,6 +49,7 @@
     tb.replaceChildren(...rows.map((r) => { const tr = el("tr"); build(r, tr).forEach((td) => tr.appendChild(td)); return tr; }));
   };
   const td = (text, cls) => el("td", cls, text);
+  const urgCls = (u) => (u === "Start now" || /^Claim/.test(u || "") ? "urg-now" : u === "Too late" ? "urg-late" : "");
 
   // confirmed
   const verdictCls = (v) => (v === "Doable" || v === "Tight" ? v : v === "Too late for 100%" ? "late" : "quiet");
@@ -59,6 +60,28 @@
     return [g, td(r.wave_label, "nowrap"), td(hrs(r.hours), "num"), v, td(r.platform, "nowrap"),
       td(r.progress ? `${r.note} · ${r.progress}` : r.note, "why")];
   });
+
+  // only on one service: not on Steam, not on the other service
+  const one = data.one_service;
+  if (one) {
+    const tierNote = one.ps_tier === "none"
+      ? "Set your PS Plus tier under [playstation] in config.local.toml to add PlayStation."
+      : `Game Pass on console and PS Plus ${one.ps_tier}.`;
+    $("one-note").textContent = `Games you can only play through one subscription. ${tierNote} Left out: ${one.skipped_steam} you own on Steam and ${one.skipped_both} on both services. Confirmed and claim deadlines come first, then Likely, Possible and Thin, each soonest first. PS Plus leaves on the third Monday of the month.`;
+    const drawOne = () => {
+      const q = $("oq").value.trim().toLowerCase(), fs = $("os").value, fb = $("ob").value;
+      const rows = one.rows.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
+        && (!fb || (fb === "-" ? !r.band : r.band === fb)));
+      $("ocount").textContent = `${rows.length} of ${one.rows.length}`;
+      fill("t-one", rows.slice(0, 300), (r, tr) => {
+        if (r.band === "Thin" || !r.band) tr.className = "thin";
+        return [td(r.game, "game"), td(r.service, "nowrap"), td(r.leaves, "nowrap"), td(r.odds, r.band ? `band-${r.band}` : ""),
+          td(hrs(r.hours), "num"), td(r.action, `nowrap ${urgCls(r.action)}`), td(r.why, "why")];
+      });
+    };
+    ["oq", "os", "ob"].forEach((id) => $(id).addEventListener("input", drawOne));
+    drawOne();
+  } else $("one").hidden = true;
 
   // waves chart: stacked bars, hand-drawn SVG
   const drawChart = () => {
@@ -112,7 +135,6 @@
   // watchlist
   const wsel = $("fw");
   data.waves.forEach((w) => wsel.add(new Option(w.label, w.wave)));
-  const urgCls = (u) => (u === "Start now" ? "urg-now" : u === "Too late" ? "urg-late" : "");
   const drawWatch = () => {
     const q = $("q").value.trim().toLowerCase(), fb = $("fb").value, fw = wsel.value, fu = $("fu").value;
     const rows = data.watchlist.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fb || r.band === fb) && (!fw || r.wave === fw) && (!fu || r.urgency === fu));
