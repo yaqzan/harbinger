@@ -5,9 +5,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Harbinger · Game Pass exit radar</title>
-<meta name="description" content="Which Game Pass games are leaving or likely to leave, how long each takes to finish, and the latest day to start.">
+<meta name="description" content="Which Game Pass and PS Plus games are leaving or likely to leave, how long each takes to finish, and the latest day to start.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=1">
+<link rel="stylesheet" href="/harbinger.css?v=2">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -16,80 +16,49 @@
 <div class="wrap">
   <nav>
     <span class="mark">harbinger</span>
+    <div class="views" role="tablist" aria-label="View">
+      <button role="tab" data-view="shelf" aria-selected="true">Shelf</button>
+      <button role="tab" data-view="board" aria-selected="false">Board</button>
+    </div>
     <button id="theme" aria-label="Toggle color theme">◐</button>
   </nav>
 
-  <header>
-    <h1>Game Pass exit radar</h1>
-    <p class="take" id="takeaway">Loading…</p>
-    <p class="meta" id="meta"></p>
+  <header class="hero">
+    <div class="countdown"><span id="hero-n">–</span><small id="hero-l">days</small></div>
+    <div>
+      <p class="take" id="takeaway">Loading…</p>
+      <p class="meta" id="meta"></p>
+    </div>
   </header>
 
-  <section class="kpis" aria-label="Key numbers">
-    <div class="kpi"><span class="n" data-k="days_to_next_wave">–</span><span class="l" id="kpi-wave">days to the next wave</span></div>
-    <div class="kpi"><span class="n" data-k="hours_available">–</span><span class="l">playable hours before it</span></div>
-    <div class="kpi"><span class="n" data-k="confirmed_count">–</span><span class="l">confirmed leaving</span></div>
-    <div class="kpi"><span class="n" data-k="finishable_count">–</span><span class="l">still finishable at 100%</span></div>
-    <div class="kpi"><span class="n" data-k="likely_count">–</span><span class="l">likely leaving, next 4 waves</span></div>
-    <div class="kpi"><span class="n" data-k="next_notice">–</span><span class="l">next notice expected</span></div>
-  </section>
+  <div class="ctl" id="ctl">
+    <input id="q" type="search" placeholder="Search games" aria-label="Search games">
+    <select id="fs" aria-label="Service"><option value="">Both services</option><option value="Game Pass">Game Pass</option><option value="PS Plus">PS Plus</option></select>
+    <select id="fb" aria-label="Odds">
+      <option value="2">Likely and up</option>
+      <option value="3">Possible and up</option>
+      <option value="4">Every scored game</option>
+    </select>
+    <select id="fr" aria-label="How far ahead">
+      <option value="56">Next 8 weeks</option>
+      <option value="183">Next 6 months</option>
+      <option value="9999">Everything</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="fk" checked> Games you have elsewhere</label>
+    <span class="count" id="count"></span>
+  </div>
 
-  <ul class="caveats">
-    <li>Evidence % is a model estimate and can be wrong. Dates are good to about a day.</li>
-    <li>Completion hours come from the sheet and nobody has checked them.</li>
-    <li>Assumes Game Pass Ultimate on an Xbox console. Games only on PC Game Pass are left out.</li>
-  </ul>
-
-  <section class="card" id="confirmed">
-    <h2>Confirmed leaving</h2>
-    <p class="note">Verdict compares hours to 100% with the hours you have before the wave at 9 hours a week.</p>
-    <div class="box"><table id="t-conf"><thead><tr><th>Game</th><th>Leaves</th><th class="num">Hours</th><th>Verdict</th><th>Platform</th><th>Note</th></tr></thead><tbody></tbody></table></div>
-  </section>
-
-  <section class="card" id="one">
-    <h2>Only on one service</h2>
-    <p class="note" id="one-note"></p>
-    <div class="ctl">
-      <input id="oq" type="search" placeholder="Search games" aria-label="Search games">
-      <select id="os" aria-label="Service"><option value="">Both services</option><option value="Game Pass">Game Pass</option><option value="PS Plus">PS Plus</option></select>
-      <select id="ob" aria-label="Band"><option value="">All bands</option><option>Confirmed</option><option>Likely</option><option>Possible</option><option>Thin</option><option value="-">Not scored</option></select>
-      <span class="count" id="ocount"></span>
-    </div>
-    <div class="box tall"><table id="t-one"><thead><tr><th>Game</th><th>Service</th><th>Leaves</th><th>Odds</th><th class="num">Hours</th><th>Action</th><th>Progress</th><th>Why</th></tr></thead><tbody></tbody></table></div>
-  </section>
-
-  <section class="card" id="horizon">
-    <h2>Games per wave</h2>
-    <p class="note">Removals land on the 15th and the last day of each month. Hatched bars are thin evidence.</p>
-    <div class="legend">
-      <span><i class="sw sw-c"></i>Confirmed</span>
-      <span><i class="sw sw-l"></i>Likely (45%+)</span>
-      <span><i class="sw sw-p"></i>Possible (25 to 44%)</span>
-      <span><i class="sw sw-t"></i>Thin (under 25%)</span>
-    </div>
-    <div class="chart" id="chart"><div class="tip" id="tip" role="tooltip"></div></div>
-  </section>
-
-  <section class="card" id="watch">
-    <h2>Watchlist</h2>
-    <p class="note">Start by is the wave, minus the weeks of play at 9 hours a week, minus a 2-week buffer. The small number by the evidence is the change since the previous ingest.</p>
-    <div class="ctl">
-      <input id="q" type="search" placeholder="Search games" aria-label="Search games">
-      <select id="fb" aria-label="Band"><option value="">All bands</option><option>Likely</option><option>Possible</option><option>Thin</option></select>
-      <select id="fw" aria-label="Wave"><option value="">All waves</option></select>
-      <select id="fu" aria-label="Urgency"><option value="">Any urgency</option><option>Start now</option><option>Start within 4 wks</option><option>Comfortable</option><option>Too late</option><option>Hours unknown</option></select>
-      <span class="count" id="wcount"></span>
-    </div>
-    <div class="box tall"><table id="t-watch"><thead><tr><th>Game</th><th>Wave</th><th>Notice</th><th>Evidence</th><th>Band</th><th class="num">Hours</th><th>Start by</th><th>Urgency</th><th>Tier</th><th>Why</th></tr></thead><tbody></tbody></table></div>
-  </section>
-
-  <section class="card" id="owned" hidden>
-    <details>
-      <summary>You own these elsewhere</summary>
-      <p class="note">On your Steam account, so a Game Pass exit doesn't cost you anything. Hours are what's left to 100% from your playtime and achievements.</p>
-      <div class="box"><table id="t-owned"><thead><tr><th>Game</th><th>On Game Pass</th><th class="num">Hours left</th><th>Progress</th></tr></thead><tbody></tbody></table></div>
-    </details>
-  </section>
+  <main>
+    <section id="shelf" class="shelf" aria-label="Leaving games by date"></section>
+    <section id="board" class="board" aria-label="Departures board" hidden>
+      <div class="bh"><span id="board-title">DEPARTURES</span><span id="board-date"></span></div>
+      <table>
+        <thead><tr><th>Departs</th><th>Game</th><th class="via">Via</th><th>Status</th><th class="num">To 100%</th><th class="by">Board by</th><th>Remarks</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <p class="empty" id="empty" hidden>Nothing matches. Widen the odds or the date range.</p>
+  </main>
 
   <section class="card" id="queue">
     <h2>Your queue</h2>
@@ -117,9 +86,11 @@
     <details>
       <summary>How to read this</summary>
       <div class="prose">
-        <p>Each third-party game has a candidate exit at the wave nearest its 12, 18, 24 and 36 month anniversary. The starting odds are how often games have left at that anniversary on the sheet. A listing on Pure Xbox's monthly forecast raises them, missing from a month that has a forecast lowers them, and a place in the Premium catalogue lowers them too.</p>
+        <p>Every game here is one you can only play through one subscription, unless it is dimmed. A dimmed game is one you own, or one the other service also has, so its exit costs you nothing. The tag says where you'd keep playing.</p>
+        <p>Each third-party Game Pass game has a candidate exit at the wave nearest its 12, 18, 24 and 36 month anniversary. The starting odds are how often games have left at that anniversary. A listing on Pure Xbox's monthly forecast raises them, missing from a month that has a forecast lowers them, and a place in the Premium catalogue lowers them too. PS Plus games leave on the third Monday of the month and use the same anniversaries with no forecast.</p>
         <p>Bands: Likely is 45% or more, Possible is 25 to 44%, Thin is under 25%. Microsoft, Bethesda and Activision Blizzard games are assumed to stay. EA Play and Retro Classics games are left out.</p>
-        <p>Urgency: Too late means the hours don't fit before the wave even if you start today. Start now means the start-by date has arrived.</p>
+        <p id="how-play"></p>
+        <p>Odds are a model estimate and can be wrong. Completion hours come from the sheets and nobody has checked them. Game Pass means Ultimate on an Xbox console; PC-only games are left out.</p>
       </div>
       <div class="box"><table id="t-cal"><thead><tr><th>Measure</th><th>Value</th><th>Sample</th><th>Source</th></tr></thead><tbody></tbody></table></div>
     </details>
@@ -133,8 +104,21 @@
     </details>
   </section>
 
-  <footer>Data from u/ABattleVet's Game Pass Master List, Pure Xbox and the Steam Web API.</footer>
+  <footer>Data from u/ABattleVet's Game Pass and PS Plus master lists, Pure Xbox, the Steam Web API and PSN.</footer>
 </div>
-<script src="/harbinger.js?v=1"></script>
+
+<dialog id="detail" aria-labelledby="d-name">
+  <form method="dialog"><button class="x" aria-label="Close">×</button></form>
+  <div class="d-top">
+    <div class="d-cover" id="d-cover"></div>
+    <div>
+      <h2 id="d-name"></h2>
+      <p class="d-svc" id="d-svc"></p>
+      <p class="d-backup" id="d-backup"></p>
+    </div>
+  </div>
+  <dl id="d-facts"></dl>
+</dialog>
+<script src="/harbinger.js?v=2"></script>
 </body>
 </html>

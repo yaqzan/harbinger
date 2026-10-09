@@ -25,7 +25,7 @@ from . import psn as psn_mod
 from . import sheet as sheet_mod
 from . import steam as steam_mod
 from . import titles as titles_mod
-from .build import alerts_due, assemble, leaver_alert, new_leavers, queue_alert
+from .build import alerts_due, arrival_alert, assemble, leaver_alert, new_leavers, queue_alert
 
 
 def _wanted(data: dict) -> set[str]:
@@ -89,7 +89,8 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         if pushed:
             notes.append(pushed)
     notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
-    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg))
+    arrived = store.arrivals(db, cfg["alerts"]["arrival_days"]) if kind == "ingest" and cfg["alerts"]["arrivals"] else []
+    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg), arrived)
     if sync_steam:  # network lookups only on ingest and steam; build shows what is already cached
         notes.append(art_mod.fetch(db, art_mod.wanted(data), cfg))
     art_mod.attach(data, art_mod.load(db))
@@ -133,13 +134,13 @@ def _pharos(cfg: dict):
 
 
 def push(data: dict, cfg: dict) -> str:
-    """Alert the phone via Pharos: newly confirmed leavers, and queued games to start soon (one
-    push each). Quiet when there's neither."""
+    """Alert the phone via Pharos: newly confirmed leavers, queued games to start soon, and new
+    Game Pass Premium / PS Plus arrivals (one push each). Quiet when there's none."""
     p = cfg.get("push", {})
     if not p.get("enabled", True):
         return "push disabled in config"
-    new, due = data.get("new_confirmed", []), data.get("queue_alerts", [])
-    if not new and not due:
+    new, due, arrived = data.get("new_confirmed", []), data.get("queue_alerts", []), data.get("arrivals", [])
+    if not new and not due and not arrived:
         return "push: nothing new"
     pharos = _pharos(cfg)
     if pharos is None:
@@ -155,6 +156,11 @@ def push(data: dict, cfg: dict) -> str:
         if pharos.delivered(result.status):  # sent or muted: latch, so a mute doesn't pile up retries
             store.mark_alerts(store.connect(), due)
         out.append(f"queue {result.status}")
+    if arrived:
+        result = pharos.send(*arrival_alert(arrived), source="harbinger", channel="digest", **link)
+        if pharos.delivered(result.status):
+            store.mark_arrivals(store.connect(), arrived)
+        out.append(f"arrivals {result.status}")
     return "push: " + ", ".join(out)
 
 

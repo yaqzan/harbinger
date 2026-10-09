@@ -18,7 +18,14 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
     Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it). Costs one
     forecast subagent run (~90 s) a day.
   - Jobs run `ops/windows/run-job.ps1`; logs in `ops/windows/logs/{ingest,steam}.log`.
-- **Push** (`ingest --push`), two kinds, one push each, quiet otherwise:
+- **Push** (`ingest --push`), three kinds, one push each, quiet otherwise:
+  - New arrivals (owner, 2026-10-09): rows added to the Game Pass Premium tab, or to the PS Plus
+    master list at Extra/Premium within your tier (Essential monthly games, PC-only, owned and
+    beaten stay quiet). Read from `sheet_change` 'added' rows of imports in the last
+    `[alerts] arrival_days` (7), so a manual ingest without `--push` doesn't swallow them; sent
+    (service, key, stint) latch in `arrival_alert` on `pharos.delivered()`. First import of a
+    sheet is a baseline (no changes). `store.arrivals` + `build.new_arrivals` + `arrival_alert`;
+    `[alerts] arrivals = false` turns it off.
   - New leavers: verified leavers the previous ingest didn't list (owned excluded; no previous
     ingest = no push). `build.new_leavers` + `leaver_alert`, baseline `store.confirmed_keys`.
   - Queue (owner, 2026-10-09): each queued, unowned game (Game Pass or PS Plus) confirmed or modelled at >= `[alerts] min_p`

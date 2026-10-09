@@ -237,7 +237,8 @@ def wanted(data: dict) -> dict[str, str]:
         for r in data.get(section, []):
             key = r.get("key") or norm(r["game"])
             out.setdefault(key, r["game"])
-    for r in data.get("one_service", {}).get("rows", []):
+    one = data.get("one_service", {})
+    for r in one.get("rows", []) + one.get("backups", []):
         out.setdefault(r.get("key") or norm(r["game"]), r["game"])
     return out
 
@@ -245,7 +246,8 @@ def wanted(data: dict) -> dict[str, str]:
 def attach(data: dict, art: dict[str, str]) -> None:
     """Put `art` on every row whose game has a picture."""
     rows = [r for s in ("confirmed", "queue", "watchlist", "owned") for r in data.get(s, [])]
-    rows += data.get("one_service", {}).get("rows", [])
+    one = data.get("one_service", {})
+    rows += one.get("rows", []) + one.get("backups", [])
     for r in rows:
         url = art.get(r.get("key") or norm(r["game"]))
         if url:

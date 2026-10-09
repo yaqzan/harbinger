@@ -6,7 +6,7 @@ from pathlib import Path
 
 from harbinger import load_config
 from harbinger import store
-from harbinger.build import alerts_due, assemble, leaver_alert, new_leavers, queue_alert
+from harbinger.build import alerts_due, arrival_alert, assemble, leaver_alert, new_arrivals, new_leavers, queue_alert
 from harbinger.sheet import FIELDS, norm, parse
 
 CFG = load_config(local=None)
@@ -242,6 +242,65 @@ class QueuePush(unittest.TestCase):
         title, body = queue_alert(alerts_due(self.q, TODAY, CFG, set()), TODAY)
         self.assertEqual((title, body), ("Start Nine Sols in 2 days", "25 h · 33% it leaves Nov 15"))
         self.assertNotIn("—", title + body)
+
+
+class ArrivalPush(unittest.TestCase):
+    """Rows added to the Premium tab or the PS Plus master list between two imports."""
+
+    def imports(self, db, xbox_before, xbox_after, ps_before=(), ps_after=()):
+        from harbinger import sheet
+        now = datetime.now().isoformat(timespec="seconds")
+        for service, tab, before, after in (("xbox", "premium", xbox_before, xbox_after),
+                                            ("playstation", "master", ps_before, ps_after)):
+            for rows in (before, after):
+                sheet.import_rows(db, {tab: [{**r, "row": i} for i, r in enumerate(rows, 3)]}, now, None, service)
+
+    def ps(self, name, tier, status="Active", hours=10):
+        return {**row(name, status, "Oct 2026", 0, hours), "tier": tier, "system": "PS5"}
+
+    def test_new_rows_only_and_marked_once(self):
+        db = store.connect(Path(":memory:"))
+        old, new = row("Old Game", "Active", "Jan 2026", 9, 12), row("Fresh Game", "Active", "Oct 2026", 0, 8)
+        self.imports(db, [old], [old, new])
+        got = store.arrivals(db, 7)
+        self.assertEqual([r["game"] for r in got], ["Fresh Game"])
+        self.assertEqual(store.arrivals(db, 7, datetime.now().replace(year=2030)), [])  # outside the window
+        store.mark_arrivals(db, got)
+        self.assertEqual(store.arrivals(db, 7), [])
+
+    def test_first_import_is_a_baseline(self):
+        from harbinger import sheet
+        db = store.connect(Path(":memory:"))
+        sheet.import_rows(db, {"premium": [{**row("Old Game", "Active", "Jan 2026", 9, 12), "row": 3}]},
+                          datetime.now().isoformat(timespec="seconds"), None, "xbox")
+        self.assertEqual(store.arrivals(db, 7), [])
+
+    def test_filters(self):
+        cfg = {**CFG, "playstation": {**CFG["playstation"], "tier": "extra"}}
+        rows = [
+            {**row("Fresh Game", "Active", "Oct 2026", 0, 8), "service": "xbox"},
+            {**row("Pc Game", "Active", "Oct 2026", 0, 8), "service": "xbox", "system": "PC"},
+            {**row("Owned Game", "Active", "Oct 2026", 0, 8), "service": "xbox"},
+            {**row("Soon Game", "Leaving Soon", "Oct 2026", 0, 8), "service": "xbox"},
+            {**self.ps("Extra Game", "Extra"), "service": "playstation"},
+            {**self.ps("Monthly Game", "Essential"), "service": "playstation"},
+            {**self.ps("Classic Game", "Premium (Classics)"), "service": "playstation"},
+        ]
+        rows = [{**r, "game": r["title"], "hours": r["completion_h"], "tier": r.get("tier")} for r in rows]
+        got = new_arrivals(rows, cfg, owned={norm("Owned Game")})
+        self.assertEqual([(r["game"], r["where"]) for r in got],
+                         [("Fresh Game", "Game Pass Premium"), ("Extra Game", "PS Plus Extra")])
+        premium = {**cfg, "playstation": {**cfg["playstation"], "tier": "premium"}}
+        self.assertIn("PS Plus Premium", [r["where"] for r in new_arrivals(rows, premium)])
+
+    def test_alert_text(self):
+        one = [{"game": "Fresh Game", "hours": 8.0, "where": "Game Pass Premium"}]
+        self.assertEqual(arrival_alert(one), ("Fresh Game joined Game Pass Premium", "Fresh Game 8 h"))
+        many = one + [{"game": f"G{i}", "hours": None, "where": "PS Plus Extra"} for i in range(4)]
+        title, body = arrival_alert(many)
+        self.assertEqual(title, "5 new games on Game Pass Premium and PS Plus Extra")
+        self.assertEqual(body, "Fresh Game 8 h · G0 · G1 · G2 · +1 more")
+
 
 if __name__ == "__main__":
     unittest.main()

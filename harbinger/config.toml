@@ -56,6 +56,11 @@ soon_weeks = 4        # "Start within 4 wks"
 # on it. Start-by already keeps [play] buffer_weeks before the wave.
 lead_days = 14
 min_p = 0.25   # modelled leave odds a queued game needs to push (the Possible band); confirmed always pushes
+# One push for games newly added to Game Pass Premium or to PS Plus Extra/Premium (your tier and
+# below; not the Essential monthly games). Looks back arrival_days of sheet imports, so a manual
+# ingest without --push doesn't swallow them. Set arrivals = false to turn it off.
+arrivals = true
+arrival_days = 7
 
 [exclude]
 # Owner-notes markers for collections that are not a normal third-party deal.

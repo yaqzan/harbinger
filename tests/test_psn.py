@@ -114,6 +114,8 @@ class Ownership(unittest.TestCase):
         self.assertNotIn(("Grand Theft Auto V", "PS"), names)   # on disc
         self.assertNotIn(("Hunt: Showdown 1896", "PS"), names)  # already claimed
         self.assertEqual(d["one_service"]["skipped_claimed"], 1)
+        backups = {r["game"]: r["backup"] for r in d["one_service"]["backups"] if r["service"].startswith("PS")}
+        self.assertEqual(backups.get("Grand Theft Auto V"), "Owned on PlayStation")
 
     def test_played_ps_plus_game_shows_progress_and_fewer_hours(self):
         lib = dict(self.lib, playing={"grand theft auto v": {"name": "Grand Theft Auto V", "played_h": 8.0,

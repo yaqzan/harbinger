@@ -46,8 +46,9 @@ gone = []
 beaten = []
 
 [push]
-# Optional phone alerts via Pharos (github.com/yaqzan/pharos): a newly confirmed leaver, and a queued
-# game to start soon (two weeks before its start-by date, then on it; timing in [alerts] in config.toml).
+# Optional phone alerts via Pharos (github.com/yaqzan/pharos): a newly confirmed leaver, a queued
+# game to start soon (two weeks before its start-by date, then on it; timing in [alerts] in config.toml),
+# and games newly added to Game Pass Premium or your PS Plus tier.
 # Leave dir empty to look for a Pharos folder next to this repo; set enabled = false to skip.
 enabled = true
 dir = ""

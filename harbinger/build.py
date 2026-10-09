@@ -494,12 +494,15 @@ class PsSide:
 def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dict:
     """Games you can play on exactly one service (Game Pass console, or PS Plus at your tier)
     and don't own (Steam, PlayStation, disc). Confirmed leavers and claim deadlines first, then Likely,
-    Possible and Thin, each soonest first."""
+    Possible and Thin, each soonest first. `backups` holds the games left out because you have
+    them elsewhere and that could still leave the service: the page shows them dimmed, with
+    `backup` naming where you'd keep playing."""
     today, play = cx.today, cx.play
     side = PsSide(cx, ps)
     ps_games, pm = side.games, side.pm
     on_xbox = {g.key: g for g in cx.by_key.values() if g.status in ("Active", "Leaving Soon")}
     conf = {r["key"]: r for r in confirmed if r["verified"]}
+    unverified = {r["key"]: r["note"] for r in confirmed if not r["verified"]}
     # The same game on both services. A copy that is itself leaving is no backup, so then
     # both copies stay on the list.
     ps_leaving = {g.key for g in ps_games if g.status == "Leaving Soon"}
@@ -507,9 +510,12 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     xbox_backup = {k for k, pk in both.items() if pk not in ps_leaving}   # Game Pass games safe on PS Plus
     ps_backup = {pk for k, pk in both.items() if k not in conf}           # PS Plus games safe on Game Pass
     owned_ps, claimed_ps = side.owned, side.claimed
-    rows = []
+    ps_name = f"PS Plus {ps['tier'].title()}" if ps else ""
+    rows, backups = [], []
 
-    def add(game, service, out, hours, platform, progress="", key=""):
+    def add(game, service, out, hours, platform, progress="", key="", backup=""):
+        if backup and not out["wave"]:
+            return  # nothing to lose: it isn't heading out
         wave = out["wave"]
         if out["state"] == "claim":
             act = f"Claim by {fmt(wave, today)}"
@@ -517,47 +523,61 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             act = model.urgency(today, wave, hours, play)
         else:
             act = ""
-        rows.append({
+        row = {
             "game": game, "key": key, "service": service, "platform": platform, "state": out["state"],
             "wave": wave.isoformat() if wave else "", "leaves": fmt(wave, today) if wave else "",
             "p": round(out["p"], 3) if out["p"] is not None else None,
             "odds": "Confirmed" if out["band"] == "Confirmed" else
                     (f"{round(out['p'] * 100)}%" if out["p"] is not None else ""),
             "band": out["band"], "hours": hours, "action": act, "why": out["why"], "progress": progress,
-        })
+        }
+        if key in unverified and service == "Game Pass":
+            row["unverified"] = unverified[key]
+        if backup:
+            row["backup"] = backup
+        (backups if backup else rows).append(row)
+
+    def xbox_out(key, g):
+        if key in conf:
+            c = conf[key]
+            return {"state": "confirmed", "wave": date.fromisoformat(c["wave"]), "p": 1.0, "band": "Confirmed",
+                    "why": c["note"]}
+        return xbox_outlook(cx, g)
 
     skipped = {"owned": 0, "both": 0, "claimed": 0, "finished": 0}
     for key, g in on_xbox.items():
+        backup = ""
         if key in cx.owned:
             skipped["owned"] += 1
+            prog = cx.progress(key, g.hours)
+            backup = f"Owned on {prog['where']}"
+            add(g.name, "Game Pass", xbox_out(key, g), prog["hours"], g.system, prog["progress"], key, backup)
             continue
         if key in xbox_backup:
             skipped["both"] += 1
-            continue
-        if key in conf:
-            c = conf[key]
-            out = {"state": "confirmed", "wave": date.fromisoformat(c["wave"]), "p": 1.0, "band": "Confirmed",
-                   "why": c["note"]}
-        else:
-            out = xbox_outlook(cx, g)
-        add(g.name, "Game Pass", out, g.hours, g.system, key=key)
+            backup = f"Also on {ps_name}"
+        add(g.name, "Game Pass", xbox_out(key, g), g.hours, g.system, key=key, backup=backup)
     for g in ps_games:
+        backup = ""
         if g.key in owned_ps:
             skipped["owned"] += 1
-            continue
-        if g.kind == "essential" and g.key in claimed_ps:
+            backup = "Owned on PlayStation"
+        elif g.kind == "essential" and g.key in claimed_ps:
             skipped["claimed"] += 1
-            continue  # already claimed: yours while you subscribe
-        if g.key in ps_backup:
+            backup = "Claimed"  # yours while you subscribe
+        elif g.key in ps_backup:
             continue  # counted once, on the Game Pass side
         hours, progress, finished = side.progress(g)
-        if finished:
+        if finished and not backup:
             skipped["finished"] += 1
-            continue  # every trophy earned: nothing left to lose
-        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, side.waves_out), hours, g.system, progress, g.key)
-    rows.sort(key=lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower()))
+            backup = "Every trophy earned"  # nothing left to lose
+        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, side.waves_out), hours, g.system, progress,
+            g.key, backup)
+    order = lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower())
+    rows.sort(key=order)
+    backups.sort(key=order)
     tier = ps["tier"] if ps else "none"
-    return {"rows": rows, "ps_tier": tier, "skipped_owned": skipped["owned"], "skipped_both": skipped["both"],
+    return {"rows": rows, "backups": backups, "ps_tier": tier, "skipped_owned": skipped["owned"], "skipped_both": skipped["both"],
             "skipped_claimed": skipped["claimed"], "skipped_finished": skipped["finished"]}
 
 
@@ -567,6 +587,47 @@ def new_leavers(confirmed: list[dict], before: set[str] | None, beaten=frozenset
     if before is None:
         return []
     return [r for r in confirmed if r["verified"] and not r["owned"] and r["key"] not in before | set(beaten)]
+
+
+def new_arrivals(rows: list[dict], cfg: dict, owned=frozenset(), beaten=frozenset()) -> list[dict]:
+    """Games that just joined Game Pass Premium or PS Plus Extra and Premium (the Essential monthly
+    games and discontinued tiers are left out): the push's third kind. `rows` are store.arrivals().
+    Active only, console Game Pass only ([scope]), PS Plus only at tiers your tier includes,
+    and nothing you own or have beaten."""
+    skip = set(cfg.get("scope", {}).get("skip_systems", ()))
+    rank = plus.TIERS.get(cfg["playstation"]["tier"].lower(), 0)
+    out, seen = [], set()
+    for r in rows:
+        if r["status"] != "Active" or r["key"] in owned or r["key"] in beaten or (r["service"], r["key"]) in seen:
+            continue
+        if r["service"] == "xbox":
+            if (r["system"] or "") in skip:
+                continue
+            service = "Game Pass Premium"
+        else:
+            f = plus.family(r["tier"])
+            if f not in ("extra", "premium") or plus.TIERS[f] > rank:
+                continue
+            service = f"PS Plus {f.title()}"
+        seen.add((r["service"], r["key"]))
+        out.append({**r, "where": service})
+    return out
+
+
+def arrival_alert(rows: list[dict], show: int = 4) -> tuple[str, str]:
+    """Push title and body for new catalogue arrivals (Pharos style: one short line)."""
+    def item(r):
+        return f"{r['game']} {r['hours']:g} h" if r["hours"] is not None else r["game"]
+
+    wheres = sorted({r["where"] for r in rows})
+    if len(rows) == 1:
+        title = f"{rows[0]['game']} joined {wheres[0]}"
+    else:
+        title = f"{len(rows)} new games on " + (wheres[0] if len(wheres) == 1 else " and ".join(wheres))
+    items = [item(r) for r in rows[:show]]
+    if len(rows) > show:
+        items.append(f"+{len(rows) - show} more")
+    return title, " · ".join(items)
 
 
 def _in_days(n: int) -> str:
@@ -626,7 +687,7 @@ def queue_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]
 
 
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
-             ps: dict | None = None, psn: dict | None = None) -> dict:
+             ps: dict | None = None, psn: dict | None = None, arrivals: list[dict] | None = None) -> dict:
     cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
@@ -642,6 +703,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
               for r in watch_all if r["owned"]])
     return {
         "today": today.isoformat(),
+        "play": {k: cfg["play"][k] for k in ("hours_per_week", "buffer_weeks", "doable_share", "soon_weeks")},
         "summary": summary(cx, confirmed, watch_all),
         "confirmed": confirmed,
         "waves": wave_rows(cx, confirmed, watch_all),
@@ -649,6 +711,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "owned": owned,
         "queue": queue_rows(cx, confirmed, side),
         "beaten": sorted(cx.beaten),
+        "arrivals": new_arrivals(arrivals or [], cfg, set(cx.owned), cx.beaten),
         "survivors": survivors,
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),

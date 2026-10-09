@@ -86,6 +86,12 @@ class OneService(unittest.TestCase):
         self.assertIn(("Quiet Game", "Game"), self.rows)     # its PS copy leaves Oct 19: no backup
         self.assertNotIn(("Quiet Game", "PS"), self.rows)  # safe on Game Pass
 
+    def test_left_out_games_that_could_leave_come_back_as_backups(self):
+        backups = {(r["game"], r["service"].split(" ")[0]): r["backup"] for r in self.one["backups"]}
+        self.assertEqual(backups[("Evil West", "Game")], "Also on PS Plus Extra")   # leaving, PS copy stays
+        self.assertNotIn(("Nine Sols", "PS"), backups)                              # counted once
+        self.assertTrue(all(r["wave"] for r in self.one["backups"]))                # nothing safe for good
+
     def test_confirmed_first_then_likely_soonest_first(self):
         rows = self.one["rows"]
         order = [r["band"] for r in rows]

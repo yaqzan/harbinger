@@ -7,7 +7,7 @@ snapshot tables (every run's scores, so the page can show how odds moved) live h
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import STATE_DIR
 
@@ -26,6 +26,10 @@ CREATE INDEX IF NOT EXISTS scores_run ON scores(run_id);
 CREATE TABLE IF NOT EXISTS queue_alert (
   key TEXT NOT NULL, wave TEXT NOT NULL, stage TEXT NOT NULL, game TEXT NOT NULL, sent_at TEXT NOT NULL,
   PRIMARY KEY (key, wave, stage)
+);
+CREATE TABLE IF NOT EXISTS arrival_alert (
+  service TEXT NOT NULL, key TEXT NOT NULL, stint INTEGER NOT NULL, game TEXT NOT NULL, sent_at TEXT NOT NULL,
+  PRIMARY KEY (service, key, stint)
 );
 """
 
@@ -75,6 +79,30 @@ def mark_alerts(db: sqlite3.Connection, rows: list[dict]) -> None:
     now = datetime.now().isoformat(timespec="seconds")
     db.executemany("INSERT OR IGNORE INTO queue_alert (key, wave, stage, game, sent_at) VALUES (?, ?, ?, ?, ?)",
                    [(r["key"], r["wave"], r["stage"], r["game"], now) for r in rows])
+    db.commit()
+
+
+def arrivals(db: sqlite3.Connection, days: int, now: datetime | None = None) -> list[dict]:
+    """Rows that joined the Game Pass Premium tab or the PS Plus master list in an import from the
+    last `days` days and haven't been pushed yet. A manual `ingest` without --push still counts."""
+    since = ((now or datetime.now()) - timedelta(days=days)).isoformat(timespec="seconds")
+    q = """SELECT DISTINCT c.service, c.key, c.stint, c.title, r.system, r.tier, r.status, r.completion_h
+           FROM sheet_change c
+           JOIN sheet_import i ON i.id = c.import_id
+           JOIN sheet_row r ON r.service = c.service AND r.tab = c.tab AND r.key = c.key AND r.stint = c.stint
+           WHERE c.kind = 'added' AND i.fetched_at >= ?
+             AND ((c.service = 'xbox' AND c.tab = 'premium') OR (c.service = 'playstation' AND c.tab = 'master'))
+             AND NOT EXISTS (SELECT 1 FROM arrival_alert a
+                             WHERE a.service = c.service AND a.key = c.key AND a.stint = c.stint)
+           ORDER BY c.title"""
+    names = ("service", "key", "stint", "game", "system", "tier", "status", "hours")
+    return [dict(zip(names, r)) for r in db.execute(q, (since,))]
+
+
+def mark_arrivals(db: sqlite3.Connection, rows: list[dict]) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    db.executemany("INSERT OR IGNORE INTO arrival_alert (service, key, stint, game, sent_at) VALUES (?, ?, ?, ?, ?)",
+                   [(r["service"], r["key"], r["stint"], r["game"], now) for r in rows])
     db.commit()
 
 
