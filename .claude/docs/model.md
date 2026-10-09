@@ -34,6 +34,10 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   - Premium x0.8; re-added to Premium 2+ months after Ultimate (a fresh deal) x0.6 instead.
     These two values were a judgment call (spec only said "lowers it").
 - Bands: Likely >= 45%, Possible 25-44%, Thin < 25%.
+- Confirmed means a trusted outlet named it (`[waves] trusted_sources`: Xbox Wire, Pure Xbox) or it's
+  on the sheet's Leaving Soon tab. Anything only another outlet reports (Insider Gaming's Superball,
+  2026-10-09) shows tagged unverified and stays out of the counts. The subagent once labelled an
+  Insider Gaming report as confirmed, so this is enforced in code, not only in the prompt.
 - Announced wave: once a wave has verified confirmed leavers, unnamed games on that wave survived
   it and move to their next checkpoint (and into "Passed a checkpoint quietly").
 - Play: 9 h/week. Verdict for confirmed games: Doable <= 75% of available hours, Tight <= 100%,

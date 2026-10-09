@@ -25,10 +25,10 @@ Set-Location $Root
 $jobArgs = @('-3.11', '-m', 'harbinger', $Job)
 if ($Job -eq 'ingest') { $jobArgs += '--push' }
 
-Add-Content -Path $Log -Value ("==== {0}  {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Job)
+Add-Content -Path $Log -Encoding UTF8 -Value ("==== {0}  {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Job)
 $out = & py @jobArgs 2>&1
 $code = $LASTEXITCODE
-$out | ForEach-Object { Add-Content -Path $Log -Value "$_" }
+$out | ForEach-Object { Add-Content -Path $Log -Encoding UTF8 -Value "$_" }
 Add-Content -Path $Log -Value "exit $code"
 
 if ($code -ne 0) {

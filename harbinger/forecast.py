@@ -25,10 +25,11 @@ Do web research, then write ONE file and nothing else.
 
 Find, for these months: {months}
 
-1. The newest OFFICIAL "leaving Game Pass" notice (Xbox Wire, or Pure Xbox / Insider
-   Gaming reporting it). Removals happen on the 15th and the last day of a month, and
-   the notice usually lands about 13 days before. List every game it names, with its
-   leave date.
+1. The newest OFFICIAL "leaving Game Pass" notice (Xbox Wire, or Pure Xbox reporting it).
+   Removals happen on the 15th and the last day of a month, and the notice usually lands
+   about 13 days before. List every game it names, with its leave date. If another outlet
+   (Insider Gaming, etc.) reports an extra leaver the official list doesn't name, include
+   it with that outlet as its "source", never as Xbox Wire or Pure Xbox.
 2. Pure Xbox's monthly forecast article of games likely to leave Game Pass in each of
    those months (titles like "Xbox Game Pass Games Likely Leaving In <Month> <Year>").
    List every game it names. If the article flags a game as unlikely to actually leave

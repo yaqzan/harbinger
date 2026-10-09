@@ -101,10 +101,13 @@ def confirmed_rows(cx: Context) -> list[dict]:
         else:
             wave, src = None, "sheet"
         entries[g.key] = {"g": g, "name": g.name, "wave": wave, "source": src, "verified": True}
+    trusted = {t.lower() for t in cx.cfg["waves"].get("trusted_sources", [])}
     for key, (wave, src) in fc_dates.items():
         if key not in entries:
             g = cx.by_key.get(key)
-            entries[key] = {"g": g, "name": g.name if g else key.title(), "wave": wave, "source": src, "verified": True}
+            ok = any(t in src.lower() for t in trusted)
+            entries[key] = {"g": g, "name": g.name if g else key.title(), "wave": wave,
+                            "source": src if ok else f"{src} only; not on the sheet", "verified": ok}
     for m in cx.cfg.get("manual_confirmed", []):
         key = norm(m["game"])
         if key not in entries:

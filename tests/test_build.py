@@ -157,3 +157,14 @@ class Config(unittest.TestCase):
         self.assertEqual(cfg["queue"]["gone"], [])
         self.assertEqual(cfg["play"]["hours_per_week"], 12)
         self.assertEqual(cfg["play"]["buffer_weeks"], 2)
+
+
+class TrustedSources(unittest.TestCase):
+    def test_untrusted_outlet_cannot_confirm(self):
+        fc = dict(FORECAST, confirmed=[{"game": "Superball", "wave": "2026-10-15", "source": "Insider Gaming"},
+                                       {"game": "Quiet Game", "wave": "2026-10-31", "source": "Xbox Wire"}])
+        d = assemble(CFG, parse(TABS, "2026-10-09T08:46:00"), fc, {"games": {}}, TODAY, TODAY)
+        conf = {r["game"]: r for r in d["confirmed"]}
+        self.assertFalse(conf["Superball"]["verified"])
+        self.assertTrue(conf["Quiet Game"]["verified"])
+        self.assertEqual(d["summary"]["confirmed_count"], 9)  # 8 + Quiet Game, not Superball
