@@ -41,7 +41,8 @@ tracking = [
 gone = []
 
 [push]
-# Optional phone alert when an ingest finds a newly confirmed leaver, via Pharos (github.com/yaqzan/pharos).
+# Optional phone alerts via Pharos (github.com/yaqzan/pharos): a newly confirmed leaver, and a queued
+# game to start soon (two weeks before its start-by date, then on it; timing in [alerts] in config.toml).
 # Leave dir empty to look for a Pharos folder next to this repo; set enabled = false to skip.
 enabled = true
 dir = ""

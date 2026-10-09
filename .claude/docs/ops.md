@@ -18,9 +18,15 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
     Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it). Costs one
     forecast subagent run (~90 s) a day.
   - Jobs run `ops/windows/run-job.ps1`; logs in `ops/windows/logs/{ingest,steam}.log`.
-- **Push**: only when an ingest finds verified leavers the previous ingest didn't list (owned
-  ones excluded; no previous ingest = no push), so daily runs stay quiet until there's news.
-  `build.new_leavers` + `leaver_alert`, baseline `store.confirmed_keys`. Via Pharos
+- **Push** (`ingest --push`), two kinds, one push each, quiet otherwise:
+  - New leavers: verified leavers the previous ingest didn't list (owned excluded; no previous
+    ingest = no push). `build.new_leavers` + `leaver_alert`, baseline `store.confirmed_keys`.
+  - Queue (owner, 2026-10-09): each queued, unowned game confirmed or modelled at >= `[alerts] min_p`
+    (0.25, the Possible band) gets a heads-up `lead_days` (14) before its start-by date and a
+    "start now" on it. `build.alerts_due` + `queue_alert`; sent (game, wave, stage) live in the
+    `queue_alert` table, latched on `pharos.delivered()` (sent or muted), so a dry run or a failed
+    send retries next day. A new wave is a new key; a game in today's leaver push is skipped.
+  Via Pharos
   (`source="harbinger"`, channel `digest`, own Pushover app with the raven icon), linking to
   `[push] url` from config.local.toml. Pharos is found
   installed, at `[push] dir`, or as a `Pharos` folder next to the repo; missing = no push, no error.

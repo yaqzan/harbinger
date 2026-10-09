@@ -200,6 +200,18 @@ def urgency(today: date, wave: date, hours: float | None, play_cfg: dict) -> str
     return "Comfortable"
 
 
+def queue_stage(today: date, wave: date, hours: float | None, play_cfg: dict, lead_days: int) -> str | None:
+    """Which push a queued game is due: "heads_up" from lead_days before its start-by date,
+    "start" from the start-by date on, None before that. Unknown hours count as 0 (start-by is
+    then just the buffer before the wave)."""
+    sb = start_by(wave, hours or 0, play_cfg)
+    if today >= sb:
+        return "start"
+    if today >= sb - timedelta(days=lead_days):
+        return "heads_up"
+    return None
+
+
 def remaining_hours(hours: float | None, played_h: float | None, ach_share: float | None):
     """Hours left to 100%, using real progress when there is any.
 

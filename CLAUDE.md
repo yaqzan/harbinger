@@ -18,7 +18,8 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 ## Commands
 
 - `py -3.11 -m harbinger ingest [--no-forecast] [--push]`: import sheet + forecast subagent +
-  Steam, reconcile titles, rebuild, snapshot (daily task). `--push` alerts on newly confirmed leavers.
+  Steam, reconcile titles, rebuild, snapshot (daily task). `--push` alerts on newly confirmed
+  leavers and on queued games due a heads-up or start (`[alerts]`).
 - `py -3.11 -m harbinger steam`: Steam + PSN import, rebuild from the database
 - `py -3.11 -m harbinger build [--today YYYY-MM-DD]`: re-score the database after a config or
   titles.toml change. `show`: print the summary. `titles`: match issues. `changes [--game X]`:

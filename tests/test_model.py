@@ -135,6 +135,19 @@ class Play(unittest.TestCase):
         self.assertEqual(model.urgency(today, date(2027, 3, 31), 20, PLAY), "Comfortable")
         self.assertEqual(model.urgency(today, date(2026, 10, 31), None, PLAY), "Hours unknown")
 
+    def test_queue_stage(self):
+        # 20 h before Nov 30: start by Oct 26, so the 14-day heads-up opens Oct 12
+        wave = date(2026, 11, 30)
+        stage = lambda d, h=20: model.queue_stage(d, wave, h, PLAY, 14)
+        self.assertIsNone(stage(date(2026, 10, 11)))
+        self.assertEqual(stage(date(2026, 10, 12)), "heads_up")
+        self.assertEqual(stage(date(2026, 10, 25)), "heads_up")
+        self.assertEqual(stage(date(2026, 10, 26)), "start")
+        self.assertEqual(stage(date(2026, 12, 1)), "start")
+        # unknown hours: start-by is the 2-week buffer alone (Nov 16), heads-up from Nov 2
+        self.assertIsNone(stage(date(2026, 11, 1), None))
+        self.assertEqual(stage(date(2026, 11, 2), None), "heads_up")
+
     def test_remaining_hours(self):
         self.assertEqual(model.remaining_hours(20, 5, None), 15)
         self.assertEqual(model.remaining_hours(20, 5, 0.5), 10)

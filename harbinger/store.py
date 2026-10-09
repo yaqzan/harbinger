@@ -23,6 +23,10 @@ CREATE TABLE IF NOT EXISTS scores (
   urgency TEXT, owned INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS scores_run ON scores(run_id);
+CREATE TABLE IF NOT EXISTS queue_alert (
+  key TEXT NOT NULL, wave TEXT NOT NULL, stage TEXT NOT NULL, game TEXT NOT NULL, sent_at TEXT NOT NULL,
+  PRIMARY KEY (key, wave, stage)
+);
 """
 
 
@@ -59,6 +63,18 @@ def confirmed_keys(db: sqlite3.Connection) -> set[str] | None:
     if not last:
         return None
     return {k for (k,) in db.execute("SELECT key FROM scores WHERE run_id = ? AND list = 'confirmed'", last)}
+
+
+def alerts_sent(db: sqlite3.Connection) -> set[tuple[str, str, str]]:
+    """(key, wave, stage) of every queue push already delivered."""
+    return set(db.execute("SELECT key, wave, stage FROM queue_alert"))
+
+
+def mark_alerts(db: sqlite3.Connection, rows: list[dict]) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    db.executemany("INSERT OR IGNORE INTO queue_alert (key, wave, stage, game, sent_at) VALUES (?, ?, ?, ?, ?)",
+                   [(r["key"], r["wave"], r["stage"], r["game"], now) for r in rows])
+    db.commit()
 
 
 def record(db: sqlite3.Connection, kind: str, as_of: str, note: str, rows: list[dict]) -> int:

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from harbinger import load_config
 from harbinger import store
-from harbinger.build import assemble, leaver_alert, new_leavers
+from harbinger.build import alerts_due, assemble, leaver_alert, new_leavers, queue_alert
 from harbinger.sheet import FIELDS, norm, parse
 
 CFG = load_config(local=None)
@@ -170,6 +170,58 @@ class NewLeaverPush(unittest.TestCase):
         store.record(db, "steam", "2026-10-09", "", [{"game": "Donut County", "key": "donut county", "list": "confirmed"}])
         self.assertEqual(store.confirmed_keys(db), {"evil west"})
 
+
+
+class QueuePush(unittest.TestCase):
+    """Nine Sols (queued): 25 h before its 24-month wave Nov 15 at 33%, so start by Oct 11 and
+    the 14-day heads-up opens Sep 27."""
+
+    def setUp(self):
+        self.q = run()["queue"]
+
+    def due(self, day, sent=(), skip=frozenset(), cfg=CFG):
+        return [(r["game"], r["stage"]) for r in alerts_due(self.q, day, cfg, set(sent), skip)]
+
+    def test_heads_up_two_weeks_before_start_by_then_start(self):
+        self.assertEqual(self.due(date(2026, 9, 26)), [])
+        self.assertEqual(self.due(date(2026, 9, 27)), [("Nine Sols", "heads_up")])
+        self.assertEqual(self.due(date(2026, 10, 11)), [("Nine Sols", "start")])
+
+    def test_each_stage_fires_once(self):
+        sent = {("nine sols", "2026-11-15", "heads_up")}
+        self.assertEqual(self.due(TODAY, sent), [])
+        self.assertEqual(self.due(date(2026, 10, 11), sent), [("Nine Sols", "start")])
+        self.assertEqual(self.due(date(2026, 10, 12), sent | {("nine sols", "2026-11-15", "start")}), [])
+
+    def test_store_remembers_what_was_sent(self):
+        db = store.connect(Path(":memory:"))
+        self.assertEqual(store.alerts_sent(db), set())
+        store.mark_alerts(db, alerts_due(self.q, TODAY, CFG, set()))
+        self.assertEqual(store.alerts_sent(db), {("nine sols", "2026-11-15", "heads_up")})
+        self.assertEqual(alerts_due(self.q, TODAY, CFG, store.alerts_sent(db)), [])
+
+    def test_quiet_when_owned_unlikely_or_already_in_the_leaver_push(self):
+        steam = {"games": {"nine sols": {"name": "Nine Sols", "appid": 3, "played_h": 0,
+                                         "ach_done": None, "ach_total": None}}}
+        self.assertEqual(alerts_due(run(steam)["queue"], TODAY, CFG, set()), [])
+        strict = {**CFG, "alerts": {**CFG["alerts"], "min_p": 0.45}}
+        self.assertEqual(self.due(TODAY, cfg=strict), [])
+        self.assertEqual(self.due(TODAY, skip={"nine sols"}), [])
+
+    def test_confirmed_queued_game(self):
+        cfg = {**CFG, "queue": {"gone": [], "tracking": ["Nine Sols", "Pacific Drive"]}}
+        q = assemble(cfg, parse(TABS, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY)["queue"]
+        due = alerts_due(q, TODAY, cfg, set())
+        self.assertEqual([(r["game"], r["stage"]) for r in due], [("Pacific Drive", "start"), ("Nine Sols", "heads_up")])
+        self.assertEqual(queue_alert(due[:1], TODAY),
+                         ("Start Pacific Drive now", "20 h, too long to finish · leaves Oct 15"))
+        self.assertEqual(queue_alert(due, TODAY),
+                         ("2 queued games to start soon", "Pacific Drive now · Nine Sols in 2 days"))
+
+    def test_alert_text(self):
+        title, body = queue_alert(alerts_due(self.q, TODAY, CFG, set()), TODAY)
+        self.assertEqual((title, body), ("Start Nine Sols in 2 days", "25 h · 33% it leaves Nov 15"))
+        self.assertNotIn("—", title + body)
 
 if __name__ == "__main__":
     unittest.main()

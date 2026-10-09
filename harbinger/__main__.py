@@ -24,7 +24,7 @@ from . import psn as psn_mod
 from . import sheet as sheet_mod
 from . import steam as steam_mod
 from . import titles as titles_mod
-from .build import assemble, leaver_alert, new_leavers
+from .build import alerts_due, assemble, leaver_alert, new_leavers, queue_alert
 
 
 def _wanted(data: dict) -> set[str]:
@@ -88,6 +88,9 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have
     data["new_confirmed"] = new_leavers(data["confirmed"], store.confirmed_keys(db)) if kind == "ingest" else []
+    # queued games whose heads-up or start push is due (marked sent only once Pharos delivers it)
+    data["queue_alerts"] = (alerts_due(data["queue"], today, cfg, store.alerts_sent(db),
+                                       {r["key"] for r in data["new_confirmed"]}) if kind == "ingest" else [])
     rows = ([{"game": r["game"], "key": r["key"], "list": "confirmed", "wave": r["wave"], "hours": r["hours"],
               "owned": int(r["owned"])} for r in data["confirmed"] if r["verified"]] +
             [{"game": r["game"], "key": r["key"], "list": "watchlist", "wave": r["wave"], "cohort": r["cohort"],
@@ -121,20 +124,29 @@ def _pharos(cfg: dict):
 
 
 def push(data: dict, cfg: dict) -> str:
-    """Alert the phone via Pharos when an ingest finds newly confirmed leavers; quiet otherwise."""
+    """Alert the phone via Pharos: newly confirmed leavers, and queued games to start soon (one
+    push each). Quiet when there's neither."""
     p = cfg.get("push", {})
     if not p.get("enabled", True):
         return "push disabled in config"
-    new = data.get("new_confirmed", [])
-    if not new:
-        return "push: no new confirmed leavers"
+    new, due = data.get("new_confirmed", []), data.get("queue_alerts", [])
+    if not new and not due:
+        return "push: nothing new"
     pharos = _pharos(cfg)
     if pharos is None:
         return "push skipped: Pharos not found"
-    title, body = leaver_alert(new, date.fromisoformat(data["today"]))
+    today = date.fromisoformat(data["today"])
     link = {"url": p["url"], "url_title": "Open the radar"} if p.get("url") else {}
-    result = pharos.send(title, body, source="harbinger", channel="digest", **link)
-    return f"push: {getattr(result, 'status', result)}"
+    out = []
+    if new:
+        result = pharos.send(*leaver_alert(new, today), source="harbinger", channel="digest", **link)
+        out.append(f"leavers {result.status}")
+    if due:
+        result = pharos.send(*queue_alert(due, today), source="harbinger", channel="digest", **link)
+        if pharos.delivered(result.status):  # sent or muted: latch, so a mute doesn't pile up retries
+            store.mark_alerts(store.connect(), due)
+        out.append(f"queue {result.status}")
+    return "push: " + ", ".join(out)
 
 
 def _changes(game: str | None, imports: int = 5) -> int:
@@ -160,7 +172,7 @@ def main(argv=None) -> int:
     ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "serve"])
     ap.add_argument("--game", help="changes: only this title")
     ap.add_argument("--no-forecast", action="store_true", help="ingest: keep the last forecast")
-    ap.add_argument("--push", action="store_true", help="ingest: push newly confirmed leavers via Pharos (optional, see config.local.example.toml)")
+    ap.add_argument("--push", action="store_true", help="ingest: push newly confirmed leavers and queued games to start via Pharos (optional, see config.local.example.toml)")
     ap.add_argument("--today", type=date.fromisoformat, help="score as of this date (testing)")
     a = ap.parse_args(argv)
     if a.command == "serve":

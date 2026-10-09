@@ -47,6 +47,9 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   else Too late for 100%. Start by = wave - ceil(hours/9) weeks - 2 weeks. Urgency: Too late (hours
   don't fit even starting today) / Start now (start-by reached) / Start within 4 wks / Comfortable /
   Hours unknown.
+- Queue push stage (`queue_stage`): heads-up from `[alerts] lead_days` before start-by, start from
+  start-by on. Unknown hours count as 0. Each queued game is judged alone; nothing sequences the
+  queue yet, so overlapping windows aren't flagged (Play plan ticket).
 - Owned anywhere (Steam, PSN purchase, PS disc; `Context.owned`, Steam wins a tie) works like
   Steam ownership below; the verdict says where ("Owned on PlayStation"), trophies count as achievements.
 - Steam: an owned game leaves the confirmed verdicts, the watchlist and the KPIs and shows under

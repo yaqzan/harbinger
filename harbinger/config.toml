@@ -50,6 +50,13 @@ buffer_weeks = 2
 doable_share = 0.75   # Doable if hours <= this share of the hours available; Tight up to all of them
 soon_weeks = 4        # "Start within 4 wks"
 
+[alerts]
+# Pushes for your queued games ([queue] tracking), sent by `ingest --push`. Each fires once per
+# game and wave: a heads-up lead_days before the start-by date (room to prep), then "start now"
+# on it. Start-by already keeps [play] buffer_weeks before the wave.
+lead_days = 14
+min_p = 0.25   # modelled leave odds a queued game needs to push (the Possible band); confirmed always pushes
+
 [exclude]
 # Owner-notes markers for collections that are not a normal third-party deal.
 ubisoft_note = "Ubisoft games joining with price increase"

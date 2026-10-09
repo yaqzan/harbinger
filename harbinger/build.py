@@ -213,22 +213,26 @@ def _find(cx: Context, name: str) -> Game | None:
     return cx.by_key[close[0]] if close else None
 
 
-def queue_rows(cx: Context, confirmed: list[dict], watch: list[dict]) -> list[dict]:
+def queue_rows(cx: Context, confirmed: list[dict]) -> list[dict]:
     today = cx.today
     conf = {r["key"]: r for r in confirmed}
-    wl = {r["key"]: r for r in watch}
     rows = []
     q = cx.cfg.get("queue", {})
     for name in q.get("gone", []) + q.get("tracking", []):
         g = None if cx.pc_only(name) else _find(cx, name)
-        row = {"game": g.name if g else name, "state": "", "next_check": "", "odds": "", "note": ""}
+        # wave/p/hours/start_by/owned: what the queue push reads (alerts_due)
+        row = {"game": g.name if g else name, "key": g.key if g else norm(name), "state": "", "next_check": "",
+               "odds": "", "note": "", "wave": "", "p": None, "hours": None, "start_by": "", "owned": False}
         if g is None and cx.pc_only(name):
             row.update(state="PC only", note="Not tracked: console Game Pass only")
         elif g is None:
             row.update(state="Not on the sheet", note="Check the title in config.toml")
         elif g.key in conf:
             c = conf[g.key]
-            row.update(state=f"Leaving {c['wave_label']}", next_check=c["wave_label"], odds="Confirmed", note=c["verdict"])
+            row.update(state=f"Leaving {c['wave_label']}", next_check=c["wave_label"], odds="Confirmed", note=c["verdict"],
+                       wave=c["wave"], p=1.0 if c["verified"] else None, hours=c["hours"], owned=c["owned"])
+            if c["hours"] is not None and not c["owned"]:
+                row["start_by"] = model.start_by(date.fromisoformat(c["wave"]), c["hours"], cx.play).isoformat()
         elif g.status == "Removed":
             row.update(state=f"Gone ({g.removed_month:%b %Y})" if g.removed_month else "Gone")
         elif g.status != "Active":
@@ -242,11 +246,14 @@ def queue_rows(cx: Context, confirmed: list[dict], watch: list[dict]) -> list[di
                 row.update(state="Active", odds="Not scored", note="Ubisoft+ Classics bundle")
             elif nxt:
                 p, _ = cx.score(g, *nxt)
+                prog = cx.progress(g.key, g.hours)
                 row.update(state="Active", next_check=f"{nxt[0]} mo · {fmt(nxt[1], today)}",
-                           odds=f"{round(p * 100)}% ({model.band(p, cx.cfg['bands'])})")
-                w = wl.get(g.key)
-                if w and w["hours"] is not None and not w["owned"]:
-                    row["note"] = f"{w['urgency']}, start by {w['start_by']}"
+                           odds=f"{round(p * 100)}% ({model.band(p, cx.cfg['bands'])})",
+                           wave=nxt[1].isoformat(), p=round(p, 3), hours=prog["hours"], owned=prog["owned"])
+                if prog["hours"] is not None and not prog["owned"]:
+                    sb = model.start_by(nxt[1], prog["hours"], cx.play)
+                    row["start_by"] = sb.isoformat()
+                    row["note"] = f"{model.urgency(today, nxt[1], prog['hours'], cx.play)}, start by {fmt(sb, today)}"
             else:
                 row.update(state="Active", next_check="past 36 mo", note="No anniversary left in the model")
             if name in q.get("gone", []):
@@ -459,6 +466,45 @@ def leaver_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str
     return f"{who} confirmed leaving {when}", " · ".join(items)
 
 
+def alerts_due(queue: list[dict], today: date, cfg: dict, sent: set[tuple[str, str, str]],
+               skip: set[str] = frozenset()) -> list[dict]:
+    """Queued games with a push due that hasn't gone out: each game's current stage only
+    (model.queue_stage), keyed (game, wave, stage) so it fires once. Owned games, modelled odds
+    under [alerts] min_p and games in `skip` (already in today's leaver push) stay quiet."""
+    a, seen, due = cfg["alerts"], set(), []
+    for r in queue:
+        if not r["wave"] or r["owned"] or r["p"] is None or r["p"] < a["min_p"] or r["key"] in skip | seen:
+            continue
+        seen.add(r["key"])
+        wave = date.fromisoformat(r["wave"])
+        stage = model.queue_stage(today, wave, r["hours"], cfg["play"], a["lead_days"])
+        if stage and (r["key"], r["wave"], stage) not in sent:
+            fits = r["hours"] is None or r["hours"] <= model.hours_available(today, wave, cfg["play"]["hours_per_week"])
+            sb = model.start_by(wave, r["hours"] or 0, cfg["play"])
+            due.append({**r, "stage": stage, "start_on": sb.isoformat(), "fits": fits})
+    due.sort(key=lambda r: r["start_on"])
+    return due
+
+
+def queue_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]:
+    """Push title and body for queued games to start (Pharos style: short, relative times)."""
+    def when(r):
+        return "now" if r["stage"] == "start" else _in_days((date.fromisoformat(r["start_on"]) - today).days)
+
+    if len(rows) == 1:
+        r = rows[0]
+        wave = fmt(date.fromisoformat(r["wave"]), today)
+        leaves = f"leaves {wave}" if r["p"] == 1.0 else f"{round(r['p'] * 100)}% it leaves {wave}"
+        hours = "hours unknown" if r["hours"] is None else f"{r['hours']:g} h" + ("" if r["fits"] else ", too long to finish")
+        return f"Start {r['game']} {when(r)}", f"{hours} · {leaves}"
+    now = sum(r["stage"] == "start" for r in rows)
+    title = f"{len(rows)} queued games to start " + ("now" if now == len(rows) else "soon")
+    items = [f"{r['game']} {when(r)}" for r in rows[:show]]
+    if len(rows) > show:
+        items.append(f"+{len(rows) - show} more")
+    return title, " · ".join(items)
+
+
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
              ps: dict | None = None, psn: dict | None = None) -> dict:
     cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
@@ -477,7 +523,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "waves": wave_rows(cx, confirmed, watch_all),
         "watchlist": watch,
         "owned": owned,
-        "queue": queue_rows(cx, confirmed, watch_all),
+        "queue": queue_rows(cx, confirmed),
         "survivors": survivors,
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),
