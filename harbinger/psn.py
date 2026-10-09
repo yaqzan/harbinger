@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS psn_game (
   kind TEXT NOT NULL,             -- purchased (id = entitlement) | played (id = title id)
   id TEXT NOT NULL, name TEXT NOT NULL, key TEXT NOT NULL, platform TEXT,
   membership TEXT,                -- purchased: NONE (bought) | PS_PLUS (claimed through PS Plus)
-  service TEXT,                   -- played: none | none_purchased | ps_plus
+  service TEXT,                   -- played: none(purchased) = bought, other = disc or bundled, ps_plus
   is_active INTEGER, is_downloadable INTEGER, is_preorder INTEGER,
   product_id TEXT, concept_id TEXT, title_id TEXT,
   play_minutes INTEGER, play_count INTEGER, first_played TEXT, last_played TEXT, image_url TEXT,
@@ -283,8 +283,10 @@ def sync(db: sqlite3.Connection, cfg: dict) -> str | None:
 def load(db: sqlite3.Connection, cfg: dict) -> dict:
     """What you own on PlayStation, as {"synced_at", "games": {key: rec}, "claimed": [names]}.
 
-    Owned: bought (membership NONE, not a pre-order), played as "none_purchased", or a disc
-    listed in config. Claimed through PS Plus is kept separately: it lasts while you subscribe.
+    Owned: bought (membership NONE, not a pre-order), played as "none(purchased)" (bought), played
+    as "other" (a disc or a bundled game: Demon's Souls on disc showed up this way, 2026-10-09), or
+    a disc listed in config (an unplayed disc is invisible). Claimed through PS Plus is kept
+    separately: it lasts while you subscribe.
     rec = {name, where, played_h, ach_done, ach_total}, the Steam shape, trophies as achievements.
     """
     last = db.execute("SELECT at FROM psn_sync ORDER BY id DESC LIMIT 1").fetchone()
@@ -301,10 +303,13 @@ def load(db: sqlite3.Connection, cfg: dict) -> dict:
         games.setdefault(k, {"name": name, "where": where, "played_h": round(play.get(k, 0) / 60, 1),
                              "ach_done": e, "ach_total": d})
 
+    # psn-api documents "none_purchased"; Sony actually sends "none(purchased)". Accept both.
     for (name,) in db.execute("SELECT name FROM psn_game WHERE present = 1 AND ((kind = 'purchased'"
                               " AND membership = 'NONE' AND is_preorder = 0) OR (kind = 'played'"
-                              " AND service = 'none_purchased'))"):
+                              " AND service IN ('none(purchased)', 'none_purchased')))"):
         own(name, "PlayStation")
+    for (name,) in db.execute("SELECT name FROM psn_game WHERE present = 1 AND kind = 'played' AND service = 'other'"):
+        own(name, "PS disc")
     for name in cfg.get("playstation", {}).get("discs", []):
         own(name, "PS disc")
     claimed = [n for (n,) in db.execute("SELECT DISTINCT name FROM psn_game WHERE kind = 'purchased'"

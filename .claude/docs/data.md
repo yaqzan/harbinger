@@ -57,8 +57,10 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 - `psn_game`: purchased (membership NONE = bought, PS_PLUS = claimed through PS Plus) and played
   (playtime, service none / none_purchased / ps_plus). `psn_trophy`: progress and counts per
   trophy list. `psn_history`: playtime / progress moves.
-- Owned = bought and not a pre-order, or played as none_purchased, or a disc listed under
-  `[playstation] discs` (no API sees discs). Claimed PS Plus games are not owned (they go with the
+- Owned = bought and not a pre-order, or played with service `none(purchased)` (what Sony sends;
+  psn-api documents `none_purchased`), or played with service `other` (discs and bundled games:
+  Demon's Souls on disc arrived this way, 2026-10-09), or listed under `[playstation] discs`
+  (an unplayed disc is invisible to the API). Claimed PS Plus games are not owned (they go with the
   subscription) but drop their "Claim by" row. A failed sync keeps the last library.
 
 ## Title matching (`titles.py`, every run)

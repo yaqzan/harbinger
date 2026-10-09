@@ -31,7 +31,9 @@ def trophies(npid, name, progress, earned, defined):
 RAW = {
     "purchased": [bought("E1", "Evil West"), bought("E2", "Hunt: Showdown 1896", membership="PS_PLUS"),
                   bought("E3", "Some Pre-Order", preorder=True)],
-    "played": [played("PPSA1", "Evil West", "PT4H30M"), played("PPSA2", "Far Game", "PT1H", service="ps_plus")],
+    "played": [played("PPSA1", "Evil West", "PT4H30M"), played("PPSA2", "Far Game", "PT1H", service="ps_plus"),
+               played("PPSA3", "Elden Ring", "PT200H", service="other"),          # a disc
+               played("PPSA4", "Split Fiction", "PT2H", service="none(purchased)")],
     "trophies": [trophies("NPWR1", "Evil West", 50, 10, 20)],
 }
 
@@ -48,7 +50,9 @@ class Import(unittest.TestCase):
 
     def test_owned_claimed_and_discs(self):
         lib = psn.load(self.db, {"playstation": {"discs": ["Demon's Souls"]}})
-        self.assertEqual(set(lib["games"]), {"evil west", "demon s souls"})  # not the pre-order, not PS Plus play
+        # not the pre-order, not the PS Plus play; the played disc and Sony's "none(purchased)" count
+        self.assertEqual(set(lib["games"]), {"evil west", "demon s souls", "elden ring", "split fiction"})
+        self.assertEqual(lib["games"]["elden ring"]["where"], "PS disc")
         self.assertEqual(lib["games"]["evil west"], {"name": "Evil West", "where": "PlayStation", "played_h": 4.5,
                                                      "ach_done": 10, "ach_total": 20})
         self.assertEqual(lib["games"]["demon s souls"]["where"], "PS disc")

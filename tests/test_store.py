@@ -167,6 +167,8 @@ class Matching(unittest.TestCase):
         self.assertEqual(m.match("Orwell")[1], "prefix")
         self.assertEqual(m.near("Sniper Elite 3"), [])
         self.assertEqual(m.near("Portal"), [])
+        self.assertTrue(sheet.sequel_gap("nba 2k23", "nba 2k26"))   # yearly sports games too
+        self.assertFalse(sheet.sequel_gap("gears 5", "gears 5 game of the year"))
 
     def test_steam_is_strict(self):
         m = titles.Matcher({"prince of persia the lost crown"})

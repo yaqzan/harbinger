@@ -59,10 +59,10 @@ def strip_edition(key: str) -> str:
 
 
 def sequel_gap(a: str, b: str) -> bool:
-    """True when two keys differ only by numbers: "sniper elite 3" vs "sniper elite 4", "portal" vs
-    "portal 2". Those are different games, never a match or a near miss."""
+    """True when two keys differ only by numbered words: "sniper elite 3" vs "sniper elite 4",
+    "portal" vs "portal 2", "nba 2k23" vs "nba 2k26". Different games: never a match or a near miss."""
     diff = set(a.split()) ^ set(b.split())
-    return bool(diff) and all(w.isdigit() for w in diff)
+    return bool(diff) and all(any(c.isdigit() for c in w) for w in diff)
 
 
 class Index:

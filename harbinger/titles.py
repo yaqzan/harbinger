@@ -155,7 +155,8 @@ def reconcile(db: sqlite3.Connection, sheet: Sheet, forecast: dict, cfg: dict, p
     steam_rows = db.execute("SELECT appid, name FROM steam_game WHERE owned = 1").fetchall()
     # PlayStation games you own: bought (one row per name) and discs from config
     owned_ps = [("psn", n, n) for (n,) in db.execute(
-        "SELECT DISTINCT name FROM psn_game WHERE present = 1 AND kind = 'purchased' AND membership = 'NONE'")]
+        "SELECT DISTINCT name FROM psn_game WHERE present = 1 AND ((kind = 'purchased' AND membership = 'NONE')"
+        " OR (kind = 'played' AND service IN ('none(purchased)', 'none_purchased', 'other')))")]
     owned_ps += [("disc", n, n) for n in cfg.get("playstation", {}).get("discs", [])]
     now = datetime.now().isoformat(timespec="seconds")
     rows = _match_rows("xbox", m, names, sources(sheet, steam_rows, forecast, cfg) + owned_ps, now)
