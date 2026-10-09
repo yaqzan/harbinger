@@ -225,21 +225,68 @@ def _find(cx: Context, name: str) -> Game | None:
     return cx.by_key[close[0]] if close else None
 
 
-def queue_rows(cx: Context, confirmed: list[dict]) -> list[dict]:
+def _note(row: dict, text: str) -> None:
+    row["note"] = (row["note"] + "; " if row["note"] else "") + text
+
+
+def _ps_queue_row(cx: Context, side: "PsSide", g) -> dict:
+    """A queued game as your PS Plus tier has it: next wave, odds, start-by, trophy progress."""
+    today = cx.today
+    out = plus.outlook(g, today, cx.cfg, side.waves_out)
+    hours, progress, finished = side.progress(g)
+    service = f"PS Plus {g.tier}"
+    owned = g.key in side.owned or (g.kind == "essential" and g.key in side.claimed)
+    row = {"game": g.name, "key": g.key, "service": service, "state": service, "next_check": "", "odds": "",
+           "note": "", "wave": "", "p": None, "hours": hours, "start_by": "", "owned": owned, "beaten": finished}
+    wave = out["wave"]
+    if out["state"] == "claim":  # Essential: a claim deadline, not a play deadline, so no push
+        row.update(next_check=fmt(wave, today), odds="Claim", note=f"Claim by {fmt(wave, today)} to keep it")
+    elif wave:
+        confirmed = out["band"] == "Confirmed"
+        row.update(state=f"Leaving {fmt(wave, today)} ({service})" if confirmed else service,
+                   next_check=(f"{out['n']} mo · " if out.get("n") else "") + fmt(wave, today),
+                   odds="Confirmed" if confirmed else f"{round(out['p'] * 100)}% ({out['band']})",
+                   wave=wave.isoformat(), p=round(out["p"], 3))
+        if hours is not None and not owned:
+            sb = model.start_by(wave, hours, cx.play)
+            row["start_by"] = sb.isoformat()
+            row["note"] = f"{model.urgency(today, wave, hours, cx.play)}, start by {fmt(sb, today)}"
+    else:
+        row.update(odds="Not scored" if out["state"] == "not scored" else "", note=out["why"])
+    if progress:
+        _note(row, progress)
+    if owned:
+        _note(row, "claimed, yours while you subscribe" if g.key in side.claimed else "you own it on PlayStation")
+    if finished:
+        _note(row, "every trophy earned, no alerts")
+    return row
+
+
+def _lasts_longer(a: dict, b: dict, min_p: float) -> bool:
+    """Is copy a safe for longer than copy b? A next wave under [alerts] min_p counts as none in
+    sight, and none in sight beats any wave."""
+    risk = lambda r: r["wave"] if r["wave"] and r["p"] is not None and r["p"] >= min_p else ""
+    return bool(risk(b)) and (not risk(a) or risk(a) > risk(b))
+
+
+def queue_rows(cx: Context, confirmed: list[dict], side: "PsSide | None" = None) -> list[dict]:
+    """Your watched games, each on Game Pass or your PS Plus tier. A game on both follows the
+    copy that is safe for longer (the other is a backup) and names the other in its note."""
     today = cx.today
     conf = {r["key"]: r for r in confirmed}
     rows = []
     q = cx.cfg.get("queue", {})
     for name in q.get("gone", []) + q.get("tracking", []):
         g = None if cx.pc_only(name) else _find(cx, name)
-        # wave/p/hours/start_by/owned: what the queue push reads (alerts_due)
-        row = {"game": g.name if g else name, "key": g.key if g else norm(name), "state": "", "next_check": "",
-               "odds": "", "note": "", "wave": "", "p": None, "hours": None, "start_by": "", "owned": False,
-               "beaten": False}
+        # wave/p/hours/start_by/owned/beaten: what the queue push reads (alerts_due)
+        row = {"game": g.name if g else name, "key": g.key if g else norm(name), "service": "Game Pass",
+               "state": "", "next_check": "", "odds": "", "note": "", "wave": "", "p": None, "hours": None,
+               "start_by": "", "owned": False, "beaten": False}
         if g is None and cx.pc_only(name):
             row.update(state="PC only", note="Not tracked: console Game Pass only")
         elif g is None:
-            row.update(state="Not on the sheet", note="Check the title in config.toml")
+            where = "Game Pass or your PS Plus tier" if side and side.pm else "the Game Pass sheet"
+            row.update(state="Not found", service="", note=f"Not on {where}; check the title in config.local.toml")
         elif g.key in conf:
             c = conf[g.key]
             row.update(state=f"Leaving {c['wave_label']}", next_check=c["wave_label"], odds="Confirmed", note=c["verdict"],
@@ -270,12 +317,29 @@ def queue_rows(cx: Context, confirmed: list[dict]) -> list[dict]:
             else:
                 row.update(state="Active", next_check="past 36 mo", note="No anniversary left in the model")
             if name in q.get("gone", []):
-                row["note"] = (row["note"] + "; " if row["note"] else "") + "back on the service?"
+                _note(row, "back on the service?")
         if g is not None and g.key in cx.owned:
-            row["note"] = (row["note"] + "; " if row["note"] else "") + f"you own it on {cx.owned[g.key]['where']}"
+            _note(row, f"you own it on {cx.owned[g.key]['where']}")
+        pg, on_gp = None, g is not None and (g.key in conf or g.status in ("Active", "Leaving Soon"))
+        if side and side.pm:  # the same game on PS Plus: strict, like the one-service list
+            pg = side.find(g.name, loose=False) if g else None
+            if pg is None and not on_gp and not cx.pc_only(name):
+                pg = side.find(name)
+        if pg is not None:
+            prow = _ps_queue_row(cx, side, pg)
+            if not on_gp or _lasts_longer(prow, row, cx.cfg["alerts"]["min_p"]):
+                if on_gp:
+                    _note(prow, "also on Game Pass" + (f", could leave {fmt(date.fromisoformat(row['wave']), today)}"
+                                                       if row["wave"] else ""))
+                elif name in q.get("gone", []) and g is not None:
+                    _note(prow, "left Game Pass, on PS Plus now")
+                row = prow
+            else:
+                _note(row, f"also on {prow['service']}" + (f", could leave {fmt(date.fromisoformat(prow['wave']), today)}"
+                                                          if prow["wave"] else ""))
         if row["key"] in cx.beaten:
             row["beaten"] = True
-            row["note"] = (row["note"] + "; " if row["note"] else "") + "beaten, no alerts"
+            _note(row, "beaten, no alerts")
         rows.append(row)
     return rows
 
@@ -390,13 +454,50 @@ def xbox_outlook(cx: Context, g: Game) -> dict:
             "why": "; ".join([f"{n}-month anniversary {fmt(anniv, cx.today)}"] + reasons)}
 
 
+class PsSide:
+    """Your PS Plus tier's catalogue as the queue and the one-service list see it: title lookup,
+    what you own or claimed there, and trophy progress."""
+
+    def __init__(self, cx: Context, ps: dict | None):
+        self.games = ps["games"] if ps else []
+        self.by_key = {g.key: g for g in self.games}
+        self.pm = ps_matcher(self.games, cx.cfg) if self.games else None
+        pm = self.pm
+        self.owned = {pm.key(r.get("name") or "", loose=False) for r in cx.owned.values()} if pm else set()
+        self.claimed = {pm.key(n, loose=False) for n in cx.claimed} if pm else set()
+        self.playing = {}
+        if pm:
+            for r in cx.playing.values():
+                k = pm.key(r["name"], loose=False)
+                if k:
+                    self.playing.setdefault(k, r)
+        self.waves_out = plus.announced(self.games, cx.today)
+
+    def find(self, name: str, loose: bool = True):
+        k = self.pm.key(name, loose) if self.pm else None
+        return self.by_key.get(k)
+
+    def progress(self, g) -> tuple[float | None, str, bool]:
+        """(hours left, progress text, every trophy earned)."""
+        r = self.playing.get(g.key)
+        if not r or not (r.get("played_h") or r.get("share")):
+            return g.hours, "", False
+        bits = [f"{r['played_h']:g} h played"] if r.get("played_h") else []
+        if r.get("share") is not None:
+            bits.append(f"{round(r['share'] * 100)}% of trophies")
+        if r.get("hard"):
+            bits.append(r["hard"])
+        return (model.remaining_hours(g.hours, r.get("played_h"), r.get("share")), ", ".join(bits),
+                (r.get("share") or 0) >= 1)
+
+
 def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dict:
     """Games you can play on exactly one service (Game Pass console, or PS Plus at your tier)
     and don't own (Steam, PlayStation, disc). Confirmed leavers and claim deadlines first, then Likely,
     Possible and Thin, each soonest first."""
     today, play = cx.today, cx.play
-    ps_games = ps["games"] if ps else []
-    pm = ps_matcher(ps_games, cx.cfg) if ps_games else None
+    side = PsSide(cx, ps)
+    ps_games, pm = side.games, side.pm
     on_xbox = {g.key: g for g in cx.by_key.values() if g.status in ("Active", "Leaving Soon")}
     conf = {r["key"]: r for r in confirmed if r["verified"]}
     # The same game on both services. A copy that is itself leaving is no backup, so then
@@ -405,16 +506,8 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     both = {k: pk for k, pk in ((g.key, pm.key(g.name, loose=False)) for g in on_xbox.values()) if pk} if pm else {}
     xbox_backup = {k for k, pk in both.items() if pk not in ps_leaving}   # Game Pass games safe on PS Plus
     ps_backup = {pk for k, pk in both.items() if k not in conf}           # PS Plus games safe on Game Pass
-    owned_ps = {pm.key(r.get("name") or "", loose=False) for r in cx.owned.values()} if pm else set()
-    claimed_ps = {pm.key(n, loose=False) for n in cx.claimed} if pm else set()
+    owned_ps, claimed_ps = side.owned, side.claimed
     rows = []
-
-    playing_ps = {}
-    if pm:
-        for r in cx.playing.values():
-            k = pm.key(r["name"], loose=False)
-            if k:
-                playing_ps.setdefault(k, r)
 
     def add(game, service, out, hours, platform, progress="", key=""):
         wave = out["wave"]
@@ -448,7 +541,6 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
         else:
             out = xbox_outlook(cx, g)
         add(g.name, "Game Pass", out, g.hours, g.system, key=key)
-    waves_out = plus.announced(ps_games, today)
     for g in ps_games:
         if g.key in owned_ps:
             skipped["owned"] += 1
@@ -458,20 +550,11 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             continue  # already claimed: yours while you subscribe
         if g.key in ps_backup:
             continue  # counted once, on the Game Pass side
-        hours, progress = g.hours, ""
-        r = playing_ps.get(g.key)
-        if r and (r.get("share") or 0) >= 1:
+        hours, progress, finished = side.progress(g)
+        if finished:
             skipped["finished"] += 1
             continue  # every trophy earned: nothing left to lose
-        if r and (r.get("played_h") or r.get("share")):
-            hours = model.remaining_hours(g.hours, r.get("played_h"), r.get("share"))
-            bits = [f"{r['played_h']:g} h played"] if r.get("played_h") else []
-            if r.get("share") is not None:
-                bits.append(f"{round(r['share'] * 100)}% of trophies")
-            if r.get("hard"):
-                bits.append(r["hard"])
-            progress = ", ".join(bits)
-        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), hours, g.system, progress, g.key)
+        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, side.waves_out), hours, g.system, progress, g.key)
     rows.sort(key=lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower()))
     tier = ps["tier"] if ps else "none"
     return {"rows": rows, "ps_tier": tier, "skipped_owned": skipped["owned"], "skipped_both": skipped["both"],
@@ -530,7 +613,8 @@ def queue_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]
     if len(rows) == 1:
         r = rows[0]
         wave = fmt(date.fromisoformat(r["wave"]), today)
-        leaves = f"leaves {wave}" if r["p"] == 1.0 else f"{round(r['p'] * 100)}% it leaves {wave}"
+        ps = " PS Plus" if r.get("service", "").startswith("PS Plus") else ""
+        leaves = f"leaves{ps} {wave}" if r["p"] == 1.0 else f"{round(r['p'] * 100)}% it leaves{ps} {wave}"
         hours = "hours unknown" if r["hours"] is None else f"{r['hours']:g} h" + ("" if r["fits"] else ", too long to finish")
         return f"Start {r['game']} {when(r)}", f"{hours} · {leaves}"
     now = sum(r["stage"] == "start" for r in rows)
@@ -546,7 +630,10 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
     cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
-    cx.beaten = {g.key if (g := _find(cx, n)) else norm(n) for n in cfg.get("queue", {}).get("beaten", [])}
+    side = PsSide(cx, ps)
+    cx.beaten = set()
+    for n in cfg.get("queue", {}).get("beaten", []):
+        cx.beaten |= {g.key if (g := _find(cx, n)) else norm(n)} | ({pg.key} if (pg := side.find(n)) else set())
     watch_all, survivors, ubisoft = scored_rows(cx, {r["key"] for r in confirmed})
     watch = [r for r in watch_all if not r["owned"]]
     owned = ([{"game": r["game"], "key": r["key"], "where": f"Leaving {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
@@ -560,7 +647,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "waves": wave_rows(cx, confirmed, watch_all),
         "watchlist": watch,
         "owned": owned,
-        "queue": queue_rows(cx, confirmed),
+        "queue": queue_rows(cx, confirmed, side),
         "beaten": sorted(cx.beaten),
         "survivors": survivors,
         "ubisoft": ubisoft,

@@ -171,7 +171,7 @@
 
   fill("t-queue", data.queue, (r) => [gameTd(r), td(r.state, "nowrap"), td(r.next_check, "nowrap"), td(r.odds, "nowrap"), td(r.note, "why")]);
   if (!data.queue.length) {
-    $("queue").querySelector(".note").textContent = "No watched games yet. List the Game Pass games you're playing or plan to play under [queue] in config.local.toml (config.local.example.toml explains it), and they show up here with the next date each could leave.";
+    $("queue").querySelector(".note").textContent = "No watched games yet. List the Game Pass or PS Plus games you're playing or plan to play under [queue] in config.local.toml (config.local.example.toml explains it), and they show up here with the next date each could leave.";
     $("t-queue").hidden = true;
   }
   fill("t-surv", data.survivors, (r) => [td(r.game, "game"), td(r.checkpoint, "nowrap"), td(r.near_term), td(r.why, "why")]);

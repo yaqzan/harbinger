@@ -28,14 +28,16 @@ discs = [
 # Watched games. These get their own "Your queue" table with the next date each one could leave,
 # even when the model doesn't rate them as likely to go.
 #
-# tracking: Game Pass games you are playing now, or plan to play and would mind losing.
+# tracking: Game Pass or PS Plus games (your [playstation] tier) you are playing now, or plan to play
+#   and would mind losing.
 #   A good rule of thumb: anything you'd be annoyed to find gone halfway through.
 # gone: games you were tracking that already left. Kept so the page notices if one comes back.
 # beaten: games you've finished or 100%'d. Never pushed about, even when confirmed leaving.
 #   (A game you own with every achievement or trophy is already quiet: it's yours.)
 #
-# Titles are matched loosely against the Game Pass sheet ("Metaphor" finds
-# "Metaphor: ReFantazio"); the page tells you if one can't be found.
+# Titles are matched loosely against the Game Pass sheet, then your PS Plus tier ("Metaphor" finds
+# "Metaphor: ReFantazio"); the page tells you if one can't be found. A game on both services
+# follows the copy that is safe for longer; the other one shows in its note.
 tracking = [
   # "Hollow Knight: Silksong",
   # "Clair Obscur: Expedition 33",

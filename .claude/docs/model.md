@@ -50,6 +50,12 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 - Queue push stage (`queue_stage`): heads-up from `[alerts] lead_days` before start-by, start from
   start-by on. Unknown hours count as 0. Each queued game is judged alone; nothing sequences the
   queue yet, so overlapping windows aren't flagged (Play plan ticket).
+- Queue across services (`build.queue_rows`, 2026-10-09): a name is looked up on Game Pass, then
+  your PS Plus tier (`PsSide`, shared with the one-service list). A game on both follows the copy
+  that is safe for longer: a next wave under `[alerts] min_p` counts as none in sight (Indika's 5%
+  Extra copy covers its 34% Game Pass wave), and none in sight beats any date. PS rows use
+  `plus.outlook` (third-Monday waves, PS base rates), trophies for hours left; every trophy
+  earned counts as beaten. Essential claim deadlines show but never push.
 - Owned anywhere (Steam, PSN purchase, PS disc; `Context.owned`, Steam wins a tie) works like
   Steam ownership below; the verdict says where ("Owned on PlayStation"). PlayStation progress uses
   Sony's progress % (weighted by grade), not trophy counts. "N trophies left that fewer than X% of

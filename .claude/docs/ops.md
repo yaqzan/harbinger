@@ -21,7 +21,7 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
 - **Push** (`ingest --push`), two kinds, one push each, quiet otherwise:
   - New leavers: verified leavers the previous ingest didn't list (owned excluded; no previous
     ingest = no push). `build.new_leavers` + `leaver_alert`, baseline `store.confirmed_keys`.
-  - Queue (owner, 2026-10-09): each queued, unowned game confirmed or modelled at >= `[alerts] min_p`
+  - Queue (owner, 2026-10-09): each queued, unowned game (Game Pass or PS Plus) confirmed or modelled at >= `[alerts] min_p`
     (0.25, the Possible band) gets a heads-up `lead_days` (14) before its start-by date and a
     "start now" on it. `build.alerts_due` + `queue_alert`; sent (game, wave, stage) live in the
     `queue_alert` table, latched on `pharos.delivered()` (sent or muted), so a dry run or a failed

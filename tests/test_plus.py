@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from harbinger import model, plus, sheet, store
-from harbinger.build import assemble
+from harbinger.build import alerts_due, assemble, queue_alert
 from harbinger.sheet import FIELDS, norm
 
 from .test_build import CFG, FORECAST, TABS, TODAY
@@ -116,3 +116,36 @@ class TwoSheets(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PsQueue(unittest.TestCase):
+    """Queued games looked up on Game Pass, then your PS Plus tier."""
+
+    def queue(self, tracking, beaten=()):
+        cfg = dict(CFG_PS, queue={"gone": [], "tracking": list(tracking), "beaten": list(beaten)})
+        d = assemble(cfg, sheet.parse(TABS, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY, ps_input())
+        return cfg, d, {r["game"]: r for r in d["queue"]}
+
+    def test_ps_only_game_gets_its_wave_and_a_push(self):
+        # GTA V: Extra since Nov 18, 2025, 32 h: 12-month wave Nov 16 (third Monday), start by Oct 5
+        cfg, d, q = self.queue(["Grand Theft Auto V"])
+        r = q["Grand Theft Auto V"]
+        self.assertEqual((r["service"], r["wave"], r["p"], r["start_by"]), ("PS Plus Extra", "2026-11-16", 0.35, "2026-10-05"))
+        due = alerts_due(d["queue"], TODAY, cfg, set())
+        self.assertEqual([x["stage"] for x in due], ["start"])
+        self.assertEqual(queue_alert(due, TODAY), ("Start Grand Theft Auto V now", "32 h · 35% it leaves PS Plus Nov 16"))
+
+    def test_a_game_on_both_follows_the_copy_that_lasts(self):
+        _, _, q = self.queue(["Evil West", "Quiet Game"])
+        # Evil West leaves Game Pass Oct 15 but stays on Extra past that: PS is the copy to plan around
+        self.assertEqual(q["Evil West"]["service"], "PS Plus Extra")
+        self.assertIn("also on Game Pass, could leave Oct 15", q["Evil West"]["note"])
+        # Quiet Game leaves Extra Oct 19 (confirmed) but Game Pass keeps it until at least Oct 31
+        self.assertEqual(q["Quiet Game"]["service"], "Game Pass")
+        self.assertIn("also on PS Plus Extra, could leave Oct 19", q["Quiet Game"]["note"])
+
+    def test_beaten_ps_game_and_unknown_title(self):
+        cfg, d, q = self.queue(["Grand Theft Auto V", "No Such Game"], beaten=["Grand Theft Auto V"])
+        self.assertEqual(alerts_due(d["queue"], TODAY, cfg, set()), [])
+        self.assertEqual(q["No Such Game"]["state"], "Not found")
+        self.assertIn("PS Plus tier", q["No Such Game"]["note"])

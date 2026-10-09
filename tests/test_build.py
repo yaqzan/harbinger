@@ -236,7 +236,7 @@ class QueuePush(unittest.TestCase):
         self.assertEqual(q(cfg)["game"], "The Talos Principle 2: Road to Elysium")
         # ruled out in titles.toml: the fallback must not grab the 2014 original instead (2026-10-09 bug)
         blocked = {**cfg, "titles": {"different": {"The Talos Principle 2": ["The Talos Principle 2: Road to Elysium"]}}}
-        self.assertEqual(q(blocked)["state"], "Not on the sheet")
+        self.assertEqual(q(blocked)["state"], "Not found")
 
     def test_alert_text(self):
         title, body = queue_alert(alerts_due(self.q, TODAY, CFG, set()), TODAY)
