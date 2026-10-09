@@ -21,6 +21,9 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
   Pharos policy.json 2026-10-09), linking to `[push] url` from config.local.toml. Pharos is found
   installed, at `[push] dir`, or as a `Pharos` folder next to the repo; missing = no push, no error.
   A failed job pages through Pharos (`run-job.ps1 -PharosModule`, default the sibling folder).
+- **Icon**: 8-bit raven (owner-picked 2026-10-09). `ops/icon.py` holds the pixel grid and writes
+  `web/icon.svg`, `web/apple-touch-icon.png` and `web/icon-512.png`; edit the grid and rerun, never
+  hand-edit the outputs. Pharos builds its 128px push icon from `icon-512.png` (`icons/build_icons.py`).
 - **Forecast subagent**: `claude -p` with Read/Write/WebSearch/WebFetch, prompt and output under
   `harbinger/state/forecast-runs/<stamp>/` (plus `agent-output.txt`). ~90 s.
 - **Steam**: `STEAM_API_KEY` / `STEAM_ID` env vars (read from the registry too, so `setx` works
