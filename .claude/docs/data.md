@@ -86,7 +86,8 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   (newer apps). A sheet title a store spells differently goes in `titles.toml` `[art]`.
 - `[art] budget` caps new lookups per run (first fill takes a few daily runs); a miss is retried
   after `retry_days`. `build` never touches the network, it only attaches what is on disk.
-- Rows get an `art` path; the page draws it in the game cell (`gameTd` in `web/harbinger.js`).
+- Rows get an `art` path; the page draws it as the shelf tile / board cover (`cover` in `web/harbinger.js`),
+  a titled placeholder when missing. `wanted` asks soonest exit first, backups included.
 
 ## Title matching (`titles.py`, every run)
 

@@ -238,7 +238,8 @@ def wanted(data: dict) -> dict[str, str]:
             key = r.get("key") or norm(r["game"])
             out.setdefault(key, r["game"])
     one = data.get("one_service", {})
-    for r in one.get("rows", []) + one.get("backups", []):
+    # soonest exit first, dimmed backups included: the shelf shows them side by side
+    for r in sorted(one.get("rows", []) + one.get("backups", []), key=lambda r: r.get("wave") or "9999"):
         out.setdefault(r.get("key") or norm(r["game"]), r["game"])
     return out
 

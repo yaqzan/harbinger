@@ -11,8 +11,10 @@ likely to leave, how long each takes to finish, and the latest day you can start
   adjusted for the Pure Xbox forecast and Premium membership. Details: `.claude/docs/model.md`.
 - A Claude Code subagent reads the forecast articles (`claude -p`, so it runs on a Claude
   subscription with no API key). Without Claude Code installed, run ingest with `--no-forecast`.
-- Games you own on Steam drop out of the urgent lists, and your playtime and achievements shrink
-  the hours left.
+- Games you own on Steam or PlayStation, or can keep playing on the other service, stay on the
+  page dimmed, with the alternative named. Your playtime and achievements shrink the hours left.
+- The page has two views of the same list: a shelf of cover art per exit date, and a departures
+  board.
 
 ## Set up
 

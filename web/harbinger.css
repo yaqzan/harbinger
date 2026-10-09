@@ -151,11 +151,12 @@ main { margin-bottom: 1.5rem; }
 .board tbody tr { cursor: pointer; }
 .board tbody tr:hover td, .board tbody tr:focus-visible td { background: #171307; }
 .board tbody tr:focus-visible { outline: 1px solid #ffb000; }
-.board td.g { display: flex; align-items: center; gap: 8px; min-width: 16rem; max-width: 26rem; }
-.board td.g .cv { width: 22px; height: 33px; border-radius: 2px; flex: none; }
-.board td.g .cv.blank { padding: 0; }
-.board td.g .cv.blank span { display: none; }
+.board .g { display: flex; align-items: center; gap: 8px; min-width: 16rem; max-width: 26rem; }
+.board .g .cv { width: 22px; height: 33px; border-radius: 2px; flex: none; }
+.board .g .cv.blank { padding: 0; }
+.board .g .cv.blank span { display: none; }
 .board .gn { overflow: hidden; text-overflow: ellipsis; }
+.board .short { display: none; }
 .board .r { color: #ff6b6b; }
 .board .gr { color: #6fdc8c; }
 .board .b { color: #7fb0ff; }
@@ -183,6 +184,13 @@ dialog dt { color: var(--muted); }
   .hero { grid-template-columns: 1fr; gap: .6rem; padding-top: 1.25rem; }
   .card { padding: .9rem .8rem; }
   .shelf { gap: 1.25rem; }
-  .board th.via, .board td.via, .board th.by, .board td.by { display: none; }
-  .board td.g { min-width: 11rem; max-width: 14rem; }
+  .board .via, .board .by, .board .hrs, #board-date { display: none; }
+  .board .g { min-width: 0; max-width: 10.5rem; }
+  .board .g .cv { display: none; }
+  .board td, .board th { padding: 5px 5px; }
+  .board { padding: 10px 8px 6px; }
+  .board table { font-size: .72rem; }
+  .board .g { max-width: 9rem; }
+  .board .long { display: none; }
+  .board .short { display: inline; }
 }

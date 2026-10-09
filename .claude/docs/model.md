@@ -62,8 +62,8 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   players have" (`[playstation] hard_trophy_rate`, 2%) flags a hard 100%.
 - PS Plus games you play without owning: their trophy progress / playtime shrink their hours on
   the one-service list; every trophy earned drops them off it ("finished").
-- Steam: an owned game leaves the confirmed verdicts, the watchlist and the KPIs and shows under
-  "You own these elsewhere". Remaining hours = hours x (1 - achievement share), else hours - playtime.
+- Steam: an owned game leaves the confirmed verdicts, the watchlist and the summary counts, and
+  shows dimmed on the page ("Owned on Steam"). Remaining hours = hours x (1 - achievement share), else hours - playtime.
 
 ## PS Plus (`plus.py`, since 2026-10-09)
 
@@ -84,6 +84,22 @@ copy that is itself leaving (Leaving Soon / confirmed) is no backup, so then it 
 once, on the Game Pass side, when both are safe. Order: Confirmed and claims, Likely, Possible,
 Thin, unscored; soonest first in each. Game Pass odds reach any distance ahead here (the
 watchlist stops at the horizon).
+
+`backups` holds the games left out above that still have an exit date, with `backup` saying
+where you'd keep playing: "Owned on Steam / PlayStation / PS disc / PS Plus claim", "Also on PS Plus Extra",
+"Claimed", "Every trophy earned". The page shows them dimmed (owner, 2026-10-09: an exit you
+are covered for should stay visible, greyed, with the alternative named).
+
+## The page (`web/`, redesigned 2026-10-09)
+
+One list (`one_service.rows` + `backups`, plus unverified reports from `confirmed`) drawn two
+ways, toggled at the top and remembered: **Shelf** (a column of cover art per exit date) and
+**Board** (an airport departures board). Filters: service, odds band (Likely and up by
+default), how far ahead (8 weeks by default), backups on/off. A tile or row opens a detail
+sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against
+the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
+`verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.
+The hero sentence is also live; `summary.takeaway` is still built for the CLI and pushes.
 
 ## Calibration (shown on the page)
 
