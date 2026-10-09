@@ -26,6 +26,7 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
     "start now" on it. `build.alerts_due` + `queue_alert`; sent (game, wave, stage) live in the
     `queue_alert` table, latched on `pharos.delivered()` (sent or muted), so a dry run or a failed
     send retries next day. A new wave is a new key; a game in today's leaver push is skipped.
+  - `[queue] beaten` (finished or 100%'d) never pushes, either kind. Owned games are already quiet.
   Via Pharos
   (`source="harbinger"`, channel `digest`, own Pushover app with the raven icon), linking to
   `[push] url` from config.local.toml. Pharos is found

@@ -92,7 +92,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have
-    data["new_confirmed"] = new_leavers(data["confirmed"], store.confirmed_keys(db)) if kind == "ingest" else []
+    data["new_confirmed"] = new_leavers(data["confirmed"], store.confirmed_keys(db), data["beaten"]) if kind == "ingest" else []
     # queued games whose heads-up or start push is due (marked sent only once Pharos delivers it)
     data["queue_alerts"] = (alerts_due(data["queue"], today, cfg, store.alerts_sent(db),
                                        {r["key"] for r in data["new_confirmed"]}) if kind == "ingest" else [])

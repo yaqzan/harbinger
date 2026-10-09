@@ -218,6 +218,26 @@ class QueuePush(unittest.TestCase):
         self.assertEqual(queue_alert(due, TODAY),
                          ("2 queued games to start soon", "Pacific Drive now · Nine Sols in 2 days"))
 
+    def test_beaten_games_never_push(self):
+        cfg = {**CFG, "queue": {**CFG["queue"], "beaten": ["Nine Sols", "Pacific Drive"]}}
+        d = assemble(cfg, parse(TABS, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY)
+        self.assertEqual(alerts_due(d["queue"], TODAY, cfg, set()), [])
+        self.assertIn("beaten", {r["game"]: r for r in d["queue"]}["Nine Sols"]["note"])
+        names = [r["game"] for r in new_leavers(d["confirmed"], set(), d["beaten"])]
+        self.assertNotIn("Pacific Drive", names)
+        self.assertIn("Evil West", names)
+
+    def test_queue_lookup_skips_the_original_for_a_sequel(self):
+        tabs = dict(TABS, master=TABS["master"] + [
+            row("The Talos Principle", "Removed", "Nov 2019", 12.1, 16, "Nov 2020"),
+            row("The Talos Principle 2: Road to Elysium", "Active", "Jan 2026", 8.4, 20)])
+        cfg = {**CFG, "titles": {}, "queue": {"gone": [], "tracking": ["The Talos Principle 2"]}}
+        q = lambda c: assemble(c, parse(tabs, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY)["queue"][0]
+        self.assertEqual(q(cfg)["game"], "The Talos Principle 2: Road to Elysium")
+        # ruled out in titles.toml: the fallback must not grab the 2014 original instead (2026-10-09 bug)
+        blocked = {**cfg, "titles": {"different": {"The Talos Principle 2": ["The Talos Principle 2: Road to Elysium"]}}}
+        self.assertEqual(q(blocked)["state"], "Not on the sheet")
+
     def test_alert_text(self):
         title, body = queue_alert(alerts_due(self.q, TODAY, CFG, set()), TODAY)
         self.assertEqual((title, body), ("Start Nine Sols in 2 days", "25 h · 33% it leaves Nov 15"))
@@ -230,7 +250,7 @@ if __name__ == "__main__":
 class Config(unittest.TestCase):
     def test_fresh_clone_watches_nothing(self):
         cfg = load_config(local=None)
-        self.assertEqual(cfg["queue"], {"gone": [], "tracking": []})
+        self.assertEqual(cfg["queue"], {"gone": [], "tracking": [], "beaten": []})
         self.assertNotIn("steam", cfg)
 
     def test_local_file_merges_over_shared(self):

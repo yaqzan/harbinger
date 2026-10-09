@@ -170,6 +170,17 @@ class Matching(unittest.TestCase):
         self.assertTrue(sheet.sequel_gap("nba 2k23", "nba 2k26"))   # yearly sports games too
         self.assertFalse(sheet.sequel_gap("gears 5", "gears 5 game of the year"))
 
+    def test_remaster_and_directors_cut_win(self):
+        m = titles.Matcher({"horizon zero dawn complete edition", "horizon zero dawn remastered",
+                            "ghost of tsushima director s cut"})
+        self.assertEqual(m.match("Horizon Zero Dawn"), ("horizon zero dawn remastered", "edition"))
+        self.assertEqual(m.match("Ghost of Tsushima"), ("ghost of tsushima director s cut", "edition"))
+        # a library's plain copy doesn't own the preferred edition; owning that edition does
+        self.assertEqual(m.match("Ghost of Tsushima", loose=False), (None, "none"))
+        self.assertEqual(m.match("Horizon Zero Dawn", loose=False), (None, "none"))
+        self.assertEqual(m.key("Ghost of Tsushima Director's Cut", loose=False), "ghost of tsushima director s cut")
+        self.assertEqual(m.near("Ghost of Tsushima"), [])  # on purpose, not a near miss to fix
+
     def test_steam_is_strict(self):
         m = titles.Matcher({"prince of persia the lost crown"})
         self.assertEqual(m.match("Prince of Persia")[1], "prefix")
@@ -231,6 +242,10 @@ class TitlesFile(unittest.TestCase):
         cfg = load_config(local=None)
         self.assertIn("same", cfg["titles"])
         self.assertIn("different", cfg["titles"])
+
+    def test_talos_principle_2_is_the_road_to_elysium_listing(self):
+        m = titles.Matcher({"the talos principle", "the talos principle 2 road to elysium"}, load_config(local=None)["titles"])
+        self.assertEqual(m.key("The Talos Principle 2"), "the talos principle 2 road to elysium")
 
 
 if __name__ == "__main__":

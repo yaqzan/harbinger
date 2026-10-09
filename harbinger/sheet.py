@@ -52,6 +52,9 @@ def norm(name: str) -> str:
 EDITION = re.compile(r" (game of the year|goty|definitive|deluxe|digital deluxe|complete|enhanced|ultimate"
                      r"|standard|premium|special|gold|anniversary|remastered|directors cut|director s cut)( edition)?$")
 _YEAR = re.compile(r" (19|20)\d\d$")
+# Editions the owner prefers (2026-10-09): when a title fits several editions, these win, and
+# owning the plain game doesn't count as owning one of these (you'd play the better version).
+PREFERRED = re.compile(r" (remastered|remaster|directors cut|director s cut)( edition)?$")
 
 
 def strip_edition(key: str) -> str:
@@ -87,6 +90,11 @@ class Index:
                                    ("year", self.year, _YEAR.sub("", key)),
                                    ("edition", self.base, strip_edition(key))):
             hits = table.get(probe, [])
+            if rung == "edition":
+                if len(hits) > 1:  # "Horizon Zero Dawn": Complete Edition or Remastered -> Remastered
+                    hits = [h for h in hits if PREFERRED.search(h)]
+                if not loose and hits and PREFERRED.search(hits[0]) and not PREFERRED.search(key):
+                    return None, "none"  # a library's plain copy doesn't own the remaster
             if len(hits) == 1:
                 return hits[0], rung
         if not loose:
@@ -108,7 +116,7 @@ def resolve(name: str, keys) -> str | None:
 
     Exact match first, then the same letters without spaces ("CloverPit"), then with a
     trailing year dropped ("Keeper (2025)"), then the same game minus an edition suffix
-    ("Hades Definitive Edition"), then a unique word-prefix that isn't a sequel number ("Sopa"
+    ("Hades Definitive Edition"; of several, a remaster or director's cut wins), then a unique word-prefix that isn't a sequel number ("Sopa"
     for "Sopa: Tale of the Stolen Potato"), then a near-identical spelling (a typo). Ambiguous
     rungs resolve to nothing.
     """

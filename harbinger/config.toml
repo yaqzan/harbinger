@@ -97,6 +97,7 @@ cohorts = [12, 18, 24, 36]  # removals land on the third Monday of the month (30
 [queue]
 gone = []
 tracking = []
+beaten = []
 
 # Leavers reported somewhere but not on the sheet. Shown, flagged unverified.
 [[manual_confirmed]]

@@ -31,6 +31,8 @@ discs = [
 # tracking: Game Pass games you are playing now, or plan to play and would mind losing.
 #   A good rule of thumb: anything you'd be annoyed to find gone halfway through.
 # gone: games you were tracking that already left. Kept so the page notices if one comes back.
+# beaten: games you've finished or 100%'d. Never pushed about, even when confirmed leaving.
+#   (A game you own with every achievement or trophy is already quiet: it's yours.)
 #
 # Titles are matched loosely against the Game Pass sheet ("Metaphor" finds
 # "Metaphor: ReFantazio"); the page tells you if one can't be found.
@@ -39,6 +41,7 @@ tracking = [
   # "Clair Obscur: Expedition 33",
 ]
 gone = []
+beaten = []
 
 [push]
 # Optional phone alerts via Pharos (github.com/yaqzan/pharos): a newly confirmed leaver, and a queued

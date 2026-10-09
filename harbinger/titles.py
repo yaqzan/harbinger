@@ -16,7 +16,7 @@ import re
 import sqlite3
 from datetime import datetime
 
-from .sheet import Index, Sheet, norm, sequel_gap
+from .sheet import PREFERRED, Index, Sheet, norm, sequel_gap, strip_edition
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS title_match (
@@ -102,7 +102,9 @@ class Matcher:
             if (c not in out and len(shorter.split()) >= 2 and longer.startswith(shorter + " ")
                     and not longer[len(shorter) + 1:].split()[0].isdigit()):
                 out[c] = ratio(c)
-        keep = [(c, r) for c, r in out.items() if c not in skip and not sequel_gap(c, k)]
+        # a plain copy next to the remaster it deliberately doesn't own isn't an issue either
+        upgrade = lambda c: PREFERRED.search(c) and not PREFERRED.search(k) and strip_edition(c) == strip_edition(k)
+        keep = [(c, r) for c, r in out.items() if c not in skip and not sequel_gap(c, k) and not upgrade(c)]
         return sorted(keep, key=lambda t: -t[1])[:n]
 
 

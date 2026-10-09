@@ -40,6 +40,12 @@
 "This War of Mine" = "This War of Mine: Final Cut"
 "Warhammer: Chaosbane" = "Warhammer: Chaosbane - Slayer Edition"
 "World War Z: Aftermath" = "World War Z"
+# One game, two catalogue names: Game Pass lists it with the Road to Elysium DLC (owner, 2026-10-09)
+"The Talos Principle 2" = "The Talos Principle 2: Road to Elysium"
+"The Talos Principle 2: Road to Elysium" = "The Talos Principle 2"
+# A Steam copy that already is the preferred edition (otherwise a plain copy doesn't own a remaster)
+"Cities: Skylines" = "Cities: Skylines - Remastered"   # the console port of the full PC game
+"Wasteland 2" = "Wasteland 2: Director's Cut"          # free upgrade for every Steam owner
 # Forecast spellings (checked loose matches)
 "Bounty Star" = "Bounty Star: The Morose Tale of Graveyard Clem"
 "MechWarriror 5: Clans" = "Mechwarrior 5: Clans"
@@ -79,6 +85,5 @@
 "Magicka 2: Spell Balance Beta" = ["Magicka 2"]
 "Resident Evil" = ["Resident Evil: Village"]
 "Sniper Elite V2" = ["Sniper Elite 5", "Sniper Elite 4"]
-"The Talos Principle 2: Road to Elysium" = ["The Talos Principle 2"]
 "NBA 2K17: The Prelude" = ["NBA 2K17"]   # a demo
-"The Talos Principle 2" = ["The Talos Principle 2: Road to Elysium"]
+"Car Mechanic Simulator 2021" = ["Car Mechanic Simulator"]   # the year is the title; PS has the 2018 game

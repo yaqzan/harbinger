@@ -10,7 +10,7 @@ from datetime import date
 
 from . import model, plus
 from .forecast import for_model
-from .sheet import Game, Sheet, norm
+from .sheet import PREFERRED, Game, Sheet, norm, sequel_gap
 from .titles import Matcher, ps_matcher
 
 BANDS = ("Confirmed", "Likely", "Possible", "Thin")
@@ -54,6 +54,7 @@ class Context:
         for g in sorted(sheet.games, key=lambda g: (g.added_month or date.min, g.status == "Active")):
             self.by_key[g.key] = g
         self.announced: set[date] = set()  # waves whose official list is out; set by assemble()
+        self.beaten: set[str] = set()      # [queue] beaten as sheet keys; set by assemble()
 
     # ── per-game facts ────────────────────────────────────────────────
 
@@ -211,10 +212,16 @@ def _find(cx: Context, name: str) -> Game | None:
     key = cx.match.key(name) or norm(name)
     if key in cx.by_key:
         return cx.by_key[key]
-    pref = [g for g in cx.sheet.games if g.key.startswith(key) or key.startswith(g.key)]
-    if pref:
-        return min(pref, key=lambda g: abs(len(g.key) - len(key)))
-    close = difflib.get_close_matches(key, list(cx.by_key), n=1, cutoff=0.85)
+    def extends(longer: str, shorter: str) -> bool:
+        # word-prefix, never across a sequel number ("talos principle 2" is not "talos principle")
+        return longer.startswith(shorter + " ") and not longer[len(shorter) + 1:].split()[0].isdigit()
+
+    never = cx.match.different.get(norm(name), set())
+    pref = [g for g in cx.sheet.games if (extends(g.key, key) or extends(key, g.key)) and g.key not in never]
+    if pref:  # on the service now, then a remaster or director's cut, then the closest length
+        return min(pref, key=lambda g: (g.status != "Active", not PREFERRED.search(g.key), abs(len(g.key) - len(key))))
+    close = [k for k in difflib.get_close_matches(key, list(cx.by_key), n=3, cutoff=0.85)
+             if k not in never and not sequel_gap(k, key)]
     return cx.by_key[close[0]] if close else None
 
 
@@ -227,7 +234,8 @@ def queue_rows(cx: Context, confirmed: list[dict]) -> list[dict]:
         g = None if cx.pc_only(name) else _find(cx, name)
         # wave/p/hours/start_by/owned: what the queue push reads (alerts_due)
         row = {"game": g.name if g else name, "key": g.key if g else norm(name), "state": "", "next_check": "",
-               "odds": "", "note": "", "wave": "", "p": None, "hours": None, "start_by": "", "owned": False}
+               "odds": "", "note": "", "wave": "", "p": None, "hours": None, "start_by": "", "owned": False,
+               "beaten": False}
         if g is None and cx.pc_only(name):
             row.update(state="PC only", note="Not tracked: console Game Pass only")
         elif g is None:
@@ -265,6 +273,9 @@ def queue_rows(cx: Context, confirmed: list[dict]) -> list[dict]:
                 row["note"] = (row["note"] + "; " if row["note"] else "") + "back on the service?"
         if g is not None and g.key in cx.owned:
             row["note"] = (row["note"] + "; " if row["note"] else "") + f"you own it on {cx.owned[g.key]['where']}"
+        if row["key"] in cx.beaten:
+            row["beaten"] = True
+            row["note"] = (row["note"] + "; " if row["note"] else "") + "beaten, no alerts"
         rows.append(row)
     return rows
 
@@ -405,7 +416,7 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             if k:
                 playing_ps.setdefault(k, r)
 
-    def add(game, service, out, hours, platform, progress=""):
+    def add(game, service, out, hours, platform, progress="", key=""):
         wave = out["wave"]
         if out["state"] == "claim":
             act = f"Claim by {fmt(wave, today)}"
@@ -414,7 +425,7 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
         else:
             act = ""
         rows.append({
-            "game": game, "service": service, "platform": platform, "state": out["state"],
+            "game": game, "key": key, "service": service, "platform": platform, "state": out["state"],
             "wave": wave.isoformat() if wave else "", "leaves": fmt(wave, today) if wave else "",
             "p": round(out["p"], 3) if out["p"] is not None else None,
             "odds": "Confirmed" if out["band"] == "Confirmed" else
@@ -436,7 +447,7 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
                    "why": c["note"]}
         else:
             out = xbox_outlook(cx, g)
-        add(g.name, "Game Pass", out, g.hours, g.system)
+        add(g.name, "Game Pass", out, g.hours, g.system, key=key)
     waves_out = plus.announced(ps_games, today)
     for g in ps_games:
         if g.key in owned_ps:
@@ -460,19 +471,19 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             if r.get("hard"):
                 bits.append(r["hard"])
             progress = ", ".join(bits)
-        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), hours, g.system, progress)
+        add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), hours, g.system, progress, g.key)
     rows.sort(key=lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower()))
     tier = ps["tier"] if ps else "none"
     return {"rows": rows, "ps_tier": tier, "skipped_owned": skipped["owned"], "skipped_both": skipped["both"],
             "skipped_claimed": skipped["claimed"], "skipped_finished": skipped["finished"]}
 
 
-def new_leavers(confirmed: list[dict], before: set[str] | None) -> list[dict]:
-    """Verified leavers you don't own that the previous ingest didn't list: what the push alerts on.
-    No previous ingest (None) alerts on nothing, so a first run doesn't flood the phone."""
+def new_leavers(confirmed: list[dict], before: set[str] | None, beaten=frozenset()) -> list[dict]:
+    """Verified leavers you don't own or haven't beaten that the previous ingest didn't list: what
+    the push alerts on. No previous ingest (None) alerts on nothing, so a first run doesn't flood the phone."""
     if before is None:
         return []
-    return [r for r in confirmed if r["verified"] and not r["owned"] and r["key"] not in before]
+    return [r for r in confirmed if r["verified"] and not r["owned"] and r["key"] not in before | set(beaten)]
 
 
 def _in_days(n: int) -> str:
@@ -495,10 +506,10 @@ def alerts_due(queue: list[dict], today: date, cfg: dict, sent: set[tuple[str, s
                skip: set[str] = frozenset()) -> list[dict]:
     """Queued games with a push due that hasn't gone out: each game's current stage only
     (model.queue_stage), keyed (game, wave, stage) so it fires once. Owned games, modelled odds
-    under [alerts] min_p and games in `skip` (already in today's leaver push) stay quiet."""
+    under [alerts] min_p, beaten games and games in `skip` (already in today's leaver push) stay quiet."""
     a, seen, due = cfg["alerts"], set(), []
     for r in queue:
-        if not r["wave"] or r["owned"] or r["p"] is None or r["p"] < a["min_p"] or r["key"] in skip | seen:
+        if not r["wave"] or r["owned"] or r["beaten"] or r["p"] is None or r["p"] < a["min_p"] or r["key"] in skip | seen:
             continue
         seen.add(r["key"])
         wave = date.fromisoformat(r["wave"])
@@ -535,11 +546,12 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
     cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
+    cx.beaten = {g.key if (g := _find(cx, n)) else norm(n) for n in cfg.get("queue", {}).get("beaten", [])}
     watch_all, survivors, ubisoft = scored_rows(cx, {r["key"] for r in confirmed})
     watch = [r for r in watch_all if not r["owned"]]
-    owned = ([{"game": r["game"], "where": f"Leaving {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
+    owned = ([{"game": r["game"], "key": r["key"], "where": f"Leaving {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
               for r in confirmed if r["owned"]] +
-             [{"game": r["game"], "where": f"{r['band']} · {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
+             [{"game": r["game"], "key": r["key"], "where": f"{r['band']} · {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
               for r in watch_all if r["owned"]])
     return {
         "today": today.isoformat(),
@@ -549,6 +561,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "watchlist": watch,
         "owned": owned,
         "queue": queue_rows(cx, confirmed),
+        "beaten": sorted(cx.beaten),
         "survivors": survivors,
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),

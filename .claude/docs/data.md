@@ -88,6 +88,17 @@ as digits.
   indexes those keys so they can be turned away instead of falling through to a similar console
   title. Scoping out PC took Steam from 477 to 430 matches (47 were PC-only Game Pass games).
 - PSN purchases and discs (sources `psn`, `disc`) are matched strictly against both catalogues.
+- **Preferred editions** (owner, 2026-10-09; `sheet.PREFERRED`: Remastered, Director's Cut). When a
+  title fits several editions the preferred one wins ("Horizon Zero Dawn" -> Remastered), so its
+  sheet hours are used. A strict source's plain copy doesn't own a preferred edition (Ghost of
+  Tsushima disc, Steam Death Stranding), so the better version stays on the radar; the report
+  doesn't list those as near misses. Where a Steam copy already is that edition, alias it in
+  `[same]` (Wasteland 2, Cities: Skylines). Changed 7 matches when added.
+- **Queue lookup** (`build._find`) falls back past the Matcher (word prefix either way, then a
+  close spelling) but never across a sequel number and never to a `[different]` title. Before
+  2026-10-09 "The Talos Principle 2" fell back to the 2014 original. An audit of all 771 matches
+  then found no other sequel mixups; a year that is the title ("Car Mechanic Simulator 2021") is
+  settled in `[different]`.
 - Steam tools (public test, beta client, dedicated server, demo...) are never matched.
 - `harbinger/titles.toml` (tracked, shared) settles the rest: `[same]` maps a title to a sheet
   title (or a list, for a forecast bundle), `[different]` blocks a match or a suggestion.
