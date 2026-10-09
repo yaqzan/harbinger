@@ -1,31 +1,29 @@
 """A whole run pinned to Oct 9, 2026: the sanity check for the first real output."""
 
-import csv
-import io
 import unittest
-from datetime import date
+from datetime import date, datetime
 
 from harbinger import load_config
 from harbinger.build import assemble
-from harbinger.sheet import parse
+from harbinger.sheet import FIELDS, norm, parse
 
 CFG = load_config(local=None)
 CFG["queue"] = {"gone": ["Frostpunk 2"], "tracking": ["Nine Sols"]}
 TODAY = date(2026, 10, 9)
-HEAD = [["Complete Game Pass Master List", "", ""], ["Game", "System", "xCloud", "Status"]]
+def ym(s):
+    return datetime.strptime(s, "%b %Y").strftime("%Y-%m") if s else None
 
 
 def row(name, status, added, months, hours, removed="", notes="", prem="", prem_added=""):
-    r = [""] * 22
-    r[0], r[1], r[3], r[4], r[5], r[6] = name, "Xbox / PC", status, added, removed, str(months)
-    r[10], r[13], r[17], r[18] = ("" if hours is None else str(hours)), notes, prem, prem_added
+    """A sheet_row as the import stores it ('Oct 2025' -> '2025-10')."""
+    r = {"title": name, "key": norm(name), "stint": 1, **{f: None for f in FIELDS}}
+    r.update(system="Xbox / PC", status=status, added=ym(added), removed=ym(removed), months=months,
+             completion_h=hours, owner_notes=notes or None, premium_status=prem or None, premium_added=ym(prem_added))
     return r
 
 
-def to_csv(rows):
-    buf = io.StringIO()
-    csv.writer(buf).writerows(rows)
-    return buf.getvalue()
+def title(name):
+    return {"title": name, "key": norm(name)}
 
 
 LEAVING = [
@@ -49,12 +47,12 @@ ACTIVE = [
     row("Frostpunk 2", "Removed", "Sep 2024", 24.0, 20, "Sep 2026"),
 ]
 TABS = {
-    "master": to_csv(HEAD + LEAVING + ACTIVE),
-    "leaving_soon": to_csv(HEAD + LEAVING),
-    "removed": to_csv(HEAD + [ACTIVE[-1]]),
-    "premium": to_csv(HEAD),
-    "first_party": to_csv([["Published or Developed by Subsidiary"], ["Halo Something"]]),
-    "ea_play": to_csv([["Games"]]),
+    "master": LEAVING + ACTIVE,
+    "leaving_soon": LEAVING,
+    "removed": [ACTIVE[-1]],
+    "premium": [],
+    "first_party": [title("Halo Something")],
+    "ea_play": [],
 }
 FORECAST = {"checked_at": "2026-10-09T08:46:00", "covers": ["2026-10"], "sources": [], "confirmed": [],
             "listed": [{"game": "Forecast Game", "month": "2026-10", "unlikely": False}]}

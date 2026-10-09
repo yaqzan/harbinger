@@ -10,7 +10,8 @@ from datetime import date
 
 from . import model
 from .forecast import for_model
-from .sheet import Game, Sheet, norm, resolve
+from .sheet import Game, Sheet, norm
+from .titles import Matcher
 
 BANDS = ("Confirmed", "Likely", "Possible", "Thin")
 FINISHABLE = ("Doable", "Tight")
@@ -32,15 +33,19 @@ def _join(names: list[str]) -> str:
 class Context:
     def __init__(self, cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date):
         self.cfg, self.sheet, self.today, self.as_of = cfg, sheet, today, as_of
-        self.forecast_raw, self.fc = forecast, for_model(forecast, [g.key for g in sheet.games])
-        keys = [g.key for g in sheet.games]
+        self.match = Matcher((g.key for g in sheet.games), cfg.get("titles"))
+        self.forecast_raw, self.fc = forecast, for_model(forecast, match=lambda n: self.match.match_all(n)[0])
         # Steam titles resolved to sheet keys ("CloverPit" -> "clover pit")
-        self.steam = {(resolve(r.get("name") or k, keys) or k): r for k, r in steam.get("games", {}).items()}
+        self.steam = {(self.match.key(r.get("name") or k, loose=False) or k): r
+                      for k, r in steam.get("games", {}).items()}
         self.dpm = cfg["sheet"]["days_per_month"]
         self.cohorts = cfg["waves"]["cohorts"]
         self.play = cfg["play"]
         self.waves = model.next_waves(today, cfg["waves"]["horizon"])
-        self.by_key = {g.key: g for g in sheet.games}
+        # A game back for a second stint has a row per stint: the newest one speaks for it.
+        self.by_key = {}
+        for g in sorted(sheet.games, key=lambda g: (g.added_month or date.min, g.status == "Active")):
+            self.by_key[g.key] = g
         self.announced: set[date] = set()  # waves whose official list is out; set by assemble()
 
     # ── per-game facts ────────────────────────────────────────────────
@@ -89,9 +94,9 @@ class Context:
 
 def confirmed_rows(cx: Context) -> list[dict]:
     today = cx.today
-    keys = list(cx.by_key)
-    fc_dates = {(resolve(c["game"], keys) or norm(c["game"])): (date.fromisoformat(c["wave"]), c.get("source", ""))
-                for c in cx.forecast_raw.get("confirmed", [])}
+    fc_dates = {key: (date.fromisoformat(c["wave"]), c.get("source", ""))
+                for c in cx.forecast_raw.get("confirmed", [])
+                for key in (cx.match.match_all(c["game"])[0] or [norm(c["game"])])}
     entries: dict[str, dict] = {}
     for g in cx.sheet.leaving:
         if g.key in fc_dates:
@@ -186,7 +191,7 @@ def scored_rows(cx: Context, confirmed_keys: set[str]):
 
 
 def _find(cx: Context, name: str) -> Game | None:
-    key = norm(name)
+    key = cx.match.key(name) or norm(name)
     if key in cx.by_key:
         return cx.by_key[key]
     pref = [g for g in cx.sheet.games if g.key.startswith(key) or key.startswith(g.key)]

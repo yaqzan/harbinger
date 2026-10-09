@@ -4,14 +4,7 @@
 # Change a value, then `py -3.11 -m harbinger build` to re-score without re-fetching.
 
 [sheet]
-id = "1kspw-4paT-eE5-mrCrc4R9tg70lH2ZTFrJOUmOtOytg"
-# Tab gids (the CSV export by tab name silently falls back to the first tab).
-master = 0
-leaving_soon = 780334990
-removed = 2013959266
-premium = 1511487110
-first_party = 637826911    # "Xbox Game Studios": Microsoft, Bethesda, Activision Blizzard
-ea_play = 630545187
+id = "1kspw-4paT-eE5-mrCrc4R9tg70lH2ZTFrJOUmOtOytg"   # public; downloaded whole as xlsx, tabs picked by name
 days_per_month = 30.4375   # add date = as_of - Months * this
 
 [waves]

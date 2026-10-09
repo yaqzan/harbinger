@@ -1,0 +1,66 @@
+# Title corrections between the Game Pass sheet and other sources (Steam, the forecast, your
+# queue). Shared by everyone who runs Harbinger: these are facts about titles, not settings.
+#
+# `py -3.11 -m harbinger titles` lists the weak matches and near misses. Settle one here, then
+# `py -3.11 -m harbinger build`. Case, punctuation, ™/® and roman numerals don't matter.
+
+# Same game, different spelling: "title elsewhere" = "title on the sheet"
+# A bundle can name every sheet game in it: "A & B" = ["A", "B"]
+[same]
+"Atlas Fallen" = "Atlas Fallen: Reign of Sand"
+"Beyond Good & Evil" = "Beyond Good & Evil HD"
+"Don't Starve" = "Don't Starve: Giant Edition"
+"GoNNER" = "GoNNER: Blueberry Edition"
+"Hearts of Iron IV" = "Hearts of Iron IV: Cadet Edition"
+"Heroes of Might & Magic III - HD Edition" = "Heroes of Might and Magic III: Complete Edition"
+"Hollow Knight" = "Hollow Knight: Voidheart Edition"
+"Laser League: World Arena" = "Laser League"
+"Mafia II (Classic)" = "Mafia II"
+"Monkey Island 2: Special Edition" = "Monkey Island 2 Special Edition: LeChuck's Revenge"
+"NieR:Automata" = "NieR Automata: Become as Gods Edition"
+"Out of Space" = "Out of Space: Couch Edition"
+"PAYDAY 2" = "Payday 2: Crimewave Edition"
+"Plants vs. Zombies: Game of the Year" = "Plants vs. Zombies: Game of the Year Edition"
+"Project Highrise" = "Project Highrise: Architect's Edition"
+"Sudden Strike 4" = "Sudden Strike 4 - Complete Collection"
+"The Bookwalker" = "The Bookwalker: Thief of Tales"
+"The Witcher 3: Wild Hunt - Remastered" = "The Witcher 3: Wild Hunt"
+"Trine 2" = "Trine 2: Complete Story"
+"The Elder Scrolls IV: Oblivion Game of the Year Edition (2009)" = "The Elder Scrolls IV: Oblivion"
+"The Walking Dead" = "The Walking Dead: The Complete First Season"
+"Valiant Hearts: The Great War / Soldats Inconnus : Memoires de la Grande Guerre" = "Valiant Hearts: The Great War"
+# Forecast spellings (checked loose matches)
+"Bounty Star" = "Bounty Star: The Morose Tale of Graveyard Clem"
+"MechWarriror 5: Clans" = "Mechwarrior 5: Clans"
+"Sopa" = "Sopa: Tale of the Stolen Potato"
+"Starcraft 2" = "Starcraft II: Campaign Collection"
+# Forecast bundles
+"Baldur's Gate & Baldur's Gate 2: Enhanced Editions" = ["Baldur's Gate: Enhanced Edition", "Baldur's Gate II: Enhanced Edition"]
+"Heroes of Might and Magic 2 & 3" = ["Heroes of Might and Magic II: Gold Edition", "Heroes of Might and Magic III: Complete Edition"]
+
+# Different games that look alike: "title elsewhere" = ["sheet title it is not", ...]
+# Stops a wrong match and silences the near-miss suggestion.
+[different]
+"Age of Wonders" = ["Age of Wonders: Planetfall"]
+"Blue Fire: Void Maker" = ["Blue Fire"]
+"Call of Duty: WWII - Multiplayer" = ["Call of Duty: WWII"]
+"Corpse Keeper" = ["Core Keeper"]
+"Deus Ex: Game of the Year Edition" = ["Gears 5: Game of the Year Edition"]
+"Eternal Threads" = ["Eternal Strands"]
+"GRIME" = ["RiME"]
+"HELLDIVERS" = ["Shelldiver"]
+"Hellblade: Senua's Sacrifice VR Edition" = ["Hellblade: Senua's Sacrifice"]
+"Hello Neighbor: Hide and Seek" = ["Hello Neighbor"]
+"NBA 2K19" = ["NBA 2K21", "NBA 2K17", "NBA 2K16"]
+"Prince of Persia" = ["Prince of Persia: The Lost Crown"]
+"RESIDENT EVIL RESISTANCE" = ["Resident Evil"]
+"Saints Row" = ["Saints Row: The Third", "Saints Row: Gat Out of Hell"]
+"Sniper Elite" = ["Sniper Elite V2", "Sniper Elite: Resistance"]
+"Sniper Elite 3" = ["Sniper Elite V2"]
+"Subterrain" = ["Subterranea"]
+"The Rise of the Golden Idol" = ["The Case of the Golden Idol"]
+"Tom Clancy's Splinter Cell" = ["Tom Clancy's Splinter Cell: Conviction"]
+"Tomb Raider: Anniversary" = ["Tomb Raider"]
+"Tomb Raider: Legend" = ["Tomb Raider"]
+"We Were Here Together" = ["We Were Here"]
+"We Were Here Too" = ["We Were Here"]

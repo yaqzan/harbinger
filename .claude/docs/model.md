@@ -5,11 +5,11 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 
 ## Inputs
 
-- **Sheet**: u/ABattleVet's "XBOX Game Pass Master List", read through the public CSV export
-  (`/gviz/tq?tqx=out:csv&gid=<gid>`). **Use gids, not tab names**: an unknown tab name silently
-  returns the first tab. Master List cols: A Game, B System, D Status, E Added, F Removed,
+- **Sheet**: u/ABattleVet's "XBOX Game Pass Master List", imported into `harbinger.sqlite` each
+  ingest (see `data.md`). Master List cols: A Game, B System, D Status, E Added, F Removed,
   G Months (fractional, live), K Completion hours, N Owner Notes, R Premium status, S Premium added.
-  Dates are month-only; `add = as_of - Months * 30.4375 days` pins the day.
+  The import has day-level dates (the old CSV export only showed the month); the model still pins
+  the add day as `as_of - Months * 30.4375 days`, now from full-precision Months.
 - **Exclusions**: "Xbox Game Studios" tab (Microsoft, Bethesda, Activision Blizzard) and the
   "EA Play" tab, plus Owner Notes markers for EA Play and Retro Classics. Ubisoft+ Classics
   (Owner Notes "Ubisoft games joining with price increase", ~50 games added Oct 1, 2025) are
@@ -17,9 +17,7 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 - **Forecast** (`forecast.py`): subagent reads Pure Xbox's monthly "might be leaving" articles and
   the official notice. Output `covers` (months with a forecast), `listed` (with `unlikely` flag),
   `confirmed` (with wave date), `sources`.
-- **Titles across sources** go through `sheet.resolve()`: exact, then space-insensitive
-  ("CloverPit"), then trailing year dropped ("Keeper (2025)"), then a UNIQUE word prefix
-  ("Sopa"). Ambiguous prefixes resolve to nothing on purpose.
+- **Titles across sources** go through `titles.Matcher` (rules and corrections in `data.md`).
 
 ## Rules
 

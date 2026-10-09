@@ -1,4 +1,8 @@
-"""Snapshots: every run's scores in SQLite, so the page can show how odds moved."""
+"""harbinger.sqlite: the imported sheet, the Steam library, title matches and score snapshots.
+
+Each source module owns its tables' schema (sheet.SCHEMA, steam.SCHEMA, titles.SCHEMA); the
+snapshot tables (every run's scores, so the page can show how odds moved) live here.
+"""
 
 from __future__ import annotations
 
@@ -24,8 +28,11 @@ CREATE INDEX IF NOT EXISTS scores_run ON scores(run_id);
 
 def connect(path=DB_FILE) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
+    from . import sheet, steam, titles
     db = sqlite3.connect(path)
-    db.executescript(SCHEMA)
+    db.execute("PRAGMA foreign_keys = ON")
+    for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, titles.SCHEMA):
+        db.executescript(schema)
     return db
 
 

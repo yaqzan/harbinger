@@ -111,10 +111,12 @@ def load() -> dict:
     return {"checked_at": None, "covers": [], "listed": [], "confirmed": [], "sources": []}
 
 
-def for_model(data: dict, keys=()) -> dict:
-    """The shape model.signals() reads, with titles resolved to sheet keys."""
+def for_model(data: dict, keys=(), match=None) -> dict:
+    """The shape model.signals() reads, with titles resolved to sheet keys. `match` (title ->
+    list of keys, from titles.Matcher) lets a bundle entry list every game in it."""
     listed = {}
     for i in data.get("listed", []):
-        key = resolve(i["game"], keys) or norm(i["game"])
-        listed[key] = {"month": i["month"], "unlikely": i.get("unlikely", False)}
+        hits = match(i["game"]) if match else [k for k in [resolve(i["game"], keys)] if k]
+        for key in hits or [norm(i["game"])]:
+            listed[key] = {"month": i["month"], "unlikely": i.get("unlikely", False)}
     return {"covers": set(data.get("covers", [])), "listed": listed}

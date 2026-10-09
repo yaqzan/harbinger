@@ -26,7 +26,8 @@ Python 3.11, standard library only.
      what counts as a watched game.
 2. Run it:
    ```
-   py -3.11 -m harbinger ingest      # fetch everything, score, write harbinger/state/data.json
+   py -3.11 -m harbinger ingest      # import the sheet and Steam, score, write harbinger/state/data.json
+   py -3.11 -m harbinger titles      # Steam games that didn't match the sheet cleanly
    py -3.11 -m harbinger serve       # http://127.0.0.1:5006
    py -3.11 -m unittest
    ```
@@ -36,9 +37,13 @@ Python 3.11, standard library only.
 4. Optional: phone summaries after each ingest go through
    [Pharos](https://github.com/yaqzan/pharos) if it's installed or cloned next to this repo.
 
-Your data stays local: everything a run produces lives in `harbinger/state/` (gitignored), and
+Your data stays local: everything a run produces lives in `harbinger/state/` (gitignored), mostly
+in `harbinger.sqlite` (the imported sheet with its change history, your Steam library and
+achievements, title matches, score snapshots), and
 the Steam key is never written into the page data. If you publish the page, though, the data it
 serves shows your Game Pass watchlist and which of those games you own on Steam.
 
 Shared model numbers live in `harbinger/config.toml`; anything in your `config.local.toml`
-overrides them.
+overrides them. Title fixes between Steam and the sheet ("PAYDAY 2" is the sheet's "Payday 2:
+Crimewave Edition") live in `harbinger/titles.toml`; add yours there, and a pull request helps
+everyone.

@@ -1,10 +1,12 @@
-"""py -3.11 -m harbinger ingest|steam|build|show|serve
+"""py -3.11 -m harbinger ingest|steam|build|show|titles|changes|serve
 
-ingest  fetch the sheet, refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
-steam   sync Steam progress and rebuild from the cached sheet and forecast (the daily job)
-build   rebuild data.json from cached inputs (after a config.toml change)
-show    print the current summary
-serve   the public page on 127.0.0.1:5006
+ingest   import the sheet, refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
+steam    sync Steam into the database and rebuild from the imported sheet (the daily job)
+build    rebuild data.json from the database (after a config.toml or titles.toml change)
+show     print the current summary
+titles   re-match titles across sources and list the weak matches and near misses
+changes  what the last sheet imports changed (--game narrows it)
+serve    the public page on 127.0.0.1:5006
 """
 
 from __future__ import annotations
@@ -19,18 +21,8 @@ from . import OUTPUT_FILE, STATE_DIR, load_config, store
 from . import forecast as fc_mod
 from . import sheet as sheet_mod
 from . import steam as steam_mod
+from . import titles as titles_mod
 from .build import assemble
-
-FETCHED_FILE = sheet_mod.SHEET_DIR / "fetched.txt"
-
-
-def _sheet(fetch: bool, cfg: dict) -> sheet_mod.Sheet:
-    if fetch:
-        tabs = sheet_mod.fetch(cfg)
-        FETCHED_FILE.write_text(datetime.now().isoformat(timespec="seconds"), encoding="utf-8")
-    else:
-        tabs = sheet_mod.load_cached()
-    return sheet_mod.parse(tabs, FETCHED_FILE.read_text(encoding="utf-8").strip())
 
 
 def _wanted(data: dict) -> set[str]:
@@ -54,7 +46,10 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     STATE_DIR.mkdir(exist_ok=True)
     today = today or date.today()
     notes = []
-    sh = _sheet(fetch, cfg)
+    db = store.connect()
+    if fetch:
+        notes.append(sheet_mod.ingest(db, cfg))
+    sh = sheet_mod.load(db)
     as_of = datetime.fromisoformat(sh.fetched).date()
     from .model import next_waves
     if refresh_forecast:
@@ -62,13 +57,14 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         notes.append(note)
     else:
         fc = fc_mod.load()
-    st = steam_mod.load()
     if sync_steam:
+        # Achievements for what the page shows plus every played Steam game still on Game Pass
         draft = assemble(cfg, sh, fc, {"games": {}}, today, as_of)
-        st, note = steam_mod.sync(_wanted(draft), cfg)
-        notes.append(note)
-    data = assemble(cfg, sh, fc, st, today, as_of)
-    db = store.connect()
+        keys = _wanted(draft) | {g.key for g in sh.games if g.status in ("Active", "Leaving Soon")}
+        match = titles_mod.Matcher((g.key for g in sh.games), cfg.get("titles"))
+        notes.append(steam_mod.sync(db, cfg, lambda name: match.key(name, loose=False) in keys))
+    notes.append(titles_mod.reconcile(db, sh, fc, cfg))
+    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of)
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     rows = ([{"game": r["game"], "key": r["key"], "list": "confirmed", "wave": r["wave"], "hours": r["hours"],
@@ -125,9 +121,28 @@ def push(data: dict, cfg: dict) -> str:
     return f"push: {getattr(result, 'status', result)}"
 
 
+def _changes(game: str | None, imports: int = 5) -> int:
+    db = store.connect()
+    q = ("SELECT i.fetched_at, c.tab, c.title, c.kind, c.field, c.old, c.new FROM sheet_change c"
+         " JOIN sheet_import i ON i.id = c.import_id WHERE c.import_id IN"
+         " (SELECT id FROM sheet_import ORDER BY id DESC LIMIT ?)")
+    args: list = [imports]
+    if game:
+        q += " AND c.key = ?"
+        args.append(sheet_mod.norm(game))
+    rows = db.execute(q + " ORDER BY c.import_id DESC, c.tab, c.title", args).fetchall()
+    if not rows:
+        print("no sheet changes recorded" + (f" for {game}" if game else ""))
+    for at, tab, title, kind, fld, old, new in rows:
+        what = f"{fld}: {old!r} -> {new!r}" if kind == "changed" else kind
+        print(f"{at[:10]}  {tab:<14} {title}  {what}")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="harbinger", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["ingest", "steam", "build", "show", "serve"])
+    ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "serve"])
+    ap.add_argument("--game", help="changes: only this title")
     ap.add_argument("--no-forecast", action="store_true", help="ingest: keep the last forecast")
     ap.add_argument("--push", action="store_true", help="ingest: send the Pharos summary (optional, see config.local.example.toml)")
     ap.add_argument("--today", type=date.fromisoformat, help="score as of this date (testing)")
@@ -136,6 +151,14 @@ def main(argv=None) -> int:
         from .serve import serve
         serve()
         return 0
+    if a.command == "titles":
+        cfg = load_config()
+        db = store.connect()
+        print(titles_mod.reconcile(db, sheet_mod.load(db), fc_mod.load(), cfg))
+        titles_mod.print_report(db)
+        return 0
+    if a.command == "changes":
+        return _changes(a.game)
     if a.command == "show":
         if not OUTPUT_FILE.exists():
             print("no data.json yet")
