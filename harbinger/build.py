@@ -33,7 +33,7 @@ def _join(names: list[str]) -> str:
 class Context:
     def __init__(self, cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date):
         self.cfg, self.sheet, self.today, self.as_of = cfg, sheet, today, as_of
-        self.match = Matcher((g.key for g in sheet.games), cfg.get("titles"))
+        self.match = Matcher((g.key for g in sheet.games), cfg.get("titles"), sheet.out_of_scope)
         self.forecast_raw, self.fc = forecast, for_model(forecast, match=lambda n: self.match.match_all(n)[0])
         # Steam titles resolved to sheet keys ("CloverPit" -> "clover pit")
         self.steam = {(self.match.key(r.get("name") or k, loose=False) or k): r
@@ -49,6 +49,10 @@ class Context:
         self.announced: set[date] = set()  # waves whose official list is out; set by assemble()
 
     # ── per-game facts ────────────────────────────────────────────────
+
+    def pc_only(self, name: str) -> bool:
+        """Out of scope: on the sheet only as a PC Game Pass game ([scope] in config.toml)."""
+        return self.match.match(name)[1] == "pc only"
 
     def excluded(self, g: Game) -> str | None:
         ex = self.cfg["exclude"]
@@ -95,7 +99,7 @@ class Context:
 def confirmed_rows(cx: Context) -> list[dict]:
     today = cx.today
     fc_dates = {key: (date.fromisoformat(c["wave"]), c.get("source", ""))
-                for c in cx.forecast_raw.get("confirmed", [])
+                for c in cx.forecast_raw.get("confirmed", []) if not cx.pc_only(c["game"])
                 for key in (cx.match.match_all(c["game"])[0] or [norm(c["game"])])}
     entries: dict[str, dict] = {}
     for g in cx.sheet.leaving:
@@ -115,7 +119,7 @@ def confirmed_rows(cx: Context) -> list[dict]:
                             "source": src if ok else f"{src} only; not on the sheet", "verified": ok}
     for m in cx.cfg.get("manual_confirmed", []):
         key = norm(m["game"])
-        if key not in entries:
+        if key not in entries and not cx.pc_only(m["game"]):
             entries[key] = {"g": cx.by_key.get(key), "name": m["game"], "wave": date.fromisoformat(m["wave"]),
                             "source": m["source"], "verified": False}
     rows = []
@@ -208,9 +212,11 @@ def queue_rows(cx: Context, confirmed: list[dict], watch: list[dict]) -> list[di
     rows = []
     q = cx.cfg.get("queue", {})
     for name in q.get("gone", []) + q.get("tracking", []):
-        g = _find(cx, name)
+        g = None if cx.pc_only(name) else _find(cx, name)
         row = {"game": g.name if g else name, "state": "", "next_check": "", "odds": "", "note": ""}
-        if g is None:
+        if g is None and cx.pc_only(name):
+            row.update(state="PC only", note="Not tracked: console Game Pass only")
+        elif g is None:
             row.update(state="Not on the sheet", note="Check the title in config.toml")
         elif g.key in conf:
             c = conf[g.key]

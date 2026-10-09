@@ -1,6 +1,7 @@
 # Harbinger
 
-Game Pass exit radar: which Game Pass games are leaving (confirmed) or likely leaving (modelled),
+Game Pass exit radar (Xbox console Game Pass; PC-only games are out of scope via `[scope]`):
+which Game Pass games are leaving (confirmed) or likely leaving (modelled),
 hours to 100%, and the latest day to start. Read-only page, no auth, no input surface.
 
 **Public, plug-and-play repo (github.com/yaqzan/harbinger).** Anyone clones it, adds their own

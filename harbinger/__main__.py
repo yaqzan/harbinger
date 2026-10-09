@@ -49,7 +49,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     db = store.connect()
     if fetch:
         notes.append(sheet_mod.ingest(db, cfg))
-    sh = sheet_mod.load(db)
+    sh = sheet_mod.load(db, cfg)
     as_of = datetime.fromisoformat(sh.fetched).date()
     from .model import next_waves
     if refresh_forecast:
@@ -61,7 +61,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         # Achievements for what the page shows plus every played Steam game still on Game Pass
         draft = assemble(cfg, sh, fc, {"games": {}}, today, as_of)
         keys = _wanted(draft) | {g.key for g in sh.games if g.status in ("Active", "Leaving Soon")}
-        match = titles_mod.Matcher((g.key for g in sh.games), cfg.get("titles"))
+        match = titles_mod.Matcher((g.key for g in sh.games), cfg.get("titles"), sh.out_of_scope)
         notes.append(steam_mod.sync(db, cfg, lambda name: match.key(name, loose=False) in keys))
     notes.append(titles_mod.reconcile(db, sh, fc, cfg))
     data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of)
@@ -154,7 +154,7 @@ def main(argv=None) -> int:
     if a.command == "titles":
         cfg = load_config()
         db = store.connect()
-        print(titles_mod.reconcile(db, sheet_mod.load(db), fc_mod.load(), cfg))
+        print(titles_mod.reconcile(db, sheet_mod.load(db, cfg), fc_mod.load(), cfg))
         titles_mod.print_report(db)
         return 0
     if a.command == "changes":

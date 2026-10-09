@@ -10,6 +10,11 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   G Months (fractional, live), K Completion hours, N Owner Notes, R Premium status, S Premium added.
   The import has day-level dates (the old CSV export only showed the month); the model still pins
   the add day as `as_of - Months * 30.4375 days`, now from full-precision Months.
+- **Scope: Xbox console Game Pass only** (owner, 2026-10-09). `[scope] skip_systems = ["PC"]`
+  drops sheet rows whose System is exactly "PC" (PC Game Pass only) from the model, matching and
+  page; "Xbox / PC" stays. A title with a PC row and a console row keeps the console row. A
+  forecast or watched title that only exists as PC is turned away ("PC only"), never matched to a
+  lookalike. Removing PC moved the measured rates by a point at most (12-mo 47%, 2025 adds 40%).
 - **Exclusions**: "Xbox Game Studios" tab (Microsoft, Bethesda, Activision Blizzard) and the
   "EA Play" tab, plus Owner Notes markers for EA Play and Retro Classics. Ubisoft+ Classics
   (Owner Notes "Ubisoft games joining with price increase", ~50 games added Oct 1, 2025) are

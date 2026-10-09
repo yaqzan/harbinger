@@ -7,6 +7,12 @@
 id = "1kspw-4paT-eE5-mrCrc4R9tg70lH2ZTFrJOUmOtOytg"   # public; downloaded whole as xlsx, tabs picked by name
 days_per_month = 30.4375   # add date = as_of - Months * this
 
+[scope]
+# Xbox console Game Pass only. Sheet rows whose System is exactly one of these are left out of
+# the model, the title matching and the page (the database still imports them). "PC" is PC Game
+# Pass only; "Xbox / PC" games stay. Set [] in config.local.toml to include PC.
+skip_systems = ["PC"]
+
 [waves]
 cohorts = [12, 18, 24, 36]  # anniversary months that can trigger a removal
 horizon = 4                 # waves shown on the watchlist and chart

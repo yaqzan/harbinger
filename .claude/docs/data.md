@@ -25,6 +25,7 @@ only the database (plus `forecast.json`). Schemas live with their module: `sheet
   old -> new), keyed by (tab, key, stint). The first import is a baseline and logs nothing.
   `months`/`essential_months` are live formulas and never logged. Old rows are re-keyed with the
   current `norm()` before diffing, so a matching change never shows up as a sheet change.
+- The database imports PC rows too; `sheet.parse()` applies `[scope]` when build loads it.
 - Status values seen: Active, Removed, Leaving Soon, Coming Soon, GwG Temporary, GwG Permanent.
 
 ## Steam import (`steam.py`, every ingest and the daily job)
@@ -49,6 +50,9 @@ as digits.
 - **Steam is strict** (no prefix, no fuzzy): a wrong match hides a leaving game as "owned", which
   is worse than a miss. Learned from the first import (2026-10-09): prefix matched "Prince of
   Persia" to The Lost Crown and "Q.U.B.E." to Q.U.B.E. 2.
+- Titles that resolve to a PC-only sheet game get method `pc only` (not an issue). The Matcher
+  indexes those keys so they can be turned away instead of falling through to a similar console
+  title. Scoping out PC took Steam from 477 to 430 matches (47 were PC-only Game Pass games).
 - Steam tools (public test, beta client, dedicated server, demo...) are never matched.
 - `harbinger/titles.toml` (tracked, shared) settles the rest: `[same]` maps a title to a sheet
   title (or a list, for a forecast bundle), `[different]` blocks a match or a suggestion.

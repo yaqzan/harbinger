@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS title_match (
   key TEXT,                      -- the sheet key it resolved to, NULL if none
   sheet_title TEXT,              -- "A + B" for a bundle
   method TEXT NOT NULL,          -- exact | compact | year | edition | prefix | fuzzy | alias | different
-                                 -- | not a game | alias to a missing title | none
+                                 -- | not a game | pc only | alias to a missing title | none
   candidates TEXT,               -- JSON [[sheet title, similarity]] for a near miss
   checked_at TEXT NOT NULL,
   PRIMARY KEY (source, source_id)
@@ -45,9 +45,12 @@ class Matcher:
     Magic 2 & 3"). [different] lists sheet titles a title must never match.
     """
 
-    def __init__(self, keys, titles_cfg: dict | None = None):
-        self.index = Index(keys)
-        self.keys = self.index.keys
+    def __init__(self, keys, titles_cfg: dict | None = None, out_of_scope=()):
+        # Out-of-scope keys (PC-only games) are matched so they can be turned away, never
+        # mistaken for a console game with a similar name.
+        self.skip = set(out_of_scope)
+        self.index = Index(set(keys) | self.skip)
+        self.keys = self.index.keys - self.skip
         t = titles_cfg or {}
         listed = lambda v: [v] if isinstance(v, str) else list(v)
         self.same = {norm(a): [norm(x) for x in listed(v)] for a, v in t.get("same", {}).items()}
@@ -57,10 +60,14 @@ class Matcher:
         k = norm(name)
         if k in self.same:
             hits = [x for x in self.same[k] if x in self.keys]
+            if not hits and any(x in self.skip for x in self.same[k]):
+                return [], "pc only"
             return (hits, "alias") if hits else ([], "alias to a missing title")
         key, how = self.index.lookup(name, loose)
         if key and key in self.different.get(k, ()):
             return [], "different"
+        if key in self.skip:
+            return [], "pc only"
         return ([key] if key else []), how
 
     def match(self, name: str, loose: bool = True) -> tuple[str | None, str]:
@@ -101,7 +108,7 @@ def sources(sheet: Sheet, steam_rows, forecast: dict, cfg: dict) -> list[tuple[s
 
 def reconcile(db: sqlite3.Connection, sheet: Sheet, forecast: dict, cfg: dict) -> str:
     """Rebuild title_match from the current sheet, Steam library, forecast and config."""
-    m = Matcher((g.key for g in sheet.games), cfg.get("titles"))
+    m = Matcher((g.key for g in sheet.games), cfg.get("titles"), sheet.out_of_scope)
     names = {}
     for g in sheet.games:
         names.setdefault(g.key, g.name)
@@ -115,7 +122,7 @@ def reconcile(db: sqlite3.Connection, sheet: Sheet, forecast: dict, cfg: dict) -
         hits, how = m.match_all(title, loose=src not in STRICT)
         key = hits[0] if hits else None
         cands = None
-        if key is None and how not in ("different", "alias to a missing title"):
+        if key is None and how not in ("different", "alias to a missing title", "pc only"):
             near = m.near(title)
             cands = json.dumps([[names.get(c, c), r] for c, r in near]) if near else None
         rows.append((src, sid, title, key, " + ".join(names.get(h, h) for h in hits) or None, how, cands, now))
@@ -136,7 +143,7 @@ def report(db: sqlite3.Connection) -> dict:
         "check": q("method IN (" + ", ".join(f"'{w}'" for w in WEAK) + ")"),
         "near": q("key IS NULL AND candidates IS NOT NULL"),
         # manual_confirmed entries are off the sheet by definition
-        "unmatched": q("key IS NULL AND candidates IS NULL AND method NOT IN ('different', 'not a game')"
+        "unmatched": q("key IS NULL AND candidates IS NULL AND method NOT IN ('different', 'not a game', 'pc only')"
                        " AND (source NOT IN ('steam', 'manual') OR method = 'alias to a missing title')"),
         "counts": {s: (n, k) for s, n, k in db.execute(
             "SELECT source, COUNT(*), COUNT(key) FROM title_match GROUP BY source")},

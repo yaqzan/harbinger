@@ -415,9 +415,9 @@ def load_rows(db: sqlite3.Connection) -> tuple[dict[str, list[dict]], str]:
     return tabs, imp[0]
 
 
-def load(db: sqlite3.Connection) -> "Sheet":
+def load(db: sqlite3.Connection, cfg: dict) -> "Sheet":
     tabs, fetched = load_rows(db)
-    return parse(tabs, fetched)
+    return parse(tabs, fetched, cfg.get("scope", {}).get("skip_systems", ()))
 
 
 # ── what the model reads ───────────────────────────────────────────────
@@ -471,12 +471,21 @@ class Sheet:
     ea_play: set[str]
     premium: set[str]
     fetched: str
+    out_of_scope: set[str] = field(default_factory=set)  # keys whose every row is a skipped system
 
 
-def parse(tabs: dict[str, list[dict]], fetched: str) -> Sheet:
-    """Row dicts (as stored in sheet_row) -> the Sheet the model reads."""
-    games = lambda t: [game(r) for r in tabs.get(t, [])]
+def parse(tabs: dict[str, list[dict]], fetched: str, skip_systems=()) -> Sheet:
+    """Row dicts (as stored in sheet_row) -> the Sheet the model reads.
+
+    Rows whose System is one of `skip_systems` ([scope] in config.toml; "PC" = PC Game Pass
+    only) are left out. A title with both a PC row and a console row keeps the console row.
+    """
+    skip = set(skip_systems)
+    keep = lambda r: (r.get("system") or "") not in skip
+    games = lambda t: [game(r) for r in tabs.get(t, []) if keep(r)]
+    scoped = {r["key"] for r in tabs.get("master", []) if keep(r)}
     return Sheet(
+        out_of_scope={r["key"] for r in tabs.get("master", []) if not keep(r)} - scoped,
         games=games("master"),
         leaving=games("leaving_soon"),
         removed=games("removed"),

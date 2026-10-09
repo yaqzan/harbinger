@@ -92,14 +92,14 @@ class SheetImport(unittest.TestCase):
         later = dict(MASTER)
         later[3] = {**MASTER[3], "D": "Leaving Soon", "G": 12.1}          # status flips, months ticks on
         del later[4]                                                     # second Conker stint vanishes
-        later[6] = {"A": "New Game", "B": "PC", "D": "Active", "E": 46300, "G": 0.2}
+        later[6] = {"A": "New Game", "B": "Xbox", "D": "Active", "E": 46300, "G": 0.2}
         sheet.import_rows(d, sheet.extract(sheet.read_xlsx(workbook(later), wanted)), "2026-10-18T08:46:00")
         got = {(t, k, f, o, n) for t, k, f, o, n in d.execute(
             "SELECT title, kind, field, old, new FROM sheet_change WHERE tab = 'master'")}
         self.assertEqual(got, {("Pacific Drive", "changed", "status", "Active", "Leaving Soon"),
                                ("Conker", "dropped", None, None, None),
                                ("New Game", "added", None, None, None)})
-        s = sheet.load(d)
+        s = sheet.load(d, CFG)
         self.assertEqual(s.fetched, "2026-10-18T08:46:00")
         self.assertEqual({g.name for g in s.games}, {"Pacific Drive", "Conker", "New Game"})
 
@@ -185,6 +185,32 @@ class Matching(unittest.TestCase):
         titles.reconcile(d, sheet.parse(tabs, "2026-10-09T08:46:00"), FORECAST, CFG)
         self.assertEqual(d.execute("SELECT method, candidates FROM title_match WHERE source = 'steam'").fetchone(),
                          ("not a game", None))
+
+
+class ConsoleScope(unittest.TestCase):
+    def setUp(self):
+
+        self.tabs = {t: [dict(r, system="PC") if r["title"].startswith("Nova Roma") else r for r in rows]
+                     for t, rows in TABS.items()}
+        self.tabs["master"] = self.tabs["master"] + [
+            dict(row("Only On PC", "Active", "Nov 2025", 11.2, 10), system="PC"),
+            dict(row("Both Ways", "Removed", "Jan 2023", 12.0, 10, removed="Jan 2024"), system="PC"),
+            row("Both Ways", "Active", "Nov 2025", 11.2, 10)]
+        self.sheet = sheet.parse(self.tabs, "2026-10-09T08:46:00", ["PC"])
+
+    def test_pc_only_rows_leave_the_model(self):
+        self.assertEqual(self.sheet.out_of_scope, {"nova roma", "only on pc"})
+        self.assertIn("both ways", {g.key for g in self.sheet.games})
+        cfg = dict(CFG, queue={"tracking": ["Only On PC"], "gone": []})
+        fc = dict(FORECAST, confirmed=[{"game": "Only On PC", "wave": "2026-10-31", "source": "Xbox Wire"}])
+        d = assemble(cfg, self.sheet, fc, {"games": {}}, TODAY, TODAY)
+        self.assertEqual(d["summary"]["confirmed_count"], 7)  # Nova Roma is PC Game Pass only
+        self.assertNotIn("Only On PC", [r["game"] for r in d["confirmed"] + d["watchlist"]])
+        self.assertEqual(d["queue"][0]["state"], "PC only")
+
+    def test_a_pc_only_title_never_lands_on_a_lookalike(self):
+        m = titles.Matcher({"only on pc 2"}, None, {"only on pc"})
+        self.assertEqual(m.match("Only On PC"), (None, "pc only"))
 
 
 class Stints(unittest.TestCase):
