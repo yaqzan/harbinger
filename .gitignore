@@ -1,6 +1,6 @@
 __pycache__/
 *.pyc
-# Run state: sheet cache, forecast runs, Steam data, snapshots, data.json
+# Run state: database, forecast runs, PSN tokens, data.json
 harbinger/state/
 ops/windows/logs/
 # Machine config (holds the tunnel UUID)

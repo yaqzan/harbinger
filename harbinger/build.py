@@ -1,4 +1,4 @@
-"""Turn the sheet, the forecast and Steam into the page's data.json.
+"""Turn the sheets, the forecast and your libraries (Steam, PlayStation) into the page's data.json.
 
 `assemble()` is pure (inputs in, dict out) so tests can pin a whole run to a fixed day.
 """
@@ -31,13 +31,19 @@ def _join(names: list[str]) -> str:
 
 
 class Context:
-    def __init__(self, cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date):
+    def __init__(self, cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
+                 psn: dict | None = None):
         self.cfg, self.sheet, self.today, self.as_of = cfg, sheet, today, as_of
         self.match = Matcher((g.key for g in sheet.games), cfg.get("titles"), sheet.out_of_scope)
         self.forecast_raw, self.fc = forecast, for_model(forecast, match=lambda n: self.match.match_all(n)[0])
-        # Steam titles resolved to sheet keys ("CloverPit" -> "clover pit")
-        self.steam = {(self.match.key(r.get("name") or k, loose=False) or k): r
-                      for k, r in steam.get("games", {}).items()}
+        # Games you own, by sheet key ("CloverPit" -> "clover pit"): Steam first, then PlayStation
+        # (bought or on disc). rec["where"] says which.
+        self.owned: dict[str, dict] = {}
+        for lib, where in ((steam, "Steam"), (psn or {}, "PlayStation")):
+            for k, r in lib.get("games", {}).items():
+                key = self.match.key(r.get("name") or k, loose=False) or k
+                self.owned.setdefault(key, {"where": where, **r})
+        self.claimed = list((psn or {}).get("claimed", []))  # PS Plus games claimed into the library
         self.dpm = cfg["sheet"]["days_per_month"]
         self.cohorts = cfg["waves"]["cohorts"]
         self.play = cfg["play"]
@@ -79,15 +85,17 @@ class Context:
         return {"on": on, "readd": readd}
 
     def progress(self, key: str, hours: float | None) -> dict:
-        s = self.steam.get(key)
+        s = self.owned.get(key)
         if not s:
-            return {"owned": False, "hours": hours, "progress": ""}
+            return {"owned": False, "where": "", "hours": hours, "progress": ""}
         share = s["ach_done"] / s["ach_total"] if s.get("ach_total") else None
         left = model.remaining_hours(hours, s.get("played_h"), share)
         bits = [f"{s['played_h']:g} h played"] if s.get("played_h") else []
         if share is not None:
-            bits.append(f"{s['ach_done']}/{s['ach_total']} achievements")
-        return {"owned": True, "hours": left, "progress": ", ".join(bits) or "not started"}
+            bits.append(f"{s['ach_done']}/{s['ach_total']} {'trophies' if s['where'] != 'Steam' else 'achievements'}")
+        return {"owned": True, "where": s["where"], "hours": left,
+                "progress": ", ".join([f"owned on {s['where']}"] + bits) if s["where"] != "Steam"
+                else ", ".join(bits) or "not started"}
 
     def score(self, g: Game, n: int, wave: date) -> tuple[float, list[str]]:
         anniv = model.anniversary(self.added(g), n, self.dpm)
@@ -131,7 +139,7 @@ def confirmed_rows(cx: Context) -> list[dict]:
         sheet_hours = g.hours if g else None
         prog = cx.progress(key, sheet_hours)
         avail = model.hours_available(today, wave, cx.play["hours_per_week"])
-        verdict = "Owned on Steam" if prog["owned"] else model.verdict(prog["hours"], avail, cx.play)
+        verdict = f"Owned on {prog['where']}" if prog["owned"] else model.verdict(prog["hours"], avail, cx.play)
         if not e["verified"]:
             note = f"Unverified: {e['source']}"
         else:
@@ -243,8 +251,8 @@ def queue_rows(cx: Context, confirmed: list[dict], watch: list[dict]) -> list[di
                 row.update(state="Active", next_check="past 36 mo", note="No anniversary left in the model")
             if name in q.get("gone", []):
                 row["note"] = (row["note"] + "; " if row["note"] else "") + "back on the service?"
-        if g is not None and g.key in cx.steam:
-            row["note"] = (row["note"] + "; " if row["note"] else "") + "you own it on Steam"
+        if g is not None and g.key in cx.owned:
+            row["note"] = (row["note"] + "; " if row["note"] else "") + f"you own it on {cx.owned[g.key]['where']}"
         rows.append(row)
     return rows
 
@@ -307,7 +315,8 @@ def summary(cx: Context, confirmed: list[dict], watch: list[dict]) -> dict:
         owned = total - len(on_first)
         lead = f"{total} games leave {when}"
         if owned:
-            lead += f" and you own {owned} of them on Steam"
+            where = {r["verdict"].removeprefix("Owned on ") for r in real if r["owned"]}
+            lead += f" and you own {owned} of them" + (f" on {where.pop()}" if len(where) == 1 else "")
         rest = "the rest" if owned else "them"
         if not on_first:
             take = lead + "."
@@ -360,7 +369,7 @@ def xbox_outlook(cx: Context, g: Game) -> dict:
 
 def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dict:
     """Games you can play on exactly one service (Game Pass console, or PS Plus at your tier)
-    and don't own on Steam. Confirmed leavers and claim deadlines first, then Likely,
+    and don't own (Steam, PlayStation, disc). Confirmed leavers and claim deadlines first, then Likely,
     Possible and Thin, each soonest first."""
     today, play = cx.today, cx.play
     ps_games = ps["games"] if ps else []
@@ -373,7 +382,8 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     both = {k: pk for k, pk in ((g.key, pm.key(g.name, loose=False)) for g in on_xbox.values()) if pk} if pm else {}
     xbox_backup = {k for k, pk in both.items() if pk not in ps_leaving}   # Game Pass games safe on PS Plus
     ps_backup = {pk for k, pk in both.items() if k not in conf}           # PS Plus games safe on Game Pass
-    steam_ps = {pm.key(r.get("name") or "", loose=False) for r in cx.steam.values()} if pm else set()
+    owned_ps = {pm.key(r.get("name") or "", loose=False) for r in cx.owned.values()} if pm else set()
+    claimed_ps = {pm.key(n, loose=False) for n in cx.claimed} if pm else set()
     rows = []
 
     def add(game, service, out, hours, platform):
@@ -393,10 +403,10 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             "band": out["band"], "hours": hours, "action": act, "why": out["why"],
         })
 
-    skipped = {"steam": 0, "both": 0}
+    skipped = {"owned": 0, "both": 0, "claimed": 0}
     for key, g in on_xbox.items():
-        if key in cx.steam:
-            skipped["steam"] += 1
+        if key in cx.owned:
+            skipped["owned"] += 1
             continue
         if key in xbox_backup:
             skipped["both"] += 1
@@ -410,15 +420,19 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
         add(g.name, "Game Pass", out, g.hours, g.system)
     waves_out = plus.announced(ps_games, today)
     for g in ps_games:
-        if g.key in steam_ps:
-            skipped["steam"] += 1
+        if g.key in owned_ps:
+            skipped["owned"] += 1
             continue
+        if g.kind == "essential" and g.key in claimed_ps:
+            skipped["claimed"] += 1
+            continue  # already claimed: yours while you subscribe
         if g.key in ps_backup:
             continue  # counted once, on the Game Pass side
         add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, waves_out), g.hours, g.system)
     rows.sort(key=lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower()))
     tier = ps["tier"] if ps else "none"
-    return {"rows": rows, "ps_tier": tier, "skipped_steam": skipped["steam"], "skipped_both": skipped["both"]}
+    return {"rows": rows, "ps_tier": tier, "skipped_owned": skipped["owned"], "skipped_both": skipped["both"],
+            "skipped_claimed": skipped["claimed"]}
 
 
 def new_leavers(confirmed: list[dict], before: set[str] | None) -> list[dict]:
@@ -446,8 +460,8 @@ def leaver_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str
 
 
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
-             ps: dict | None = None) -> dict:
-    cx = Context(cfg, sheet, forecast, steam, today, as_of)
+             ps: dict | None = None, psn: dict | None = None) -> dict:
+    cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
     watch_all, survivors, ubisoft = scored_rows(cx, {r["key"] for r in confirmed})
@@ -475,5 +489,6 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
             "forecast_sources": forecast.get("sources", []),
             "steam_synced": steam.get("synced_at"),
             "ps_sheet_fetched": ps["fetched"] if ps else None,
+            "psn_synced": psn.get("synced_at") if psn else None,
         },
     }

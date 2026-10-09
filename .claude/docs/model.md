@@ -47,6 +47,8 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   else Too late for 100%. Start by = wave - ceil(hours/9) weeks - 2 weeks. Urgency: Too late (hours
   don't fit even starting today) / Start now (start-by reached) / Start within 4 wks / Comfortable /
   Hours unknown.
+- Owned anywhere (Steam, PSN purchase, PS disc; `Context.owned`, Steam wins a tie) works like
+  Steam ownership below; the verdict says where ("Owned on PlayStation"), trophies count as achievements.
 - Steam: an owned game leaves the confirmed verdicts, the watchlist and the KPIs and shows under
   "You own these elsewhere". Remaining hours = hours x (1 - achievement share), else hours - playtime.
 

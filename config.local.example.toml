@@ -16,6 +16,13 @@ api_key = ""
 # Your PS Plus tier: none | essential | extra | premium. Each includes the tiers below it, so
 # "extra" covers the Essential monthly games too. "none" keeps PlayStation off the page.
 tier = "none"
+# Your PlayStation library counts as owned, like Steam. Bought games come from PSN: sign in
+# at playstation.com, open https://ca.account.sony.com/api/v1/ssocookie in the same browser and
+# put the "npsso" value in the PSN_NPSSO environment variable (or npsso = "..." here). It
+# lasts about two months. Disc games can't be seen by any API, so list them here.
+discs = [
+  # "Demon's Souls",
+]
 
 [queue]
 # Watched games. These get their own "Your queue" table with the next date each one could leave,

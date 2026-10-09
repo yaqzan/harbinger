@@ -21,7 +21,7 @@ from .sheet import Index, Sheet, norm, sequel_gap
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS title_match (
   target TEXT NOT NULL,          -- the catalogue matched against: xbox | playstation
-  source TEXT NOT NULL,          -- steam | forecast | confirmed | queue | manual | xbox
+  source TEXT NOT NULL,          -- steam | psn | disc | forecast | confirmed | queue | manual | xbox
   source_id TEXT NOT NULL,       -- Steam appid, else the title itself
   title TEXT NOT NULL,           -- as that source spells it
   key TEXT,                      -- the sheet key it resolved to, NULL if none
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS title_match (
 
 WEAK = ("prefix", "fuzzy")     # matched on a loose rung: worth a look
 NEAR = 0.85                    # similarity that makes an unmatched title a near miss
-STRICT = {"steam", "xbox"}     # whole catalogues of unrelated games: no prefix or fuzzy matches
+STRICT = {"steam", "xbox", "psn", "disc"}  # libraries and catalogues: no prefix or fuzzy matches
 # Steam apps that are tools, not games: never matched, never suggested
 NOT_A_GAME = re.compile(r"\b(public test|test server|beta client|dedicated server|playtest|demo|soundtrack|sdk)\b", re.I)
 
@@ -153,13 +153,18 @@ def reconcile(db: sqlite3.Connection, sheet: Sheet, forecast: dict, cfg: dict, p
     for g in sheet.games:
         names.setdefault(g.key, g.name)
     steam_rows = db.execute("SELECT appid, name FROM steam_game WHERE owned = 1").fetchall()
+    # PlayStation games you own: bought (one row per name) and discs from config
+    owned_ps = [("psn", n, n) for (n,) in db.execute(
+        "SELECT DISTINCT name FROM psn_game WHERE present = 1 AND kind = 'purchased' AND membership = 'NONE'")]
+    owned_ps += [("disc", n, n) for n in cfg.get("playstation", {}).get("discs", [])]
     now = datetime.now().isoformat(timespec="seconds")
-    rows = _match_rows("xbox", m, names, sources(sheet, steam_rows, forecast, cfg), now)
+    rows = _match_rows("xbox", m, names, sources(sheet, steam_rows, forecast, cfg) + owned_ps, now)
     if ps_games:
         pm = ps_matcher(ps_games, cfg)
         ps_names = {g.key: g.name for g in ps_games}
         xbox_now = {g.key: g.name for g in sheet.games if g.status in ("Active", "Leaving Soon")}
-        items = [("steam", str(a), n) for a, n in steam_rows] + [("xbox", k, n) for k, n in xbox_now.items()]
+        items = ([("steam", str(a), n) for a, n in steam_rows] + owned_ps
+                 + [("xbox", k, n) for k, n in xbox_now.items()])
         rows += _match_rows("playstation", pm, ps_names, items, now)
     with db:
         db.execute("DELETE FROM title_match")
@@ -185,7 +190,7 @@ def report(db: sqlite3.Connection) -> dict:
         # manual_confirmed entries are off the sheet by definition; most Game Pass games
         # are simply not on PS Plus
         "unmatched": q("key IS NULL AND candidates IS NULL AND method NOT IN ('different', 'not a game', 'pc only')"
-                       " AND (source NOT IN ('steam', 'manual', 'xbox') OR method = 'alias to a missing title')"),
+                       " AND (source NOT IN ('steam', 'psn', 'disc', 'manual', 'xbox') OR method = 'alias to a missing title')"),
         "counts": {f"{s}->{t}": (n, k) for t, s, n, k in db.execute(
             "SELECT target, source, COUNT(*), COUNT(key) FROM title_match GROUP BY target, source")},
         "methods": dict(db.execute("SELECT method, COUNT(*) FROM title_match WHERE key IS NOT NULL GROUP BY method")),

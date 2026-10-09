@@ -40,7 +40,7 @@
   const s = data.summary;
   $("takeaway").textContent = s.takeaway;
   const src = data.sources;
-  $("meta").textContent = `Updated ${ago(data.generated_at)} · sheet read ${ago(src.sheet_fetched)}${src.ps_sheet_fetched ? ` · PS Plus sheet read ${ago(src.ps_sheet_fetched)}` : ""} · forecast checked ${ago(src.forecast_checked)} · Steam synced ${ago(src.steam_synced)}`;
+  $("meta").textContent = `Updated ${ago(data.generated_at)} · sheet read ${ago(src.sheet_fetched)}${src.ps_sheet_fetched ? ` · PS Plus sheet read ${ago(src.ps_sheet_fetched)}` : ""} · forecast checked ${ago(src.forecast_checked)} · Steam synced ${ago(src.steam_synced)}${src.psn_synced ? ` · PSN synced ${ago(src.psn_synced)}` : ""}`;
   document.querySelectorAll(".kpi .n").forEach((n) => { const v = s[n.dataset.k]; n.textContent = v === "" || v === undefined ? "–" : v; });
   $("kpi-wave").textContent = `days to the ${s.next_wave} wave`;
 
@@ -67,7 +67,7 @@
     const tierNote = one.ps_tier === "none"
       ? "Set your PS Plus tier under [playstation] in config.local.toml to add PlayStation."
       : `Game Pass on console and PS Plus ${one.ps_tier}.`;
-    $("one-note").textContent = `Games you can only play through one subscription. ${tierNote} Left out: ${one.skipped_steam} you own on Steam and ${one.skipped_both} on both services. Confirmed and claim deadlines come first, then Likely, Possible and Thin, each soonest first. PS Plus leaves on the third Monday of the month.`;
+    $("one-note").textContent = `Games you can only play through one subscription. ${tierNote} Left out: ${one.skipped_owned} you own (Steam, PlayStation or disc), ${one.skipped_both} on both services${one.skipped_claimed ? ` and ${one.skipped_claimed} PS Plus games you already claimed` : ""}. Confirmed and claim deadlines come first, then Likely, Possible and Thin, each soonest first. PS Plus leaves on the third Monday of the month.`;
     const drawOne = () => {
       const q = $("oq").value.trim().toLowerCase(), fs = $("os").value, fb = $("ob").value;
       const rows = one.rows.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))

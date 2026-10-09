@@ -28,12 +28,12 @@ CREATE INDEX IF NOT EXISTS scores_run ON scores(run_id);
 
 def connect(path=DB_FILE) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
-    from . import sheet, steam, titles
+    from . import psn, sheet, steam, titles
     db = sqlite3.connect(path)
     db.execute("PRAGMA foreign_keys = ON")
     sheet.migrate(db)
     titles.migrate(db)
-    for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, titles.SCHEMA):
+    for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, psn.SCHEMA, titles.SCHEMA):
         db.executescript(schema)
     return db
 

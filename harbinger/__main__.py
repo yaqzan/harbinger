@@ -1,7 +1,7 @@
 """py -3.11 -m harbinger ingest|steam|build|show|titles|changes|serve
 
 ingest   import the sheets (Game Pass, PS Plus), refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
-steam    sync Steam into the database and rebuild from the imported sheet
+steam    sync Steam and PSN into the database and rebuild from the imported sheets
 build    rebuild data.json from the database (after a config.toml or titles.toml change)
 show     print the current summary
 titles   re-match titles across sources and list the weak matches and near misses
@@ -20,6 +20,7 @@ from datetime import date, datetime
 from . import OUTPUT_FILE, STATE_DIR, load_config, store
 from . import forecast as fc_mod
 from . import plus
+from . import psn as psn_mod
 from . import sheet as sheet_mod
 from . import steam as steam_mod
 from . import titles as titles_mod
@@ -78,8 +79,11 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         keys = _wanted(draft) | {g.key for g in sh.games if g.status in ("Active", "Leaving Soon")}
         match = titles_mod.Matcher((g.key for g in sh.games), cfg.get("titles"), sh.out_of_scope)
         notes.append(steam_mod.sync(db, cfg, lambda name: match.key(name, loose=False) in keys))
+        note = psn_mod.sync(db, cfg)
+        if note:
+            notes.append(note)
     notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
-    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps)
+    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg))
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have

@@ -48,6 +48,19 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   everything as the baseline).
 - A failed sync keeps the database as it was.
 
+## PlayStation library (`psn.py`, every ingest and the daily job)
+
+- Stdlib port of psn-api's calls (auth flow, client id and the purchased-games GraphQL hash
+  copied from its source 2026-10-09): NPSSO -> access code -> tokens, cached in
+  `state/psn_tokens.json`; refresh token ~2 months, then a new NPSSO (`PSN_NPSSO` env var or
+  `[playstation] npsso`). No NPSSO and no cached token = PSN skipped quietly.
+- `psn_game`: purchased (membership NONE = bought, PS_PLUS = claimed through PS Plus) and played
+  (playtime, service none / none_purchased / ps_plus). `psn_trophy`: progress and counts per
+  trophy list. `psn_history`: playtime / progress moves.
+- Owned = bought and not a pre-order, or played as none_purchased, or a disc listed under
+  `[playstation] discs` (no API sees discs). Claimed PS Plus games are not owned (they go with the
+  subscription) but drop their "Claim by" row. A failed sync keeps the last library.
+
 ## Title matching (`titles.py`, every run)
 
 `Matcher` resolves a title to a sheet key, rung by rung (`sheet.Index`): exact, compact (no
@@ -62,6 +75,7 @@ as digits.
 - Titles that resolve to a PC-only sheet game get method `pc only` (not an issue). The Matcher
   indexes those keys so they can be turned away instead of falling through to a similar console
   title. Scoping out PC took Steam from 477 to 430 matches (47 were PC-only Game Pass games).
+- PSN purchases and discs (sources `psn`, `disc`) are matched strictly against both catalogues.
 - Steam tools (public test, beta client, dedicated server, demo...) are never matched.
 - `harbinger/titles.toml` (tracked, shared) settles the rest: `[same]` maps a title to a sheet
   title (or a list, for a forecast bundle), `[different]` blocks a match or a suggestion.
