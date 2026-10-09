@@ -52,6 +52,20 @@ class ArtTest(unittest.TestCase):
             self.assertIsNone(art.steam_search("Hade"))
             self.assertEqual(art.steam_search("Hades (2020)"), 2)   # year and preview tags are dropped
 
+    def test_steam_art_falls_back_to_the_hashed_header(self):
+        details = b'{"7": {"data": {"header_image": "https://shared.akamai.steamstatic.com/h.jpg"}}}'
+        with mock.patch.object(art, "_image", side_effect=[None, None, (b"x", "jpg")]) as img,                 mock.patch.object(art, "_get", return_value=(details, "application/json")):
+            self.assertEqual(art.steam_art(7), (b"x", "jpg"))
+        self.assertEqual(img.call_args.args[0], "https://shared.akamai.steamstatic.com/h.jpg")
+
+    def test_alias_names_are_tried_in_order(self):
+        seen = []
+        with mock.patch.object(art, "steam_search", side_effect=lambda n: seen.append(n)),                 mock.patch.object(art, "microsoft_art", return_value=None):
+            art.resolve(self.db, "x", "Sheet Name", ["A", "B"])
+        self.assertEqual(seen, ["A", "B"])
+        cfg = {"titles": {"art": {"Clover Pit": "CloverPit", "Two": ["A", "B"]}}}
+        self.assertEqual(art.aliases(cfg), {"clover pit": ["CloverPit"], "two": ["A", "B"]})
+
     def test_fetch_caches_misses_and_respects_the_budget(self):
         cfg = {"art": {"budget": 2, "pause_s": 0}}
         found = [("steam", PNG, "png"), None, ("psn", PNG, "png")]

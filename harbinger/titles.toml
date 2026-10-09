@@ -87,3 +87,15 @@
 "Sniper Elite V2" = ["Sniper Elite 5", "Sniper Elite 4"]
 "NBA 2K17: The Prelude" = ["NBA 2K17"]   # a demo
 "Car Mechanic Simulator 2021" = ["Car Mechanic Simulator"]   # the year is the title; PS has the 2018 game
+
+# What a store calls a game the sheet spells differently, for cover art only: "sheet title" =
+# "store title" (or a list, tried in order). Exact titles; art.py never guesses.
+[art]
+"Clover Pit" = "CloverPit"
+"Lord of the Rings: Return to Moria" = "The Lord of the Rings: Return to Moria"
+"Kulebra and the Souls of Limbo" = "Kulebra and the Souls of Limbo: Closure Edition"
+"Symphonia (2024)" = ["Tales of Symphonia", "Tales of Symphonia Remastered"]
+"Harvest Moon: Light of Hope - Special Edition" = "Harvest Moon: Light of Hope Special Edition"
+"Planet of Lana II: Children of the Leaf" = "Planet of Lana II"
+"Broken Sword - Shadows of the Templar: Reforged" = "Broken Sword - Shadow of the Templars: Reforged"
+"Enotria: The Last Song Standard Edition" = "Enotria: The Last Song"

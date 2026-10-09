@@ -79,7 +79,8 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   `[art] max_px` when Pillow is installed, else kept as downloaded). Served at `/art/<file>`.
 - Source order, every name match exact on `norm()` after dropping "(2020)" / "(Game Preview)":
   Steam library appid, PSN `image_url`, Steam store search, Microsoft Store autosuggest. Steam
-  art is `library_600x900.jpg`, else `header.jpg`.
+  art is `library_600x900.jpg`, else `header.jpg`, else the hashed `header_image` from appdetails
+  (newer apps). A sheet title a store spells differently goes in `titles.toml` `[art]`.
 - `[art] budget` caps new lookups per run (first fill takes a few daily runs); a miss is retried
   after `retry_days`. `build` never touches the network, it only attaches what is on disk.
 - Rows get an `art` path; the page draws it in the game cell (`gameTd` in `web/harbinger.js`).

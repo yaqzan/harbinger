@@ -34,6 +34,7 @@ URL_PREFIX = "/art/"
 FILE_RE = re.compile(r"^[0-9a-f]{16}\.(jpg|png)$")
 STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/{name}"
 STEAM_IMAGES = ("library_600x900.jpg", "header.jpg")   # portrait cover, then the wide banner
+STEAM_DETAILS = "https://store.steampowered.com/api/appdetails?appids={appid}&filters=basic"
 STEAM_SEARCH = "https://store.steampowered.com/api/storesearch/?term={q}&cc=us&l=en"
 MS_SEARCH = ("https://displaycatalog.mp.microsoft.com/v7.0/productFamilies/autosuggest"
              "?market=US&languages=en-US&query={q}&productFamilyNames=games")
@@ -106,7 +107,12 @@ def steam_art(appid: int) -> tuple[bytes, str] | None:
         got = _image(STEAM_CDN.format(appid=appid, name=name))
         if got:
             return got
-    return None
+    try:  # newer apps keep art under a hashed path the fixed names don't reach
+        body, _ = _get(STEAM_DETAILS.format(appid=appid))
+        url = json.loads(body)[str(appid)]["data"].get("header_image") or ""
+    except (urllib.error.URLError, OSError, ValueError, KeyError, TypeError):
+        return None
+    return _image(url) if url.startswith("https://") else None
 
 
 def steam_search(name: str) -> int | None:
@@ -154,8 +160,14 @@ def _local_source(db: sqlite3.Connection, key: str) -> tuple[str, int | str] | N
     return None
 
 
-def resolve(db: sqlite3.Connection, key: str, name: str) -> tuple[str, bytes, str] | None:
-    """(source, bytes, ext) for a game, or None when no source has it."""
+def aliases(cfg: dict) -> dict[str, list[str]]:
+    """{sheet key: [store titles]} from the [art] table of titles.toml."""
+    return {norm(k): [v] if isinstance(v, str) else list(v) for k, v in cfg.get("titles", {}).get("art", {}).items()}
+
+
+def resolve(db: sqlite3.Connection, key: str, name: str, names: list[str] | None = None) -> tuple[str, bytes, str] | None:
+    """(source, bytes, ext) for a game, or None when no source has it. `names` are the titles the
+    stores use for it when they differ from the sheet's."""
     local = _local_source(db, key)
     if local and local[0] == "steam":
         got = steam_art(local[1])
@@ -165,14 +177,15 @@ def resolve(db: sqlite3.Connection, key: str, name: str) -> tuple[str, bytes, st
         got = _image(local[1])
         if got:
             return "psn", *got
-    appid = steam_search(name)
-    if appid:
-        got = steam_art(appid)
+    for n in names or [name]:
+        appid = steam_search(n)
+        if appid:
+            got = steam_art(appid)
+            if got:
+                return "steam search", *got
+        got = microsoft_art(n)
         if got:
-            return "steam search", *got
-    got = microsoft_art(name)
-    if got:
-        return "microsoft store", *got
+            return "microsoft store", *got
     return None
 
 
@@ -189,9 +202,10 @@ def fetch(db: sqlite3.Connection, wanted: dict[str, str], cfg: dict, now: dateti
     todo = [(k, n) for k, n in wanted.items()
             if k not in cached or (cached[k][0] is None and cached[k][1] < retry_before)
             or (cached[k][0] and not (ART_DIR / cached[k][0]).exists())]
+    alias = aliases(cfg)
     got = miss = 0
     for key, name in todo[: s["budget"]]:
-        found = resolve(db, key, name)
+        found = resolve(db, key, name, alias.get(key) or alias.get(norm(name)))
         if found:
             source, body, ext = found
             body, ext = _shrink(body, ext, s["max_px"])
