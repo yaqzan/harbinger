@@ -37,8 +37,9 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
 - **Forecast subagent**: `claude -p` with Read/Write/WebSearch/WebFetch, prompt and output under
   `harbinger/state/forecast-runs/<stamp>/` (plus `agent-output.txt`). ~90 s.
 - **PSN**: `PSN_NPSSO` env var (registry too), else `[playstation] npsso` in config.local.toml.
-  Expires about every two months: the page header's "PSN synced" age grows and the job log says
-  "PSN sync failed: the NPSSO was refused". Get a new one from
+  Expires about every two months (it is a browser session; nothing can extend it): Pharos `ops`
+  pushes "PlayStation sign-in expired" once, and "back" once a new one works. The page header's
+  "PSN synced" age also grows. Get a new one from
   https://ca.account.sony.com/api/v1/ssocookie while signed in at playstation.com.
 - **Steam**: `STEAM_API_KEY` / `STEAM_ID` env vars (read from the registry too, so `setx` works
   without a new shell), else `[steam]` in config.local.toml. Profile game details must be public.

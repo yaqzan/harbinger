@@ -79,9 +79,14 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         keys = _wanted(draft) | {g.key for g in sh.games if g.status in ("Active", "Leaving Soon")}
         match = titles_mod.Matcher((g.key for g in sh.games), cfg.get("titles"), sh.out_of_scope)
         notes.append(steam_mod.sync(db, cfg, lambda name: match.key(name, loose=False) in keys))
-        note = psn_mod.sync(db, cfg)
+        note, outcome = psn_mod.sync(db, cfg)
         if note:
             notes.append(note)
+        last = db.execute("SELECT at FROM psn_sync ORDER BY id DESC LIMIT 1").fetchone()
+        pushed = psn_mod.alert(outcome, last[0] if last else None,
+                               _pharos(cfg) if cfg.get("push", {}).get("enabled", True) else None)
+        if pushed:
+            notes.append(pushed)
     notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
     data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg))
     base_at, base = store.baseline(db, kind)

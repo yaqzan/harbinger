@@ -90,5 +90,47 @@ class Ownership(unittest.TestCase):
         self.assertEqual(d["one_service"]["skipped_claimed"], 1)
 
 
+class FakePharos:
+    def __init__(self):
+        self.sent = []
+
+    def send(self, title, message, **kw):
+        self.sent.append((title, message, kw["channel"]))
+        return type("R", (), {"status": "sent"})()
+
+    delivered = staticmethod(lambda status: status == "sent")
+    ago = staticmethod(lambda when, now=None: f"{(now - when).days} days ago")
+    span = staticmethod(lambda secs: f"{round(secs / 86400)} days")
+
+
+class ExpiryAlert(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from unittest import mock
+        self.dir = tempfile.TemporaryDirectory()
+        patch = mock.patch.object(psn, "ALERT_FILE", Path(self.dir.name) / "psn_alert.json")
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.addCleanup(self.dir.cleanup)
+        self.ph = FakePharos()
+
+    def test_once_on_expiry_quiet_after_once_on_recovery(self):
+        from datetime import datetime
+        day = lambda d: datetime(2026, 12, d, 6, 30)
+        last = "2026-12-01T06:30:00"
+        self.assertEqual(psn.alert("auth", last, self.ph, day(2)), "PSN alert sent")
+        self.assertIsNone(psn.alert("auth", last, self.ph, day(3)))      # latched: no daily repeats
+        self.assertIsNone(psn.alert("error", last, self.ph, day(4)))     # a network blip never pushes
+        self.assertEqual(psn.alert("ok", last, self.ph, day(5)), "PSN recovery sent")
+        self.assertIsNone(psn.alert("ok", last, self.ph, day(6)))
+        self.assertEqual(self.ph.sent, [
+            ("❌ PlayStation sign-in expired", "library last synced 1 days ago · needs a new sign-in token", "ops"),
+            ("✅ PlayStation sign-in back", "Library syncing again · expired for 3 days", "ops")])
+
+    def test_no_push_when_never_alerted(self):
+        self.assertIsNone(psn.alert("ok", None, self.ph))
+        self.assertEqual(self.ph.sent, [])
+
+
 if __name__ == "__main__":
     unittest.main()

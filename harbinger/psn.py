@@ -6,8 +6,11 @@ and trophy progress, all for the signed-in account ("me").
 
 The NPSSO comes from the PSN_NPSSO environment variable, else `[playstation] npsso` in
 config.local.toml (gitignored). Tokens are cached in state/psn_tokens.json (gitignored); the
-refresh token lasts about two months, then a fresh NPSSO is needed. Disc games can't be seen
-by any API: list them under `[playstation] discs` in config.local.toml.
+refresh token lasts about 10 days and refreshing does NOT extend it (measured 2026-10-09), so
+every ~10 days the NPSSO signs in again on its own. The NPSSO itself (a browser session cookie,
+about two months) can only be renewed by signing in again in a browser: when Sony refuses it,
+`alert()` pushes once through Pharos, and once more when a new one works. Disc games can't be
+seen by any API: list them under `[playstation] discs` in config.local.toml.
 
 Tables: `psn_game` (kind purchased | played), `psn_trophy`, `psn_history` (a row whenever
 playtime or trophy progress moves) and `psn_sync`.
@@ -38,6 +41,7 @@ PURCHASED_HASH = "827a423f6a8ddca4107ac01395af2ec0eafd8396fc7fa204aaf9b7ed2eefa1
 GAMES = "https://m.np.playstation.com/api/gamelist/v2/users/me/titles"
 TROPHIES = "https://m.np.playstation.com/api/trophy/v1/users/me/trophyTitles"
 TOKEN_FILE = STATE_DIR / "psn_tokens.json"
+ALERT_FILE = STATE_DIR / "psn_alert.json"   # {"failed_since": iso, "alerted": bool} while sign-in is refused
 NPSSO_HELP = ("sign in at playstation.com, open https://ca.account.sony.com/api/v1/ssocookie in the same "
               "browser and copy the npsso value into the PSN_NPSSO environment variable")
 
@@ -267,17 +271,45 @@ def save(db: sqlite3.Connection, raw: dict, at: str) -> str:
     return note
 
 
-def sync(db: sqlite3.Connection, cfg: dict) -> str | None:
-    """Fetch and save. None when PSN isn't set up; any failure keeps the last good library."""
+def sync(db: sqlite3.Connection, cfg: dict) -> tuple[str | None, str | None]:
+    """Fetch and save: (note, outcome), outcome None (not set up) | ok | auth (sign-in refused)
+    | error (anything else). Any failure keeps the last good library."""
     if not npsso(cfg) and not TOKEN_FILE.exists():
-        return None
+        return None, None
     try:
         raw = fetch(cfg)
     except PsnAuthError as e:
-        return f"PSN sync failed: {e}; kept the previous one"
+        return f"PSN sync failed: {e}; kept the previous one", "auth"
     except (urllib.error.URLError, RuntimeError, KeyError, ValueError) as e:
-        return f"PSN sync failed ({e}); kept the previous one"
-    return save(db, raw, datetime.now().isoformat(timespec="seconds"))
+        return f"PSN sync failed ({e}); kept the previous one", "error"
+    return save(db, raw, datetime.now().isoformat(timespec="seconds")), "ok"
+
+
+def alert(outcome: str | None, last_sync: str | None, pharos, now: datetime | None = None) -> str | None:
+    """Push once when the sign-in is refused, and once when it works again; quiet in between.
+    Network or API errors never push: only an expired sign-in needs the owner."""
+    now = now or datetime.now()
+    state = json.loads(ALERT_FILE.read_text(encoding="utf-8")) if ALERT_FILE.exists() else {}
+    if outcome == "auth":
+        state.setdefault("failed_since", now.isoformat(timespec="seconds"))
+        if state.get("alerted") or pharos is None:
+            ALERT_FILE.write_text(json.dumps(state), encoding="utf-8")
+            return None
+        since = f"library last synced {pharos.ago(datetime.fromisoformat(last_sync), now)}" if last_sync else "never synced"
+        result = pharos.send("❌ PlayStation sign-in expired", f"{since} · needs a new sign-in token",
+                             source="harbinger", channel="ops")
+        state["alerted"] = bool(pharos.delivered(result.status))
+        ALERT_FILE.write_text(json.dumps(state), encoding="utf-8")
+        return f"PSN alert {result.status}"
+    if outcome == "ok" and state:
+        ALERT_FILE.unlink()
+        if not state.get("alerted") or pharos is None:
+            return None
+        down = pharos.span((now - datetime.fromisoformat(state["failed_since"])).total_seconds())
+        result = pharos.send("✅ PlayStation sign-in back", f"Library syncing again · expired for {down}",
+                             source="harbinger", channel="ops")
+        return f"PSN recovery {result.status}"
+    return None
 
 
 def load(db: sqlite3.Connection, cfg: dict) -> dict:

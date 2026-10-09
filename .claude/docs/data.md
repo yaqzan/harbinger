@@ -52,8 +52,13 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 
 - Stdlib port of psn-api's calls (auth flow, client id and the purchased-games GraphQL hash
   copied from its source 2026-10-09): NPSSO -> access code -> tokens, cached in
-  `state/psn_tokens.json`; refresh token ~2 months, then a new NPSSO (`PSN_NPSSO` env var or
-  `[playstation] npsso`). No NPSSO and no cached token = PSN skipped quietly.
+  `state/psn_tokens.json`. The refresh token lasts ~10 days and refreshing does not extend it
+  (measured 2026-10-09), so the code re-signs in with the NPSSO by itself every ~10 days. Only the
+  NPSSO (`PSN_NPSSO` env var or `[playstation] npsso`, ~2 months, unverified) needs the owner; no
+  code can renew it. No NPSSO and no cached token = PSN skipped quietly.
+- Expiry alert (`psn.alert`): a refused sign-in pushes once on Pharos `ops` ("PlayStation sign-in
+  expired"), latched in `state/psn_alert.json`; the first good sync after pushes the recovery with
+  how long it was down. Network/API errors never push.
 - `psn_game`: purchased (membership NONE = bought, PS_PLUS = claimed through PS Plus) and played
   (playtime, service none / none_purchased / ps_plus). `psn_trophy`: progress and counts per
   trophy list. `psn_history`: playtime / progress moves.
