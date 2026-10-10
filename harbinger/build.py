@@ -698,7 +698,8 @@ def queue_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]
 
 
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
-             ps: dict | None = None, psn: dict | None = None, arrivals: list[dict] | None = None) -> dict:
+             ps: dict | None = None, psn: dict | None = None, arrivals: list[dict] | None = None,
+             scores: dict | None = None) -> dict:
     cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
@@ -728,7 +729,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),
         "one_service": one,
-        "library": library.rows(cx, side, steam, psn, one),
+        "library": library.rows(cx, side, steam, psn, one, scores),
         "sources": {
             "sheet_fetched": sheet.fetched,
             "forecast_checked": forecast.get("checked_at"),

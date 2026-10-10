@@ -44,6 +44,7 @@ def connect(path=DB_FILE) -> sqlite3.Connection:
     for schema in (SCHEMA, sheet.SCHEMA, steam.SCHEMA, psn.SCHEMA, titles.SCHEMA, art.SCHEMA, ratings.SCHEMA):
         db.executescript(schema)
     psn.migrate(db)
+    ratings.migrate(db)
     return db
 
 

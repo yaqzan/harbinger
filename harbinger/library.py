@@ -25,9 +25,10 @@ def _leave(row: dict) -> list | None:
     return [row["wave"], row["band"], row["p"]]
 
 
-def rows(cx, side, steam: dict, psn: dict | None, one: dict) -> list[dict]:
+def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None = None) -> list[dict]:
     """One dict per game: {game, key, gp, ps, steam, psn, mc, us, hours, genre, year, played,
-    gp_leaves, ps_leaves, appid}. Sorted by name; the page sorts and filters."""
+    gp_leaves, ps_leaves, appid}. Sorted by name; the page sorts and filters. `scores`
+    ({key: {mc, us}}, sheet.scores) fills a score the game's own catalogue row lacks."""
     pm = side.pm
     out: dict[str, dict] = {}
 
@@ -88,6 +89,17 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict) -> list[dict]:
         own(rec["name"], "steam", rec.get("played_h"), rec.get("appid"))
     for rec in ((psn or {}).get("games") or {}).values():
         own(rec["name"], "psn" if rec.get("where") in OWNED_ON_PSN else "ps", rec.get("played_h"))
+
+    # a score the catalogue row lacks, from any sheet row for the same title (removed, other tier)
+    sc = scores or {}
+    pkey = {v: k for k, v in ps_to_row.items()}  # row key -> the PS Plus key of the same game
+    for k, r in out.items():
+        for f in ("mc", "us"):
+            if r.get(f) is None:
+                for kk in (k, pkey.get(k)):
+                    if kk and sc.get(kk, {}).get(f) is not None:
+                        r[f] = sc[kk][f]
+                        break
 
     # when a game leaves, per service
     for src in (one.get("rows", []), one.get("backups", [])):

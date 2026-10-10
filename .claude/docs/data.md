@@ -110,9 +110,15 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   Steam library, else exact-title Steam store search (same strict rule as art); then the public
   appreviews summary. Owned games first. `[ratings] budget` per ingest, `refresh_days`, a game with
   no Steam app retried after `retry_days`; HTTP trouble ends the run and keeps what's cached.
-  Under `min_reviews` (10) a game shows no score. First fill takes a few daily runs. Metacritic
-  is only the sheets' column: Steam-only games have none, which is why Steam reviews exist.
-- Cover art for the library comes through the same `art.wanted()` list, after the leaving games.
+  Under `min_reviews` (10) a game shows no score. First fill takes a few daily runs.
+- **Where each score comes from** (a game's own catalogue row first, then the next): Metacritic =
+  Game Pass sheet, PS Plus sheet, any other sheet row for the title (`sheet.scores`: removed games,
+  other tiers, Games with Gold), then Steam's store copy (`appdetails` filters=metacritic, only asked
+  for games still without one, cached in `steam_rating.metacritic`). PlayStation user score = the PS
+  sheet's User score, any row. Steam reviews = appreviews. Nothing else is scraped.
+- Cover art for the library comes through the same `art.wanted()` list, after the leaving games, so
+  at 150 a run the library waits weeks for a first fill. The 2026-10-10 backfill ran `steam` once with
+  the budget lifted (patch `art.settings`); do the same after a big library jump.
 
 ## Title matching (`titles.py`, every run)
 

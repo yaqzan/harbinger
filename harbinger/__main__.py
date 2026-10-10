@@ -95,7 +95,8 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
             notes.append(pushed)
     notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
     arrived = store.arrivals(db, cfg["alerts"]["arrival_days"]) if kind == "ingest" and cfg["alerts"]["arrivals"] else []
-    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg), arrived)
+    data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg), arrived,
+                    sheet_mod.scores(db))
     if sync_steam:  # network lookups only on ingest and steam; build shows what is already cached
         notes.append(art_mod.fetch(db, art_mod.wanted(data), cfg))
     art_mod.attach(data, art_mod.load(db))

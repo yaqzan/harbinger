@@ -460,6 +460,19 @@ def load_rows(db: sqlite3.Connection, service: str = "xbox") -> tuple[dict[str, 
     return tabs, imp[0] if imp else None
 
 
+def scores(db: sqlite3.Connection) -> dict[str, dict]:
+    """{key: {mc, us}}: the Metacritic and PlayStation user score the sheets hold for a title, from
+    any tab, status or service (a removed game or a tier above yours still has its scores)."""
+    out: dict[str, dict] = {}
+    for key, mc, us in db.execute("SELECT key, metacritic, user_score FROM sheet_row"
+                                  " WHERE metacritic IS NOT NULL OR user_score IS NOT NULL"):
+        r = out.setdefault(key, {})
+        for f, v in (("mc", mc), ("us", us)):
+            if isinstance(v, (int, float)) and f not in r:
+                r[f] = v
+    return out
+
+
 def load(db: sqlite3.Connection, cfg: dict) -> "Sheet":
     tabs, fetched = load_rows(db)
     return parse(tabs, fetched, cfg.get("scope", {}).get("skip_systems", ()))

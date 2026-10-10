@@ -13,9 +13,9 @@ from .test_build import CFG, FORECAST, TABS, TODAY
 from .test_plus import ps_input
 
 
-def lib(steam=None, psn=None):
+def lib(steam=None, psn=None, scores=None):
     d = assemble(CFG, parse(TABS, "2026-10-09T08:46:00"), FORECAST, steam or {"games": {}}, TODAY, TODAY,
-                 ps_input(), psn)
+                 ps_input(), psn, scores=scores)
     return {r["key"]: r for r in d["library"]}
 
 
@@ -57,6 +57,14 @@ class Overlaps(unittest.TestCase):
         self.assertEqual(self.rows.get("frostpunk 2", {"gp": 0})["gp"], 0)
 
 
+class SheetScores(unittest.TestCase):
+    def test_a_score_the_catalogue_row_lacks_comes_from_any_sheet_row(self):
+        rows = lib(scores={norm("Grand Theft Auto V"): {"mc": 97.0, "us": 8.9}, "forecast game": {"mc": 70.0}})
+        gta = rows[norm("Grand Theft Auto V")]
+        self.assertEqual((gta["mc"], gta["us"]), (97.0, 8.9))
+        self.assertEqual(rows["forecast game"]["mc"], 70.0)
+
+
 NOW = datetime(2026, 10, 9, 12, 0)
 
 
@@ -67,29 +75,29 @@ class Ratings(unittest.TestCase):
         self.cfg = {"ratings": {"budget": 2, "pause_s": 0}}
 
     def test_owned_appid_skips_the_search_and_budget_caps_the_run(self):
-        wanted = [("a", "A", 1), ("b", "B", None), ("c", "C", None)]
+        wanted = [("a", "A", 1, False), ("b", "B", None, False), ("c", "C", None, False)]
         with mock.patch.object(art, "steam_search", return_value=7) as s, \
                 mock.patch.object(ratings, "summary", return_value=(90, 100)):
             note = ratings.fetch(self.db, wanted, self.cfg, NOW)
         self.assertEqual(note, "ratings: 2 rated, 0 not on Steam, 1 left for the next run")
         s.assert_called_once_with("B")
-        self.assertEqual(ratings.load(self.db)["a"], {"appid": 1, "pct": 90, "n": 100})
+        self.assertEqual(ratings.load(self.db)["a"], {"appid": 1, "mc": None, "pct": 90, "n": 100})
 
     def test_no_steam_app_is_cached_and_not_retried_inside_retry_days(self):
         with mock.patch.object(art, "steam_search", return_value=None), mock.patch.object(ratings, "summary") as sm:
-            ratings.fetch(self.db, [("x", "X", None)], self.cfg, NOW)
-            ratings.fetch(self.db, [("x", "X", None)], self.cfg, NOW)
+            ratings.fetch(self.db, [("x", "X", None, False)], self.cfg, NOW)
+            ratings.fetch(self.db, [("x", "X", None, False)], self.cfg, NOW)
         sm.assert_not_called()
         self.assertEqual(ratings.load(self.db), {})
 
     def test_throttled_summary_stops_the_run_and_keeps_the_rest(self):
         with mock.patch.object(ratings, "summary", return_value=None):
-            note = ratings.fetch(self.db, [("a", "A", 1), ("b", "B", 2)], self.cfg, NOW)
+            note = ratings.fetch(self.db, [("a", "A", 1, False), ("b", "B", 2, False)], self.cfg, NOW)
         self.assertEqual(note, "ratings: 0 rated, 0 not on Steam, Steam stopped answering, 2 left for the next run")
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM steam_rating").fetchone()[0], 0)
 
     def test_few_reviews_show_no_score(self):
-        self.db.execute("INSERT INTO steam_rating VALUES ('a', 'A', 1, 4, 5, '2026-10-09T00:00:00')")
+        self.db.execute("INSERT INTO steam_rating (key, name, appid, positive, total, checked_at) VALUES ('a', 'A', 1, 4, 5, '2026-10-09T00:00:00')")
         rows = [{"key": "a", "game": "A"}]
         ratings.attach(rows, ratings.load(self.db))
         self.assertNotIn("rating", rows[0])
@@ -100,7 +108,24 @@ class Ratings(unittest.TestCase):
     def test_leaving_games_are_asked_first_then_owned(self):
         rows = [{"key": "c", "game": "C", "steam": 0}, {"key": "b", "game": "B", "steam": 1, "appid": 5},
                 {"key": "a", "game": "A", "steam": 0, "gp_leaves": ["2026-10-15", "Confirmed", 1.0]}]
-        self.assertEqual([k for k, _, _ in ratings.wanted(rows)], ["a", "b", "c"])
+        self.assertEqual([w[0] for w in ratings.wanted(rows)], ["a", "b", "c"])
+
+    def test_metacritic_is_asked_only_for_games_without_one_and_filled_in_by_attach(self):
+        with mock.patch.object(ratings, "summary", return_value=(9, 10)),                 mock.patch.object(ratings, "metacritic", return_value=81) as m:
+            ratings.fetch(self.db, [("a", "A", 1, True), ("b", "B", 2, False)], self.cfg, NOW)
+        m.assert_called_once_with(1)
+        rows = [{"key": "a", "game": "A"}, {"key": "b", "game": "B", "mc": 50.0}]
+        ratings.attach(rows, ratings.load(self.db))
+        self.assertEqual((rows[0]["mc"], rows[1]["mc"]), (81.0, 50.0))
+
+    def test_a_cached_game_is_asked_for_metacritic_once(self):
+        self.db.execute("INSERT INTO steam_rating (key, name, appid, positive, total, checked_at)"
+                        " VALUES ('a', 'A', 1, 9, 10, '2026-10-09T00:00:00')")
+        with mock.patch.object(ratings, "summary") as sm, mock.patch.object(ratings, "metacritic", return_value=None) as m:
+            ratings.fetch(self.db, [("a", "A", 1, True)], self.cfg, NOW)
+            ratings.fetch(self.db, [("a", "A", 1, True)], self.cfg, NOW)
+        sm.assert_not_called()
+        m.assert_called_once_with(1)
 
 
 if __name__ == "__main__":
