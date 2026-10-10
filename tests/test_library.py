@@ -85,7 +85,7 @@ class Ratings(unittest.TestCase):
     def test_throttled_summary_stops_the_run_and_keeps_the_rest(self):
         with mock.patch.object(ratings, "summary", return_value=None):
             note = ratings.fetch(self.db, [("a", "A", 1), ("b", "B", 2)], self.cfg, NOW)
-        self.assertEqual(note, "ratings: 0 rated, 0 not on Steam")
+        self.assertEqual(note, "ratings: 0 rated, 0 not on Steam, Steam stopped answering, 2 left for the next run")
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM steam_rating").fetchone()[0], 0)
 
     def test_few_reviews_show_no_score(self):

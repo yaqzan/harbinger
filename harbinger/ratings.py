@@ -64,6 +64,7 @@ def fetch(db: sqlite3.Connection, wanted: list[tuple[str, str, int | None]], cfg
     todo.sort(key=lambda t: (t[0], t[1]))
     alias = art.aliases(cfg)
     done = miss = 0
+    stopped = False
     for _, _, key, name, appid in todo[: s["budget"]]:
         appid = appid or cached.get(key, (None,))[0]
         if not appid:
@@ -74,7 +75,8 @@ def fetch(db: sqlite3.Connection, wanted: list[tuple[str, str, int | None]], cfg
             time.sleep(s["pause_s"])
         got = summary(appid) if appid else None
         if appid and got is None:
-            break  # throttled or offline: keep what is cached, try again next run
+            stopped = True  # throttled or offline: keep what is cached, try again next run
+            break
         pos, tot = got if got else (None, None)
         db.execute("INSERT OR REPLACE INTO steam_rating VALUES (?, ?, ?, ?, ?, ?)",
                    (key, name, appid, pos, tot, now.isoformat(timespec="seconds")))
@@ -82,8 +84,9 @@ def fetch(db: sqlite3.Connection, wanted: list[tuple[str, str, int | None]], cfg
         done += got is not None
         miss += got is None
         time.sleep(s["pause_s"])
-    left = max(0, len(todo) - s["budget"])
-    return f"ratings: {done} rated, {miss} not on Steam" + (f", {left} left for the next run" if left else "")
+    left = len(todo) - done - miss if stopped else max(0, len(todo) - s["budget"])
+    return (f"ratings: {done} rated, {miss} not on Steam" + (", Steam stopped answering" if stopped else "")
+            + (f", {left} left for the next run" if left else ""))
 
 
 def load(db: sqlite3.Connection, min_reviews: int = DEFAULTS["min_reviews"]) -> dict[str, dict]:
