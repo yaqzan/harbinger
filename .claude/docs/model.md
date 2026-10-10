@@ -109,11 +109,12 @@ them as mini logo circles (Simple Icons paths, CC0) in the cover's corner, one p
 
 One list (`one_service.rows` + `backups`, plus unverified reports from `confirmed`) drawn two
 ways, toggled at the top and remembered: **Shelf** (a column of cover art per exit date) and
-**Board** (a metro line, owner's pick 2026-10-10: rows grouped under each exit date on a vertical
-line; each row is a poster carrying the shelf's halo, stacked end to end with room for the ring, then
+**Board** (a metro line, owner's pick 2026-10-10: rows grouped by the last day to start (2026-10-10:
+Start now, then each start-by date, then Hours unknown, then Won't fit; claims on their claim date) on a
+vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the shelf's halo, stacked end to end with room for the ring, then
 Metacritic (Metacritic's green/yellow/red) + title + platform logo, a facts line (odds, Steam % or PS
 user score, genre, year), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
-default), how far ahead (8 weeks by default), backups on/off. A tile or row opens a detail
+default), how far ahead (8 weeks by default), two backup switches (games you own; games on both services). A tile or row opens a detail
 sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against
 the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
 `verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.

@@ -191,14 +191,17 @@
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
   // ── filters and view ─────────────────────────────────────────────
-  const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), fk: $("fk") };
+  const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), fo: $("fo"), fk: $("fk") };
+  // a backup is either a game you own (bought, disc, claimed, every trophy) or one the other service also has
+  const owned = (r) => r.backup && !r.backup.startsWith("Also on");
   ["fs", "fb", "fr"].forEach((k) => { ctl[k].value = store.get(k, ctl[k].value); });
   ctl.fk.checked = store.get("fk", "1") === "1";
-  if (one.ps_tier === "none") ctl.fs.hidden = true;
+  ctl.fo.checked = store.get("fo", "1") === "1";
+  if (one.ps_tier === "none") { ctl.fs.hidden = true; ctl.fk.parentElement.hidden = true; }
   const shown = () => {
     const q = ctl.q.value.trim().toLowerCase(), fs = ctl.fs.value, fb = +ctl.fb.value, fr = +ctl.fr.value;
     return items.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
-      && rank(r) < fb && days(r) <= fr && (ctl.fk.checked || !r.backup));
+      && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.fo.checked : ctl.fk.checked)));
   };
   const expanded = new Set();
   const CAP = 15;
@@ -303,13 +306,22 @@
   // What to do about a game, in the board's words.
   const remark = (r) => {
     if (r.backup) return r.backup;
-    if (isClaim(r)) return `Claim by ${fmt(t(r.wave))}`;
-    if (r.unverified && r.band === "Reported") return "Unverified report";
-    const u = urgency(r);
-    if (u === "Hours unknown") return "Hours unknown";
-    if (u === "Too late") return `Short ${Math.round(r.hours - avail(r))} h`;
-    if (u === "Start now") return "Boarding · start now";
-    return `${u === "Comfortable" ? "On time" : "Board soon"} · start ${fmt(startBy(r))}`;
+    const when = fmt(t(r.wave));
+    if (isClaim(r)) return `Claim by ${when}`;
+    if (r.unverified && r.band === "Reported") return `Reported for ${when}`;
+    if (r.hours != null && r.hours > avail(r)) return `Leaves ${when} · short ${Math.round(r.hours - avail(r))} h`;
+    return `Leaves ${when}, ${inDays(days(r))}`;
+  };
+  // The board runs in order of the last day to start, not the exit date: a 2 h game leaving in
+  // two weeks and a 120 h game leaving in three months can be due the same week. Start-by is
+  // model.start_by (exit, minus the weeks of play, minus the buffer); claims are due on their date.
+  const startGroup = (r) => {
+    if (isClaim(r)) return { key: String(t(r.wave)), at: t(r.wave), label: fmt(t(r.wave)), sub: `start by, ${inDays(days(r))}` };
+    if (r.hours == null) return { key: "unk", at: 9e15, label: "Hours unknown", sub: "no completion time yet" };
+    if (r.hours > avail(r)) return { key: "late", at: 9.1e15, label: "Won't fit", sub: "not even starting today" };
+    const sb = startBy(r);
+    if (sb <= T0) return { key: "now", at: -1, label: "Start now", sub: "the start-by date has passed" };
+    return { key: String(sb), at: sb, label: fmt(sb), sub: `start by, ${inDays(Math.round((sb - T0) / DAY))}` };
   };
   // Metacritic in Metacritic's own colours: green 75+, yellow 50 to 74, red under 50
   const mcBox = (r) => {
@@ -335,11 +347,17 @@
     return c;
   };
   const drawBoard = (rows) => {
-    const host = $("board");
-    host.replaceChildren(...[...new Set(rows.map((r) => r.wave))].map((w) => {
-      const its = rows.filter((r) => r.wave === w), grp = el("div", "m-group"), head = el("div", "m-date");
-      head.appendChild(el("b", null, fmt(t(w))));
-      head.appendChild(el("span", null, `${inDays(days(its[0]))} · ${round(avail(its[0]))} h to play`));
+    const host = $("board"), groups = new Map();
+    rows.forEach((r) => {
+      const g = startGroup(r);
+      if (!groups.has(g.key)) groups.set(g.key, { ...g, its: [] });
+      groups.get(g.key).its.push(r);
+    });
+    host.replaceChildren(...[...groups.values()].sort((a, b) => a.at - b.at).map((gr0) => {
+      const its = gr0.its.sort((a, b) => !!a.backup - !!b.backup || a.wave.localeCompare(b.wave) || (b.p ?? 0) - (a.p ?? 0));
+      const grp = el("div", "m-group"), head = el("div", "m-date");
+      head.appendChild(el("b", null, gr0.label));
+      head.appendChild(el("span", null, gr0.sub));
       grp.appendChild(head);
       const line = el("div", "m-line");
       its.forEach((r) => {
@@ -382,7 +400,7 @@
     view = b.dataset.view; store.set("view", view); history.replaceState(null, "", `#${view}`); draw();
   }));
   Object.entries(ctl).forEach(([k, n]) => n.addEventListener("input", () => {
-    if (k !== "q") store.set(k, k === "fk" ? (n.checked ? "1" : "0") : n.value);
+    if (k !== "q") store.set(k, n.type === "checkbox" ? (n.checked ? "1" : "0") : n.value);
     draw();
   }));
   draw();
