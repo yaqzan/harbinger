@@ -111,7 +111,10 @@ Two tabs, **Board** (`index.html`) and **Library** (`library.html`). The Shelf v
 cover art per exit date) was dropped 2026-10-10 by the owner; git history has it (before this note).
 The Board draws one list (`one_service.rows` + `backups`, plus unverified reports from `confirmed`)
 as a metro line (owner's pick 2026-10-10: rows grouped by the last day to start (2026-10-10:
-Start now, then each start-by date, then Hours unknown, then Won't fit; claims on their claim date) on a
+Won't fit, then Start now, then each start-by date; claims on their claim date. The page opens
+scrolled to Start now with a "↑ N won't fit" pill at the top edge (`landOnStart`, once per load; the
+pill scrolls up). Games with no hours stay off the board (owner, 2026-10-10); research them into
+`titles.toml` `[hours]`) on a
 vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the halo, stacked end to end with room for the ring, then
 Metacritic (Metacritic's green/yellow/red) + title + platform logo, a facts line (odds, Steam % or PS
 user score, genre, year), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by

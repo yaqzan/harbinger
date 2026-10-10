@@ -81,14 +81,16 @@ class SanityCheck(unittest.TestCase):
             self.assertIn(name, s["takeaway"])
         self.assertNotIn("—", s["takeaway"])
 
-    def test_finishable_are_the_three_short_ones(self):
+    def test_finishable_are_the_short_ones(self):
         fin = sorted(r["game"] for r in self.d["confirmed"] if r["verdict"] in ("Doable", "Tight"))
-        self.assertEqual(fin, ["Donut County", "Nova Roma (Game Preview)", "The Casting of Frank Stone"])
+        # Superball isn't on the sheet; its 3 h come from titles.toml [hours]
+        self.assertEqual(fin, ["Donut County", "Nova Roma (Game Preview)", "Superball", "The Casting of Frank Stone"])
 
     def test_superball_is_shown_but_unverified_and_uncounted(self):
         sb = [r for r in self.d["confirmed"] if r["game"] == "Superball"]
         self.assertEqual(len(sb), 1)
         self.assertFalse(sb[0]["verified"])
+        self.assertEqual(sb[0]["hours"], 3.0)  # researched, titles.toml [hours]
 
     def test_no_past_dates(self):
         for r in self.d["confirmed"] + self.d["watchlist"]:

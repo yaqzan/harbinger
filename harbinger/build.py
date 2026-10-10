@@ -47,6 +47,11 @@ class Context:
                 self.owned_on.setdefault(key, set()).add(where.lower())
         self.claimed = list((psn or {}).get("claimed", []))  # PS Plus games claimed into the library
         self.playing = (psn or {}).get("playing", {})          # every PS game you've played, owned or not
+        # [hours] in titles.toml: researched hours for games the sheet leaves blank or doesn't list
+        self.hours_fix = {norm(k): float(v) for k, v in cfg.get("titles", {}).get("hours", {}).items()}
+        for g in sheet.games + sheet.leaving:
+            if g.hours is None and g.key in self.hours_fix:
+                g.hours = self.hours_fix[g.key]
         self.dpm = cfg["sheet"]["days_per_month"]
         self.cohorts = cfg["waves"]["cohorts"]
         self.play = cfg["play"]
@@ -144,7 +149,7 @@ def confirmed_rows(cx: Context) -> list[dict]:
         if wave is None or wave < today:
             continue  # never show a departure date in the past
         g = e["g"]
-        sheet_hours = g.hours if g else None
+        sheet_hours = g.hours if g else cx.hours_fix.get(key)
         prog = cx.progress(key, sheet_hours)
         avail = model.hours_available(today, wave, cx.play["hours_per_week"])
         verdict = f"Owned on {prog['where']}" if prog["owned"] else model.verdict(prog["hours"], avail, cx.play)
@@ -463,6 +468,9 @@ class PsSide:
 
     def __init__(self, cx: Context, ps: dict | None):
         self.games = ps["games"] if ps else []
+        for g in self.games:  # [hours] fills a PS Plus row the sheet left blank, too
+            if g.hours is None and norm(g.name) in cx.hours_fix:
+                g.hours = cx.hours_fix[norm(g.name)]
         self.by_key = {g.key: g for g in self.games}
         self.pm = ps_matcher(self.games, cx.cfg) if self.games else None
         pm = self.pm

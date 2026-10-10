@@ -100,6 +100,12 @@
 "Broken Sword - Shadows of the Templar: Reforged" = "Broken Sword - Shadow of the Templars: Reforged"
 "Enotria: The Last Song Standard Edition" = "Enotria: The Last Song"
 
+# Hours to 100% for a game the sheets give none (or that isn't on a sheet at all), researched by
+# hand: "title" = hours. Only fills a blank; a sheet's own hours always win. Without hours a game
+# stays off the board, so look one up when the board would want it. Note the source.
+[hours]
+"Superball" = 3   # TrueAchievements: 14 achievements, 2-3 h to complete (2026-10-10)
+
 # Sony first-party on PS Plus (PlayStation Studios and Sony-published), as the PS Plus sheet spells
 # them. The sheet has no studio column, so this list is kept by hand: add a line when Sony puts a
 # new first-party game on Extra or Premium. They get [playstation.base_rates.sony] (measured

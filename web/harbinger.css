@@ -259,6 +259,10 @@ td .dots { margin-right: 2px; }
 .m-fit .bar.unk { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); opacity: .6; }
 .m-fit .ft { display: block; color: var(--muted); font-size: .74rem; margin-top: 3px; white-space: nowrap; }
 .m-rm { font-weight: 700; font-size: .86rem; }
+/* the hint the page opens on: Won't fit is just above */
+.m-peek { justify-self: center; display: inline-flex; align-items: center; margin: .2rem auto .1rem; padding: 4px 14px; font: inherit; font-size: .8rem;
+  color: var(--muted); background: var(--card); border: 1px solid var(--rule); border-radius: 999px; cursor: pointer; }
+.m-peek:hover { color: var(--ink); }
 .m-row.dim .m-info > *, .m-row.dim .m-fit, .m-row.dim .m-rm { opacity: .4; }
 .m-row.dim .m-title { opacity: 1 !important; }
 .m-row.dim .m-title > :not(.plats) { opacity: .4; }  /* the logos stay lit */

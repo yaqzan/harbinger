@@ -178,7 +178,8 @@
     const q = ctl.q.value.trim().toLowerCase(), fs = ctl.fs.value, fb = +ctl.fb.value, fr = +ctl.fr.value;
     return items.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
       && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.so.checked : ctl.sb.checked))
-      && (!done(r) || withDone));
+      && (!done(r) || withDone)
+      && (r.hours != null || isClaim(r)));  // no hours, no place on a timeline: research it into titles.toml [hours]
   };
 
   // Halo: how bright the glow is says how likely the game leaves; a confirmed exit is a solid
@@ -250,8 +251,8 @@
   // model.start_by (exit, minus the weeks of play, minus the buffer); claims are due on their date.
   const startGroup = (r) => {
     if (isClaim(r)) return { key: String(t(r.wave)), at: t(r.wave), label: fmt(t(r.wave)), sub: `start by, ${inDays(days(r))}` };
-    if (r.hours == null) return { key: "unk", at: 9e15, label: "Hours unknown", sub: "no completion time yet" };
-    if (r.hours > avail(r)) return { key: "late", at: 9.1e15, label: "Won't fit", sub: "not even starting today" };
+    // Won't fit sits above Start now: the page lands on Start now and peeks at it (landOnStart)
+    if (r.hours > avail(r)) return { key: "late", at: -2, label: "Won't fit", sub: "not even starting today" };
     const sb = startBy(r);
     if (sb <= T0) return { key: "now", at: -1, label: "Start now", sub: "the start-by date has passed" };
     return { key: String(sb), at: sb, label: fmt(sb), sub: `start by, ${inDays(Math.round((sb - T0) / DAY))}` };
@@ -325,6 +326,21 @@
       grp.appendChild(line);
       return grp;
     }));
+    const late = groups.get("late");
+    if (late && groups.size > 1) {  // the hint the page lands on: Won't fit is just above
+      const peek = el("button", "m-peek", `↑ ${late.its.length} won't fit before ${late.its.length === 1 ? "it leaves" : "they leave"}`);
+      peek.type = "button";
+      peek.addEventListener("click", () => host.firstChild.scrollIntoView({ behavior: still.matches ? "auto" : "smooth", block: "start" }));
+      host.firstChild.after(peek);
+    }
+  };
+  // Open on Start now, not on the games you can't finish: scroll once so the peek sits at the top edge.
+  let landed = false;
+  const landOnStart = () => {
+    if (landed) return;
+    landed = true;
+    const peek = $("board").querySelector(".m-peek");
+    if (peek) scrollTo({ top: peek.getBoundingClientRect().top + scrollY - 6 });
   };
 
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
@@ -338,6 +354,7 @@
     $("board").hidden = !rows.length;
     $("legend").hidden = !rows.length;
     drawBoard(rows);
+    landOnStart();
   };
   // The switches animate: hiding shrinks the dimmed games away and slides the rest together;
   // showing slides the rest apart and grows the dimmed games in (FLIP on every keyed element).
