@@ -102,16 +102,17 @@ where you'd keep playing: "Owned on Steam / PlayStation / PS disc / PS Plus clai
 "Claimed", "Every trophy earned". The page shows them dimmed (owner, 2026-10-09: an exit you
 are covered for should stay visible, greyed, with the alternative named).
 `places` lists every library or service you can still play it on (`xbox`, `playstation`, `steam`;
-Steam and PSN ownership tracked separately in `Context.owned_on` / `PsSide.owned_on`); the shelf draws
+Steam and PSN ownership tracked separately in `Context.owned_on` / `PsSide.owned_on`); the page draws
 them as mini logo circles (Simple Icons paths, CC0) in the cover's corner, one per place.
 
 ## The page (`web/`, redesigned 2026-10-09)
 
-One list (`one_service.rows` + `backups`, plus unverified reports from `confirmed`) drawn two
-ways, toggled at the top and remembered: **Shelf** (a column of cover art per exit date) and
-**Board** (a metro line, owner's pick 2026-10-10: rows grouped by the last day to start (2026-10-10:
+Two tabs, **Board** (`index.html`) and **Library** (`library.html`). The Shelf view (a column of
+cover art per exit date) was dropped 2026-10-10 by the owner; git history has it (before this note).
+The Board draws one list (`one_service.rows` + `backups`, plus unverified reports from `confirmed`)
+as a metro line (owner's pick 2026-10-10: rows grouped by the last day to start (2026-10-10:
 Start now, then each start-by date, then Hours unknown, then Won't fit; claims on their claim date) on a
-vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the shelf's halo, stacked end to end with room for the ring, then
+vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the halo, stacked end to end with room for the ring, then
 Metacritic (Metacritic's green/yellow/red) + title + platform logo, a facts line (odds, Steam % or PS
 user score, genre, year), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
 default), how far ahead (8 weeks by default), two switches for the dimmed games (games you own; games on both services), off by default
@@ -120,7 +121,7 @@ reverse (FLIP over `data-k` keys in `animatedDraw`; skipped under reduced motion
 sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against
 the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
 `verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.
-Shelf cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (full at 60%+), a
+The cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (full at 60%+), a
 solid ring once confirmed (dashed if only reported). Its colour is fit, not odds, from s = hours you have /
 hours needed: green at s >= 1.5, a gradient to pure yellow at 1.0 (just enough), then to red at s <= 0.5;
 grey for unknown hours and backups. On the board the halo sits on the poster; the stop on the line is a plain fit-colour dot (a
@@ -135,10 +136,8 @@ confirmed date + service groups, how many you'd lose and how many still fit, plu
 `summary.next_notice`. Sync times live under "Runs and sources". `summary.takeaway` is still
 built for the CLI and pushes.
 
-**Phones (2026-10-10).** Under 640px: each Shelf date column is the screen width minus a peek of
-the next one (scroll-snap); the Board drops Via / To 100% / Board by and uses fixed columns with
-short status and remark text (`.long` / `.short` spans, also used for remarks up to 1180px so
-the Board never scrolls sideways); tables with `class="stack"` become one block per row, labelled
+**Phones (2026-10-10).** Under 640px the Board's date heads its group and each row folds to the
+poster beside title, facts, then hours and remark; tables with `class="stack"` become one block per row, labelled
 from `data-label` (copied from the header by the JS that fills them); the detail dialog docks to
 the bottom as a sheet. Touch screens (`pointer: coarse`) at any width get 44px controls and
 16px inputs (iOS zooms in on anything smaller). Hover effects sit behind `@media (hover: hover)`.

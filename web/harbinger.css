@@ -139,12 +139,6 @@ main { margin-bottom: 1.5rem; }
   background: var(--card); background: linear-gradient(160deg, color-mix(in srgb, var(--ink) 10%, var(--card)), var(--card)); border: 1px solid var(--rule); }
 
 /* ── shelf: one column per exit date ── */
-.shelf { display: flex; gap: 1.75rem; overflow-x: auto; padding: 4px 14px .75rem; margin: 0 -14px; scroll-snap-type: x proximity; scroll-padding: 0 14px; }  /* room for the halos */
-.col { flex: none; width: calc(3 * 84px + 2 * 12px); scroll-snap-align: start; }
-.col h3 { font-size: 1.05rem; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
-.col h3 small { color: var(--muted); font-weight: 400; font-size: .78rem; }
-.cap { display: flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); margin: 1px 0 .7rem; }
-.tiles { display: grid; grid-template-columns: repeat(3, 84px); gap: 16px 12px; }
 .tile { display: flex; flex-direction: column; width: 84px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tile .cv { width: 84px; height: 126px; overflow: visible; transition: transform .12s; }
 .tile .cv img { border-radius: 6px; }
@@ -165,18 +159,12 @@ main { margin-bottom: 1.5rem; }
 .tile .rib { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 4px; font-size: .62rem; font-weight: 700; line-height: 1.2; text-align: center; background: rgba(0, 0, 0, .82); color: #fff; }
 .tile.dim .cv img { filter: grayscale(1) brightness(.55); }
 .tile.dim .nm, .tile.dim .sub { opacity: .45; }
-.hb { display: block; height: 4px; border-radius: 2px; background: var(--rule); margin-top: 5px; overflow: hidden; }
-.hb i { display: block; height: 100%; }
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.1rem; color: var(--muted); font-size: .78rem; margin: -.1rem 0 .9rem; }
 .legend span { display: inline-flex; align-items: center; gap: 7px; }
 .legend i { display: inline-block; width: 12px; height: 16px; border-radius: 3px; background: var(--card); }
 .lg-glow { box-shadow: 0 0 9px 2px hsl(140 85% 55% / .8); }
 .lg-ring { box-shadow: 0 0 0 2px hsl(140 85% 55%); }
 .lg-scale { width: 54px !important; height: 6px !important; background: linear-gradient(90deg, hsl(140 85% 55%), hsl(55 85% 55%), hsl(0 85% 55%)) !important; }
-.hb.ok i { background: var(--ok); }
-.hb.tight i { background: var(--possible); }
-.hb.late i { background: var(--likely); }
-.hb.unk i { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); }
 .tile .nm { font-size: .74rem; line-height: 1.25; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tile .sub { font-size: .7rem; color: var(--muted); }
 .more { margin-top: .8rem; font: inherit; font-size: .8rem; color: var(--muted); background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
@@ -337,13 +325,6 @@ td .dots { margin-right: 2px; }
   .ctl select { flex: 1 1 40%; min-width: 0; }
   .ctl .count { flex: none; }
 
-  /* shelf: each date fills the screen, the next one peeks in from the edge */
-  .shelf { margin: 0 calc(-1 * max(16px, env(safe-area-inset-right))) 0 calc(-1 * max(16px, env(safe-area-inset-left)));
-    padding: 0 16px .75rem; scroll-padding: 0 16px; scroll-snap-type: x mandatory; gap: 1.25rem; overscroll-behavior-x: contain; }
-  .col { width: calc(100vw - 72px); max-width: 26rem; }
-  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
-  .tile:not(.lib) { width: auto; min-width: 0; }
-  .tile:not(.lib) .cv { width: 100%; height: auto; aspect-ratio: 2 / 3; }
   .tile .odds { font-size: .7rem; }
 
   /* tables: one block per row. The first cell heads it, the short values run on one line
@@ -378,8 +359,6 @@ td .dots { margin-right: 2px; }
   .mark { font-size: .8rem; }
   .views button, .views a { padding: 0 10px; }
   .navlink { padding: 0 .2rem; }
-  .col { width: calc(100vw - 56px); }
-  .tiles { gap: 12px 8px; }
   .tile .odds { font-size: .6rem; padding: 1px 4px; }  /* clears the service dot on ~80px tiles */
 }
 /* the page behind an open sheet stays put */

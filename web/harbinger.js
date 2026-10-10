@@ -1,4 +1,4 @@
-// Harbinger page: reads /data.json and draws the shelf, the departures board and the tables
+// Harbinger page: reads /data.json and draws the board (a metro line of leaving games) and the tables
 // below them. Data is untrusted text: everything goes in through textContent, never innerHTML.
 // Day counts, hours and start-by dates are worked out here against the viewer's today, with the
 // same rules as harbinger/model.py (hours_available, verdict, start_by, urgency).
@@ -83,7 +83,6 @@
   const svc = (r) => (r.service.startsWith("PS") ? "ps" : "xbox");
   const isClaim = (r) => r.state === "claim";
   const oddsLabel = (r) => (isClaim(r) ? "Claim" : r.unverified && r.band === "Reported" ? "Reported" : r.band === "Confirmed" ? "Confirmed" : r.p != null ? `${Math.round(r.p * 100)}%` : "");
-  const bandCls = (r) => (isClaim(r) ? "claim" : r.band === "Reported" ? "rep" : (r.band || "none").toLowerCase());
   // ?v= busts browser caches: Cloudflare turns a 404's no-cache into a 4-hour max-age, so a cover
   // that 404'd once (server older than the art route, 2026-10-09) stays broken until the URL changes.
   const ART_V = 2;
@@ -131,7 +130,7 @@
     li.appendChild(b);
     return li;
   }));
-  if (picks.length > PICK_CAP) $("picks").appendChild(el("li", "more-note", `${picks.length - PICK_CAP} more on the shelf below.`));
+  if (picks.length > PICK_CAP) $("picks").appendChild(el("li", "more-note", `${picks.length - PICK_CAP} more on the board below.`));
 
   const hard = items.filter((r) => r.band === "Confirmed" && !isClaim(r) && !r.unverified);
   const exits = [...new Set(hard.map((r) => `${r.wave}|${svcName(r)}`))].slice(0, 3);
@@ -190,7 +189,7 @@
   };
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
-  // ── filters and view ─────────────────────────────────────────────
+  // ── filters ────────────────────────────────────────────────────
   const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), so: $("so"), sb: $("sb") };
   // a backup is either a game you own (bought, disc, claimed, every trophy) or one the other service also has
   const owned = (r) => r.backup && !r.backup.startsWith("Also on");
@@ -204,8 +203,6 @@
     return items.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
       && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.so.checked : ctl.sb.checked)));
   };
-  const expanded = new Set();
-  const CAP = 15;
 
   // Halo: how bright the glow is says how likely the game leaves; a confirmed exit is a solid
   // ring instead. The colour says whether you can still finish it, from s = hours you have /
@@ -259,58 +256,6 @@
   const tag = (n, r) => {
     n.dataset.k = `${svc(r)}|${r.key || r.game}|${r.wave}`;
     if (r.backup) n.dataset.b = owned(r) ? "so" : "sb";
-  };
-
-  const tile = (r) => {
-    const b = el("button", `tile ${svc(r)}${r.backup ? " dim" : ""}`);
-    b.type = "button";
-    b.title = r.game;
-    tag(b, r);
-    const c = cover(r, "cv");
-    if (r.band !== "Confirmed" || isClaim(r)) c.appendChild(el("span", `odds ${bandCls(r)}`, oddsLabel(r)));  // the solid ring says confirmed
-    c.appendChild(el("span", `dot ${svc(r)}`));
-    if (r.backup) { c.appendChild(places(r)); b.setAttribute("aria-label", `${r.game}, ${r.backup}`); }
-    halo(r, c);
-    b.appendChild(c);
-    if (!isClaim(r) && !r.backup) {
-      const bar = el("span", `hb ${fit(r)}`), i = el("i");
-      i.style.width = r.hours == null ? "100%" : `${Math.min(100, (r.hours / Math.max(1, avail(r))) * 100)}%`;
-      if (r.hours != null) i.style.background = hsl(fitHue(r));
-      bar.appendChild(i); b.appendChild(bar);
-    }
-    b.appendChild(el("span", "nm", r.game));
-    const sub = isClaim(r) ? "claim to keep" : r.backup ? `${r.hours ?? "?"} h` : r.hours == null ? "? h" : fit(r) === "late" ? `${r.hours} h · short ${Math.round(r.hours - avail(r))} h` : `${r.hours} h`;
-    b.appendChild(el("span", "sub", sub));
-    b.addEventListener("click", () => open(r));
-    return b;
-  };
-
-  const drawShelf = (rows) => {
-    const host = $("shelf");
-    const waves = [...new Set(rows.map((r) => r.wave))];
-    host.replaceChildren(...waves.map((w) => {
-      const its = rows.filter((r) => r.wave === w), col = el("div", "col");
-      const h = el("h3", null, fmt(t(w)));
-      h.dataset.k = `h|${w}`;
-      h.appendChild(el("small", null, inDays(days(its[0]))));
-      col.appendChild(h);
-      const kinds = [...new Set(its.map(svc))];
-      const cap = el("p", "cap");
-      kinds.forEach((k) => { cap.appendChild(el("span", `dot ${k}`)); });
-      cap.appendChild(document.createTextNode(`${kinds.length > 1 ? "Both" : kinds[0] === "ps" ? "PS Plus" : "Game Pass"} · ${round(avail(its[0]))} h to play`));
-      col.appendChild(cap);
-      const g = el("div", "tiles");
-      const all = expanded.has(w);
-      its.slice(0, all ? its.length : CAP).forEach((r) => g.appendChild(tile(r)));
-      col.appendChild(g);
-      if (its.length > CAP) {
-        const more = el("button", "more", all ? "Show fewer" : `Show ${its.length - CAP} more`);
-        more.type = "button";
-        more.addEventListener("click", () => { all ? expanded.delete(w) : expanded.add(w); draw(); });
-        col.appendChild(more);
-      }
-      return col;
-    }));
   };
 
   // What to do about a game, in the board's words.
@@ -376,7 +321,7 @@
         tag(row, r);
         row.tabIndex = 0;
         row.appendChild(lamp(r));
-        const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the shelf's halo, on the poster
+        const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the halo, on the poster
         const info = el("div", "m-info"), top = el("div", "m-title");
         top.appendChild(mcBox(r));
         top.appendChild(el("span", "gn", r.game));
@@ -397,26 +342,20 @@
     }));
   };
 
-  let view = location.hash === "#board" ? "board" : location.hash === "#shelf" ? "shelf" : store.get("view", "shelf");
   const draw = () => {
     const rows = shown();
     $("count").textContent = `${rows.length} game${rows.length === 1 ? "" : "s"}`;
     $("empty").hidden = rows.length > 0;
-    $("shelf").hidden = view !== "shelf" || !rows.length;
-    $("board").hidden = view !== "board" || !rows.length;
+    $("board").hidden = !rows.length;
     $("legend").hidden = !rows.length;
-    document.querySelectorAll(".views button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === view)));
-    if (view === "shelf") drawShelf(rows); else drawBoard(rows);
+    drawBoard(rows);
   };
-  document.querySelectorAll(".views button").forEach((b) => b.addEventListener("click", () => {
-    view = b.dataset.view; store.set("view", view); history.replaceState(null, "", `#${view}`); draw();
-  }));
   // The switches animate: hiding shrinks the dimmed games away and slides the rest together;
   // showing slides the rest apart and grows the dimmed games in (FLIP on every keyed element).
   const still = matchMedia("(prefers-reduced-motion: reduce)");
   const EASE = "cubic-bezier(.2, .8, .2, 1)";
   const animatedDraw = async (hiding) => {
-    const host = $(view === "shelf" ? "shelf" : "board");
+    const host = $("board");
     if (still.matches || !host.animate) return draw();
     if (hiding) {
       const out = [...host.querySelectorAll(`[data-b="${hiding}"]`)];

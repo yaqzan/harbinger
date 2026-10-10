@@ -13,8 +13,8 @@ likely to leave, how long each takes to finish, and the latest day you can start
   subscription with no API key). Without Claude Code installed, run ingest with `--no-forecast`.
 - Games you own on Steam or PlayStation, or can keep playing on the other service, stay on the
   page dimmed, with the alternative named. Your playtime and achievements shrink the hours left.
-- The page has two views of the same list: a shelf of cover art per exit date, and a departures
-  board.
+- Two tabs: the Board, every leaving game in order of the last day to start it, and the Library,
+  everything you can play across the services and your own libraries.
 
 ## Set up
 
