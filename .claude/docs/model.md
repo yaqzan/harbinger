@@ -128,12 +128,11 @@ grey for unknown hours and backups. On the board the halo sits on the poster; th
 glowing dot couldn't show confirmed vs likely). Remark text takes the fit colour. Every row carries logos: the service it leaves for a live row, where you
 have it for a backup. The fit bar uses the same colour; the odds badge is plain and only on modelled
 games (2026-10-10: no "Confirmed" badge, no "Owned on" ribbon over the cover; the ring and the logos say it).
-Top of the page (owner, 2026-10-10: the old day countdown + sentence meant nothing to them):
-**Start soon** lists up to 5 games you'd lose (no backup) that still fit and are confirmed,
-reported or Likely, or in your queue at any odds, with a start-by inside 8 weeks; overdue starts
-read "Start now" and order by leave date. **Confirmed exits** is a side panel: the next 3
-confirmed date + service groups, how many you'd lose and how many still fit, plus
-`summary.next_notice`. Sync times live under "Runs and sources". `summary.takeaway` is still
+Top of the page (owner, 2026-10-10): one **Confirmed exits** panel, the next 3 confirmed date +
+service groups side by side with how many you'd lose and how many still fit, plus
+`summary.next_notice`. The old day countdown went first, then the "Start soon" list (same day:
+the board's Start now group says the same thing); its "In your queue" tag moved onto the board's
+facts line. Sync times live under "Runs and sources". `summary.takeaway` is still
 built for the CLI and pushes.
 
 **Phones (2026-10-10).** Under 640px the Board's date heads its group and each row folds to the

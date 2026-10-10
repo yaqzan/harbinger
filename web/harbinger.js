@@ -39,7 +39,7 @@
     if (!r.ok) throw new Error(r.status);
     data = await r.json();
   } catch (e) {
-    $("start-note").textContent = "No data yet. The first ingest hasn't run.";
+    $("meta").textContent = "No data yet. The first ingest hasn't run.";
     return;
   }
 
@@ -97,41 +97,10 @@
   const order = (a, b) => a.wave.localeCompare(b.wave) || rank(a) - rank(b) || !!a.backup - !!b.backup || (b.p ?? 0) - (a.p ?? 0) || a.game.localeCompare(b.game);
   items.sort(order);
 
-  // ── top: what to start, then the confirmed exit dates ────────────
+  // ── top: the confirmed exit dates ────────────────────────────────
   const svcName = (r) => (svc(r) === "ps" ? "PS Plus" : "Game Pass");
   const queued = new Set((data.queue || []).map((q) => `${q.service.split(" ")[0]}|${q.key}`));
   const watching = (r) => queued.has(`${r.service.split(" ")[0]}|${r.key}`);
-  // A pick still fits before it leaves and is confirmed, reported or likely to go (or in your
-  // queue at any odds), with a start-by inside the next 8 weeks. Overdue starts tie at today,
-  // so among those the one that leaves first comes first.
-  const PICK_WEEKS = 8, PICK_CAP = 5;
-  const due = (r) => Math.max(T0, startBy(r));
-  const picks = items.filter((r) => !r.backup && !isClaim(r) && r.hours != null && fit(r) !== "late"
-    && (rank(r) <= 1 || watching(r)) && startBy(r) <= T0 + PICK_WEEKS * 7 * DAY)
-    .sort((a, b) => due(a) - due(b) || a.wave.localeCompare(b.wave) || rank(a) - rank(b) || (b.p ?? 0) - (a.p ?? 0));
-  $("start-note").textContent = picks.length
-    ? `Games that may leave soon and still fit at ${HPW} hours a week. Most urgent first.`
-    : `Nothing you'd lose needs starting in the next ${PICK_WEEKS} weeks.`;
-  $("picks").replaceChildren(...picks.slice(0, PICK_CAP).map((r) => {
-    const li = el("li"), b = el("button", "pick");
-    b.type = "button";
-    b.appendChild(cover(r, "pk-cv"));
-    const txt = el("span", "pk-t");
-    const nm = el("span", "nm", r.game);
-    if (watching(r)) nm.appendChild(el("span", "tag", "In your queue"));
-    txt.appendChild(nm);
-    const when = `${svcName(r)} ${fmt(t(r.wave))}`;
-    const why = r.band === "Confirmed" ? `Leaves ${when}` : r.band === "Reported" ? `Reported to leave ${when}` : `${oddsLabel(r)} chance it leaves ${when}`;
-    txt.appendChild(el("span", "sub", `${why} · ${r.hours} h to finish`));
-    b.appendChild(txt);
-    const sb = startBy(r);
-    b.appendChild(el("span", `by${sb <= T0 ? " now" : ""}`, sb <= T0 ? "Start now" : `Start by ${fmt(sb)}`));
-    b.addEventListener("click", () => open(r));
-    li.appendChild(b);
-    return li;
-  }));
-  if (picks.length > PICK_CAP) $("picks").appendChild(el("li", "more-note", `${picks.length - PICK_CAP} more on the board below.`));
-
   const hard = items.filter((r) => r.band === "Confirmed" && !isClaim(r) && !r.unverified);
   const exits = [...new Set(hard.map((r) => `${r.wave}|${svcName(r)}`))].slice(0, 3);
   $("exits").replaceChildren(...exits.map((k) => {
@@ -289,6 +258,7 @@
     isClaim(r) ? "Monthly game" : r.band === "Confirmed" ? "Confirmed" : r.band === "Reported" ? "Reported" : `${r.band} ${oddsLabel(r)}`,
     r.rating != null ? `Steam ${r.rating}%` : r.us != null ? `PS users ${r.us.toFixed(1)}` : "",
     [r.genre, r.year].filter(Boolean).join(" "),
+    watching(r) ? "In your queue" : "",
   ].filter(Boolean).join(" · ");
   // hours needed against the hours you have before it leaves, in one bar
   const fitCell = (r) => {

@@ -87,23 +87,13 @@ nav { align-items: center; gap: 1rem; }
 .views button { font: inherit; font-size: .84rem; border: 0; background: none; color: var(--muted); padding: 4px 14px; border-radius: 999px; cursor: pointer; }
 .views button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
 
-/* ── top: start soon + confirmed exits ── */
-.top { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 1rem; align-items: start; padding: 1.5rem 0 1.25rem; }
+/* ── top: the confirmed exits, dates side by side ── */
+.top { padding: 1.5rem 0 1.25rem; }
 .panel { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.1rem; }
 .panel .note { margin-bottom: .6rem; }
-.picks, .exits { list-style: none; }
-.picks li + li, .exits li + li { border-top: 1px solid var(--rule); }
-.pick { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: .75rem; align-items: center; width: 100%; padding: .5rem 0;
-  font: inherit; color: inherit; text-align: left; background: none; border: 0; cursor: pointer; }
-.pk-cv { width: 32px; height: 48px; border-radius: 4px; overflow: hidden; background: var(--rule); }
-.pk-cv img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.pk-cv.blank span { display: none; }
-.pk-t { display: flex; flex-direction: column; min-width: 0; }
+.exits { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0 1.5rem; }
 .top .nm { font-size: .92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top .sub { font-size: .8rem; color: var(--muted); }
-.top .tag { font-size: .68rem; font-weight: 500; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 0 6px; margin-left: .45rem; vertical-align: 1px; }
-.pick .by { font-size: .8rem; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
-.pick .by.now { color: var(--likely); font-weight: 600; }
 .more-note { color: var(--muted); font-size: .8rem; padding-top: .5rem; }
 .exits li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .75rem; align-items: baseline; padding: .55rem 0; }
 .exits .d { font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
@@ -183,7 +173,7 @@ dialog dl { display: grid; grid-template-columns: 7.5rem 1fr; gap: .35rem .8rem;
 dialog dt { color: var(--muted); }
 
 @media (max-width: 640px) {
-  .top { grid-template-columns: 1fr; gap: .75rem; padding-top: 1rem; }
+  .top { padding-top: 1rem; }
   .panel { padding: .9rem .8rem; }
   .card { padding: .9rem .8rem; }
 }
@@ -296,7 +286,6 @@ td .dots { margin-right: 2px; }
 @media (hover: hover) {
   #theme:hover, .navlink:hover { color: var(--ink); }
   .tile:hover .cv { transform: translateY(-2px); }
-  .pick:hover .nm { text-decoration: underline; }
   .m-row:hover { background: var(--card); }
 }
 
@@ -309,7 +298,6 @@ td .dots { margin-right: 2px; }
   input, select { min-height: 44px; font-size: 16px; }
   .chk { min-height: 44px; }
   .more, .chip-r { min-height: 44px; }
-  .pick { min-height: 56px; }
   dialog .x { top: 4px; right: 4px; min-width: 44px; min-height: 44px; }
   summary { padding: 9px 0; }
   .box tr[tabindex] td { padding-top: 10px; padding-bottom: 10px; }
