@@ -191,17 +191,18 @@
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
   // ── filters and view ─────────────────────────────────────────────
-  const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), fo: $("fo"), fk: $("fk") };
+  const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), so: $("so"), sb: $("sb") };
   // a backup is either a game you own (bought, disc, claimed, every trophy) or one the other service also has
   const owned = (r) => r.backup && !r.backup.startsWith("Also on");
   ["fs", "fb", "fr"].forEach((k) => { ctl[k].value = store.get(k, ctl[k].value); });
-  ctl.fk.checked = store.get("fk", "1") === "1";
-  ctl.fo.checked = store.get("fo", "1") === "1";
-  if (one.ps_tier === "none") { ctl.fs.hidden = true; ctl.fk.parentElement.hidden = true; }
+  // dimmed games (you have them elsewhere) start hidden; each switch remembers its own state
+  ctl.so.checked = store.get("so", "0") === "1";
+  ctl.sb.checked = store.get("sb", "0") === "1";
+  if (one.ps_tier === "none") { ctl.fs.hidden = true; ctl.sb.parentElement.hidden = true; }
   const shown = () => {
     const q = ctl.q.value.trim().toLowerCase(), fs = ctl.fs.value, fb = +ctl.fb.value, fr = +ctl.fr.value;
     return items.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
-      && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.fo.checked : ctl.fk.checked)));
+      && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.so.checked : ctl.sb.checked)));
   };
   const expanded = new Set();
   const CAP = 15;
@@ -253,10 +254,18 @@
     return l;
   };
 
+  // Keys for the switch animation: which element is which game across a redraw, and which
+  // switch hides it.
+  const tag = (n, r) => {
+    n.dataset.k = `${svc(r)}|${r.key || r.game}|${r.wave}`;
+    if (r.backup) n.dataset.b = owned(r) ? "so" : "sb";
+  };
+
   const tile = (r) => {
     const b = el("button", `tile ${svc(r)}${r.backup ? " dim" : ""}`);
     b.type = "button";
     b.title = r.game;
+    tag(b, r);
     const c = cover(r, "cv");
     if (r.band !== "Confirmed" || isClaim(r)) c.appendChild(el("span", `odds ${bandCls(r)}`, oddsLabel(r)));  // the solid ring says confirmed
     c.appendChild(el("span", `dot ${svc(r)}`));
@@ -282,6 +291,7 @@
     host.replaceChildren(...waves.map((w) => {
       const its = rows.filter((r) => r.wave === w), col = el("div", "col");
       const h = el("h3", null, fmt(t(w)));
+      h.dataset.k = `h|${w}`;
       h.appendChild(el("small", null, inDays(days(its[0]))));
       col.appendChild(h);
       const kinds = [...new Set(its.map(svc))];
@@ -356,12 +366,14 @@
     host.replaceChildren(...[...groups.values()].sort((a, b) => a.at - b.at).map((gr0) => {
       const its = gr0.its.sort((a, b) => !!a.backup - !!b.backup || a.wave.localeCompare(b.wave) || (b.p ?? 0) - (a.p ?? 0));
       const grp = el("div", "m-group"), head = el("div", "m-date");
+      head.dataset.k = `h|${gr0.key}`;
       head.appendChild(el("b", null, gr0.label));
       head.appendChild(el("span", null, gr0.sub));
       grp.appendChild(head);
       const line = el("div", "m-line");
       its.forEach((r) => {
         const row = el("div", `m-row${r.backup ? " dim" : ""}`);
+        tag(row, r);
         row.tabIndex = 0;
         row.appendChild(lamp(r));
         const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the shelf's halo, on the poster
@@ -399,9 +411,33 @@
   document.querySelectorAll(".views button").forEach((b) => b.addEventListener("click", () => {
     view = b.dataset.view; store.set("view", view); history.replaceState(null, "", `#${view}`); draw();
   }));
+  // The switches animate: hiding shrinks the dimmed games away and slides the rest together;
+  // showing slides the rest apart and grows the dimmed games in (FLIP on every keyed element).
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  const EASE = "cubic-bezier(.2, .8, .2, 1)";
+  const animatedDraw = async (hiding) => {
+    const host = $(view === "shelf" ? "shelf" : "board");
+    if (still.matches || !host.animate) return draw();
+    if (hiding) {
+      const out = [...host.querySelectorAll(`[data-b="${hiding}"]`)];
+      await Promise.all(out.map((n) => n.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.8)" }],
+        { duration: 200, easing: "ease-in", fill: "forwards" }).finished));
+    }
+    const before = new Map([...host.querySelectorAll("[data-k]")].map((n) => [n.dataset.k, n.getBoundingClientRect()]));
+    draw();
+    host.querySelectorAll("[data-k]").forEach((n) => {
+      const a = before.get(n.dataset.k), b = n.getBoundingClientRect();
+      if (a) {
+        const dx = a.left - b.left, dy = a.top - b.top;
+        if (dx || dy) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 360, easing: EASE });
+      } else {
+        n.animate([{ opacity: 0, transform: "scale(.8)" }, { opacity: 1, transform: "none" }], { duration: 340, delay: 120, easing: EASE, fill: "backwards" });
+      }
+    });
+  };
   Object.entries(ctl).forEach(([k, n]) => n.addEventListener("input", () => {
     if (k !== "q") store.set(k, n.type === "checkbox" ? (n.checked ? "1" : "0") : n.value);
-    draw();
+    if (n.type === "checkbox") animatedDraw(n.checked ? null : k); else draw();
   }));
   draw();
 

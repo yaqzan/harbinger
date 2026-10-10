@@ -114,7 +114,9 @@ Start now, then each start-by date, then Hours unknown, then Won't fit; claims o
 vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the shelf's halo, stacked end to end with room for the ring, then
 Metacritic (Metacritic's green/yellow/red) + title + platform logo, a facts line (odds, Steam % or PS
 user score, genre, year), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
-default), how far ahead (8 weeks by default), two backup switches (games you own; games on both services). A tile or row opens a detail
+default), how far ahead (8 weeks by default), two switches for the dimmed games (games you own; games on both services), off by default
+(owner, 2026-10-10) and animated: hiding shrinks them out and slides the rest together, showing the
+reverse (FLIP over `data-k` keys in `animatedDraw`; skipped under reduced motion). A tile or row opens a detail
 sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against
 the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
 `verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.
