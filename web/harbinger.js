@@ -243,19 +243,10 @@
     return box;
   };
 
-  // The board's status light: the halo's rules on a small lamp. Colour = fit, glow = odds,
-  // solid lit lamp with a ring = confirmed, dashed = reported only, grey = hours unknown or a backup.
+  // The board's stop on the line: just the fit colour. Odds and certainty live on the cover's halo.
   const lamp = (r) => {
-    const l = el("span", "lamp"), h = fitHue(r);
-    if (r.unverified && r.band === "Reported") { l.style.border = `1.5px dashed ${hsl(h)}`; return l; }
-    if (r.band === "Confirmed") {
-      l.style.background = hsl(h, r.backup ? 0.45 : 1);
-      l.style.boxShadow = r.backup ? "none" : `0 0 0 2px ${hsl(h, 0.35)}, 0 0 10px 2px ${hsl(h, 0.6)}`;
-      return l;
-    }
-    const k = Math.min(1, (r.p ?? 0) / 0.6);
-    l.style.background = hsl(h, (r.backup ? 0.15 : 0.2) + (r.backup ? 0.2 : 0.65) * k);
-    if (!r.backup) l.style.boxShadow = `0 0 ${Math.round(3 + 9 * k)}px ${Math.round(2 * k)}px ${hsl(h, 0.15 + 0.6 * k)}`;
+    const l = el("span", "lamp");
+    l.style.background = hsl(fitHue(r), r.backup ? 0.45 : 1);
     return l;
   };
 
@@ -320,14 +311,18 @@
     if (u === "Start now") return "Boarding · start now";
     return `${u === "Comfortable" ? "On time" : "Board soon"} · start ${fmt(startBy(r))}`;
   };
-  const scoreCell = (r) => {
-    const c = el("div", "m-score");
-    if (r.mc != null) { const b = el("span", "mc", String(Math.round(r.mc))); b.title = "Metacritic"; c.appendChild(b); }
-    else c.appendChild(el("span", "mc none", "--"));
-    const user = r.rating != null ? `Steam ${r.rating}%` : r.us != null ? `PS ${r.us.toFixed(1)}` : "";
-    if (user) c.appendChild(el("span", "user", user));
-    return c;
+  // Metacritic in Metacritic's own colours: green 75+, yellow 50 to 74, red under 50
+  const mcBox = (r) => {
+    if (r.mc == null) return el("span", "mc none", "--");
+    const n = Math.round(r.mc), b = el("span", `mc ${n >= 75 ? "good" : n >= 50 ? "mixed" : "bad"}`, String(n));
+    b.title = "Metacritic";
+    return b;
   };
+  const facts = (r) => [
+    isClaim(r) ? "Monthly game" : r.band === "Confirmed" ? "Confirmed" : r.band === "Reported" ? "Reported" : `${r.band} ${oddsLabel(r)}`,
+    r.rating != null ? `Steam ${r.rating}%` : r.us != null ? `PS users ${r.us.toFixed(1)}` : "",
+    [r.genre, r.year].filter(Boolean).join(" "),
+  ].filter(Boolean).join(" · ");
   // hours needed against the hours you have before it leaves, in one bar
   const fitCell = (r) => {
     const c = el("div", "m-fit"), left = Math.round(avail(r));
@@ -351,13 +346,14 @@
         const row = el("div", `m-row${r.backup ? " dim" : ""}`);
         row.tabIndex = 0;
         row.appendChild(lamp(r));
-        const g = el("div", "m-game");
-        g.appendChild(cover(r, "cv"));
-        const nm = el("span", "gn", r.game); g.appendChild(nm);
-        g.appendChild(places(r, r.backup ? r.places : [svc(r) === "ps" ? "playstation" : "xbox"]));
-        row.appendChild(g);
-        row.appendChild(el("div", "m-odds", isClaim(r) ? "Monthly game" : r.band === "Confirmed" ? "Confirmed" : r.band === "Reported" ? "Reported" : `${r.band} ${oddsLabel(r)}`));
-        row.appendChild(scoreCell(r));
+        const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the shelf's halo, on the poster
+        const info = el("div", "m-info"), top = el("div", "m-title");
+        top.appendChild(mcBox(r));
+        top.appendChild(el("span", "gn", r.game));
+        top.appendChild(places(r, r.backup ? r.places : [svc(r) === "ps" ? "playstation" : "xbox"]));
+        info.appendChild(top);
+        info.appendChild(el("div", "m-facts", facts(r)));
+        row.appendChild(info);
         row.appendChild(fitCell(r));
         const rm = el("div", "m-rm", remark(r));
         if (!r.backup && fitHue(r) != null) rm.style.color = hsl(fitHue(r));  // same colour as the light

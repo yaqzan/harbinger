@@ -109,9 +109,10 @@ them as mini logo circles (Simple Icons paths, CC0) in the cover's corner, one p
 
 One list (`one_service.rows` + `backups`, plus unverified reports from `confirmed`) drawn two
 ways, toggled at the top and remembered: **Shelf** (a column of cover art per exit date) and
-**Board** (a metro line, owner's pick 2026-10-10: rows grouped under each exit date, lamps on a
-vertical line; columns: game with platform logo, odds, Metacritic + Steam % or PS user score, one
-fit bar of hours needed vs hours left before it leaves, remark). Filters: service, odds band (Likely and up by
+**Board** (a metro line, owner's pick 2026-10-10: rows grouped under each exit date on a vertical
+line; each row is a poster carrying the shelf's halo, stacked end to end with room for the ring, then
+Metacritic (Metacritic's green/yellow/red) + title + platform logo, a facts line (odds, Steam % or PS
+user score, genre, year), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
 default), how far ahead (8 weeks by default), backups on/off. A tile or row opens a detail
 sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against
 the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
@@ -119,8 +120,8 @@ the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours
 Shelf cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (full at 60%+), a
 solid ring once confirmed (dashed if only reported). Its colour is fit, not odds, from s = hours you have /
 hours needed: green at s >= 1.5, a gradient to pure yellow at 1.0 (just enough), then to red at s <= 0.5;
-grey for unknown hours and backups. The board shows the same rules as the lamp on each row's line stop (remark
-text in the same colour). Every row carries logos: the service it leaves for a live row, where you
+grey for unknown hours and backups. On the board the halo sits on the poster; the stop on the line is a plain fit-colour dot (a
+glowing dot couldn't show confirmed vs likely). Remark text takes the fit colour. Every row carries logos: the service it leaves for a live row, where you
 have it for a backup. The fit bar uses the same colour; the odds badge is plain and only on modelled
 games (2026-10-10: no "Confirmed" badge, no "Owned on" ribbon over the cover; the ring and the logos say it).
 Top of the page (owner, 2026-10-10: the old day countdown + sentence meant nothing to them):

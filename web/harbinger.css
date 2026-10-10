@@ -233,61 +233,65 @@ td .dots { margin-right: 2px; }
 }
 
 
-/* ── board: a metro line. Dates are stops down the left, lamps sit on the line ── */
+/* ── board: a metro line. Dates are stops down the left, each game's poster carries the shelf's
+   halo (glow = odds, solid ring = confirmed, colour = fit) and the posters stack end to end ── */
 .metro { display: grid; gap: .25rem; }
 .m-group { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0 .9rem; }
 .m-date { padding-top: .9rem; }
 .m-date b { display: block; font-size: 1.35rem; font-weight: 800; line-height: 1.05; }
 .m-date span { display: block; color: var(--muted); font-size: .76rem; margin-top: .2rem; }
-.m-line { border-left: 3px solid var(--rule); margin: .6rem 0; padding: .2rem 0; }
-.m-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem 5.5rem 11rem 13rem; align-items: center; gap: .9rem;
-  padding: .45rem .6rem .45rem 1.5rem; border-radius: 8px; cursor: pointer; }
+.m-line { border-left: 3px solid var(--rule); margin: .5rem 0; padding: 2px 0; }
+.m-row { position: relative; display: grid; grid-template-columns: 54px minmax(0, 1fr) 11rem 13rem; align-items: center; gap: 1rem;
+  padding: 5px .6rem 5px 1.4rem; border-radius: 8px; cursor: pointer; }  /* 5px + 5px: room for the ring between posters */
 .m-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-.m-row .lamp { position: absolute; left: -9px; top: 50%; margin-top: -8px; width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid var(--bg); box-sizing: content-box; background: var(--rule); }
-.m-game { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.m-game .cv { width: 26px; height: 39px; border-radius: 3px; flex: none; }
-.m-game .cv.blank { padding: 0; }
-.m-game .cv.blank span { display: none; }
-.m-game .gn { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.m-game .plats { position: static; display: inline-flex; gap: 3px; flex: none; }
-.m-game .plat { width: 18px; height: 18px; }
-.m-game .plat svg { width: 11px; height: 11px; }
-.m-game .plat.steam svg { width: 12px; height: 12px; }
-.m-odds { color: var(--muted); font-size: .82rem; white-space: nowrap; }
-.m-score { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-.mc { display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 5px; border-radius: 5px; border: 1.5px solid var(--ink); font-weight: 800; font-size: .82rem; font-variant-numeric: tabular-nums; }
-.mc.none { border-color: var(--rule); color: var(--muted); font-weight: 400; }
-.m-score .user { color: var(--muted); font-size: .74rem; }
+.m-row .lamp { position: absolute; left: -8.5px; top: 50%; margin-top: -7px; width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--bg); box-sizing: content-box; }
+.m-cv { width: 54px; height: 81px; border-radius: 5px; overflow: hidden; }
+.m-cv.blank { font-size: .6rem; padding: 3px; }
+.m-info { min-width: 0; }
+.m-title { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.m-title .gn { font-weight: 600; font-size: .98rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.m-title .plats { position: static; display: inline-flex; gap: 3px; flex: none; }
+.m-title .plat { width: 18px; height: 18px; }
+.m-title .plat svg { width: 11px; height: 11px; }
+.m-title .plat.steam svg { width: 12px; height: 12px; }
+.m-facts { color: var(--muted); font-size: .8rem; margin-top: .25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc { flex: none; display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 5px; border-radius: 5px; font-weight: 800; font-size: .82rem; font-variant-numeric: tabular-nums; color: #111; }
+.mc.good { background: #66cc33; }
+.mc.mixed { background: #ffcc33; }
+.mc.bad { background: #ff4d4d; color: #fff; }
+.mc.none { background: none; border: 1.5px solid var(--rule); color: var(--muted); font-weight: 400; }
 .m-fit .bar { display: block; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
 .m-fit .bar i { display: block; height: 100%; }
 .m-fit .bar.unk { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); opacity: .6; }
 .m-fit .ft { display: block; color: var(--muted); font-size: .74rem; margin-top: 3px; white-space: nowrap; }
 .m-rm { font-weight: 700; font-size: .86rem; }
-.m-row.dim > :not(.lamp):not(.m-game), .m-row.dim .m-game > :not(.plats) { opacity: .4; }  /* the logos stay lit */
-.m-row.dim .cv img { filter: grayscale(1); }
+.m-row.dim .m-info > *, .m-row.dim .m-fit, .m-row.dim .m-rm { opacity: .4; }
+.m-row.dim .m-title { opacity: 1 !important; }
+.m-row.dim .m-title > :not(.plats) { opacity: .4; }  /* the logos stay lit */
+.m-row.dim .m-cv img { filter: grayscale(1) brightness(.6); }
 .m-row.dim .m-rm { color: var(--muted); font-weight: 600; }
 
-/* narrower screens: the odds and the user score fold into the game's line */
 @media (max-width: 1000px) {
-  .m-row { grid-template-columns: minmax(0, 1fr) 2.5rem 8.5rem 12.5rem; gap: .7rem; }
+  .m-row { grid-template-columns: 54px minmax(0, 1fr) 9rem 12rem; gap: .8rem; }
   .m-rm { white-space: nowrap; }
-  .m-odds { display: none; }
-  .m-score .user { display: none; }
 }
-/* phones: the date heads its group, each row is the game over one line of facts */
+/* phones: the date heads its group; poster on the left, title over fit and remark */
 @media (max-width: 640px) {
   .m-group { grid-template-columns: 1fr; }
   .m-date { display: flex; align-items: baseline; gap: .6rem; padding-top: .9rem; }
   .m-date span { margin: 0; }
   .m-line { margin: .4rem 0 .4rem 6px; }
-  .m-row { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "game game game" "score fit rm"; gap: .35rem .7rem; padding: .55rem .2rem .55rem 1.1rem; }
-  .m-game { grid-area: game; }
-  .m-score { grid-area: score; }
+  .m-row { grid-template-columns: 46px minmax(0, 1fr) auto; grid-template-areas: "cv info info" "cv fit rm"; gap: .3rem .7rem; padding: 5px .2rem 5px 1.1rem; }
+  .m-cv { grid-area: cv; width: 46px; height: 69px; }
+  .m-info { grid-area: info; }
   .m-fit { grid-area: fit; min-width: 0; }
-  .m-fit .ft { overflow: hidden; text-overflow: ellipsis; }
-  .m-rm { grid-area: rm; text-align: right; font-size: .8rem; }
-  .m-row .lamp { top: 1.35rem; margin-top: 0; }
-  .mc { height: 22px; min-width: 28px; font-size: .76rem; }
+  .m-fit .bar { display: none; }
+  .m-fit .ft { overflow: hidden; text-overflow: ellipsis; margin: 0; }
+  .m-rm { grid-area: rm; text-align: right; font-size: .78rem; white-space: nowrap; }
+  .m-title { gap: 7px; }
+  .m-title .gn { font-size: .9rem; }
+  .mc { height: 21px; min-width: 26px; font-size: .74rem; }
+  .m-facts { font-size: .74rem; }
 }
 
 /* ── hover only where there is a mouse, so a tap doesn't leave it stuck ── */
@@ -370,3 +374,16 @@ td .dots { margin-right: 2px; }
 }
 /* the page behind an open sheet stays put */
 html:has(dialog[open]) { overflow: hidden; }
+
+/* ── library: platform logos top-left, Metacritic bands, halo as on the shelf ── */
+.tile.lib .cv .plats { right: auto; bottom: auto; top: 5px; left: 5px; }
+.tile.lib .cv .plat { width: 18px; height: 18px; }
+.tile.lib .cv .plat svg { width: 11px; height: 11px; }
+.tile.lib .cv .plat.steam svg { width: 13px; height: 13px; }
+.listbox .plats, td .plats { position: static; display: inline-flex; gap: 3px; vertical-align: middle; }
+.listbox .plat { width: 20px; height: 20px; }
+.lib-grid { gap: 18px 14px; padding: 6px; }
+.tile .odds.sc-mc.good, .mcs.good { background: #66cc33; color: #0b1a05; }
+.tile .odds.sc-mc.mixed, .mcs.mixed { background: #ffcc33; color: #2a1d00; }
+.tile .odds.sc-mc.bad, .mcs.bad { background: #ff0000; color: #fff; }
+.mcs { display: inline-block; min-width: 28px; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: .82rem; text-align: center; font-variant-numeric: tabular-nums; }
