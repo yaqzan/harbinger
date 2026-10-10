@@ -162,7 +162,7 @@ main { margin-bottom: 1.5rem; }
 .legend i { display: inline-block; width: 12px; height: 16px; border-radius: 3px; background: var(--card); }
 .lg-glow { box-shadow: 0 0 9px 2px hsl(140 85% 55% / .8); }
 .lg-ring { box-shadow: 0 0 0 2px hsl(140 85% 55%); }
-.lg-scale { width: 54px !important; height: 6px !important; background: linear-gradient(90deg, hsl(140 85% 55%), hsl(70 85% 55%), hsl(28 85% 55%), hsl(0 85% 55%)) !important; }
+.lg-scale { width: 54px !important; height: 6px !important; background: linear-gradient(90deg, hsl(140 85% 55%), hsl(55 85% 55%), hsl(0 85% 55%)) !important; }
 .hb.ok i { background: var(--ok); }
 .hb.tight i { background: var(--possible); }
 .hb.late i { background: var(--likely); }

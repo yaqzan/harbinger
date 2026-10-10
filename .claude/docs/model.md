@@ -115,8 +115,8 @@ sheet. Days left, hours you have, start-by and the fit bar are computed in the b
 the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
 `verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.
 Shelf cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (full at 60%+), a
-solid ring once confirmed (dashed if only reported). Its colour is fit, not odds: green while hours
-needed <= half the hours you have, sliding through yellow and orange to red at 100% (won't fit);
+solid ring once confirmed (dashed if only reported). Its colour is fit, not odds, from s = hours you have /
+hours needed: green at s >= 1.5, a gradient to pure yellow at 1.0 (just enough), then to red at s <= 0.5;
 grey for unknown hours and backups. The fit bar uses the same colour; the odds badge is plain and only on modelled
 games (2026-10-10: no "Confirmed" badge, no "Owned on" ribbon over the cover; the ring and the logos say it).
 Top of the page (owner, 2026-10-10: the old day countdown + sentence meant nothing to them):

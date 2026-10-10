@@ -199,14 +199,18 @@
   const CAP = 15;
 
   // Halo: how bright the glow is says how likely the game leaves; a confirmed exit is a solid
-  // ring instead. The colour says whether you can still finish it: green with room to spare,
-  // through yellow and orange as the hours needed close in on the hours you have, red once
-  // they don't fit. Grey for hours unknown and for games you have elsewhere.
+  // ring instead. The colour says whether you can still finish it, from s = hours you have /
+  // hours needed (owner, 2026-10-10): green at 1.5x and up, yellowing to pure yellow at 1.0x
+  // (just enough), then orange to red at 0.5x and below. Grey for hours unknown and backups.
+  const GREEN = 140, YELLOW = 55;
   const fitHue = (r) => {
     if (r.backup || r.hours == null) return null;
-    if (isClaim(r)) return 140;
-    const x = r.hours / Math.max(0.1, avail(r));
-    return x <= 0.5 ? 140 : x >= 1 ? 0 : Math.round(140 * (1 - x) / 0.5);
+    if (isClaim(r)) return GREEN;
+    const s = avail(r) / Math.max(0.1, r.hours);
+    if (s >= 1.5) return GREEN;
+    if (s >= 1) return Math.round(YELLOW + (GREEN - YELLOW) * (s - 1) / 0.5);
+    if (s > 0.5) return Math.round(YELLOW * (s - 0.5) / 0.5);
+    return 0;
   };
   const hsl = (h, a = 1) => (h == null ? `hsl(40 6% 62% / ${a})` : `hsl(${h} 85% 55% / ${a})`);
   const halo = (r, c) => {
