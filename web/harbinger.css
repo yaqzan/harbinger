@@ -182,7 +182,6 @@ dialog dt { color: var(--muted); }
 .navlink { margin-left: auto; margin-right: .75rem; font-size: .84rem; color: var(--muted); text-decoration: none; }
 .views a { font-size: .84rem; color: var(--muted); padding: 4px 14px; border-radius: 999px; text-decoration: none; }
 .views a[aria-current="page"] { background: var(--ink); color: var(--bg); }
-.views.small button { padding: 3px 11px; }
 .dot.steam { background: #8b93a1; }
 .dot.psn { background: transparent; box-shadow: inset 0 0 0 2px var(--ps); }
 .lib-head { padding: 1.5rem 0 .75rem; }
@@ -212,7 +211,6 @@ dialog dt { color: var(--muted); }
 .odds.sc-mc { color: #f2d06b; }
 .odds.sc-steam { color: #7fb0ff; }
 .odds.sc-ps { color: #7ee2a0; }
-.listbox { padding: .4rem .6rem; }
 td .dots { margin-right: 2px; }
 @media (max-width: 640px) {
   .where { grid-template-columns: 1fr; }
@@ -332,7 +330,6 @@ td .dots { margin-right: 2px; }
   .stack td.h::after { content: "h"; margin-left: -.15rem; }
   .stack img.art { flex: none; }
   .stack tr[tabindex] { cursor: pointer; }
-  .listbox { padding: 0 .9rem; }
 
   /* detail: a sheet docked to the bottom of the screen */
   dialog { margin: auto 0 0; width: 100%; max-width: none; max-height: 85vh; max-height: 85dvh; overflow-y: auto; overscroll-behavior: contain;
@@ -357,8 +354,6 @@ html:has(dialog[open]) { overflow: hidden; }
 .tile.lib .cv .plat { width: 18px; height: 18px; }
 .tile.lib .cv .plat svg { width: 11px; height: 11px; }
 .tile.lib .cv .plat.steam svg { width: 13px; height: 13px; }
-.listbox .plats, td .plats { position: static; display: inline-flex; gap: 3px; vertical-align: middle; }
-.listbox .plat { width: 20px; height: 20px; }
 .lib-grid { gap: 18px 14px; padding: 6px; }
 .tile .odds.sc-mc.good, .mcs.good { background: #66cc33; color: #0b1a05; }
 .tile .odds.sc-mc.mixed, .mcs.mixed { background: #ffcc33; color: #2a1d00; }

@@ -1,5 +1,5 @@
 // Library page: reads /library.json (every game on Game Pass, your PS Plus tier, Steam or PlayStation)
-// and draws it as a grid or list, sorted by a score and filtered by where the game lives.
+// and draws it as a grid of posters, sorted by a score and filtered by where the game lives.
 // Data is untrusted text: everything goes in through textContent, never innerHTML.
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -259,34 +259,6 @@
     return b;
   };
 
-  const num = (v, f) => (v == null ? "" : f ? f(v) : String(v));
-  const heads = [...document.querySelectorAll("#list thead th")].map((th) => th.textContent);
-  const listRow = (r) => {
-    const tr = el("tr");
-    tr.tabIndex = 0;
-    const g = el("td", "game");
-    if (coverUrl(r)) { const i = el("img", "art"); i.src = coverUrl(r); i.alt = ""; i.loading = "lazy"; i.width = 24; i.height = 36; g.appendChild(i); }
-    g.appendChild(document.createTextNode(r.game));
-    tr.appendChild(g);
-    const w = el("td", "nowrap places");
-    w.appendChild(logos(r));
-    tr.appendChild(w);
-    const mc = el("td", "num");
-    if (r.mc != null) mc.appendChild(el("span", `mcs ${mcCls(Math.round(r.mc))}`, String(Math.round(r.mc))));
-    tr.appendChild(mc);
-    tr.appendChild(el("td", "num", r.rating != null ? `${r.rating}%` : ""));
-    tr.appendChild(el("td", "num", num(r.us, (v) => v.toFixed(1))));
-    tr.appendChild(el("td", "num h", num(r.hours)));
-    tr.appendChild(el("td", "num", num(r.year)));
-    const lv = leaves(r)[0];
-    tr.appendChild(el("td", "nowrap", lv ? `${lv.band === "Confirmed" ? "" : `${lv.band} `}${fmt(lv.ms)}` : ""));
-    // each cell carries its column name, shown as a label when a phone stacks the row
-    [...tr.children].forEach((c, i) => { c.dataset.label = heads[i] || ""; });
-    tr.addEventListener("click", () => open(r));
-    tr.addEventListener("keydown", (e) => { if (e.key === "Enter") open(r); });
-    return tr;
-  };
-
   const dlg = $("detail");
   const open = (r) => {
     const big = cover(r, "big"); halo(r, big);
@@ -345,7 +317,6 @@
       : "Pick one or more. Nothing picked shows every game.";
   };
 
-  let layout = store.get("layout", "grid") === "list" ? "list" : "grid";
   const draw = (keepPage) => {
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
@@ -360,20 +331,14 @@
     });
     $("count").textContent = `${out.length.toLocaleString()} game${out.length === 1 ? "" : "s"}`;
     $("empty").hidden = out.length > 0;
-    $("grid").hidden = layout !== "grid" || !out.length;
-    $("list").hidden = layout !== "list" || !out.length;
+    $("grid").hidden = !out.length;
     $("more").hidden = out.length <= shown;
     $("more").textContent = `Show ${Math.min(STEP, out.length - shown)} more of ${out.length - shown}`;
-    document.querySelectorAll("[data-layout]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.layout === layout)));
     const page = out.slice(0, shown);
-    if (layout === "grid") $("grid").replaceChildren(...page.map(tile));
-    else $("list").querySelector("tbody").replaceChildren(...page.map(listRow));
+    $("grid").replaceChildren(...page.map(tile));
     drawRegions();
   };
 
-  document.querySelectorAll("[data-layout]").forEach((b) => b.addEventListener("click", () => {
-    layout = b.dataset.layout; store.set("layout", layout); draw();
-  }));
   $("more").addEventListener("click", () => { shown += STEP; draw(true); });
   Object.entries(ctl).forEach(([k, n]) => n.addEventListener("input", () => {
     if (k !== "q") store.set(k, k === "rated" ? (n.checked ? "1" : "0") : n.value);

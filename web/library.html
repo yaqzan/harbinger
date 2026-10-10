@@ -52,21 +52,11 @@
     </select>
     <select id="genre" aria-label="Genre"><option value="">Every genre</option></select>
     <label class="chk"><input type="checkbox" id="rated"> Only games with that score</label>
-    <div class="views small" role="tablist" aria-label="Layout">
-      <button role="tab" data-layout="grid" aria-selected="true">Grid</button>
-      <button role="tab" data-layout="list" aria-selected="false">List</button>
-    </div>
     <span class="count" id="count"></span>
   </div>
 
   <main>
     <section id="grid" class="lib-grid" aria-label="Games"></section>
-    <section id="list" class="card listbox" aria-label="Games" hidden>
-      <div class="box tall"><table class="stack">
-        <thead><tr><th>Game</th><th>Where</th><th class="num">Metacritic</th><th class="num">Steam</th><th class="num">PS users</th><th class="num">To 100%</th><th class="num">Year</th><th>Leaves</th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-    </section>
     <button class="more" id="more" hidden>Show more</button>
     <p class="empty" id="empty" hidden>Nothing matches.</p>
   </main>
@@ -86,6 +76,6 @@
   </div>
   <dl id="d-facts"></dl>
 </dialog>
-<script src="/library.js?v=4"></script>
+<script src="/library.js?v=5"></script>
 </body>
 </html>
