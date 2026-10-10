@@ -9,6 +9,9 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
   `stale: true` means data.json is over 40 h old, i.e. the scheduled jobs are failing.
   web/ and data.json are read per request, but a change to `serve.py` (a new route) needs
   `server.ps1 restart -Service harbinger`: the covers 404'd for hours on 2026-10-09 until it did.
+  Cloudflare turns the server's `no-cache` on a 404 (and on web/ files) into `max-age=14400`, so a
+  404 sticks in browsers for 4 h; hard refresh doesn't clear images. Fix = change the URL: bump
+  `ART_V` in `web/harbinger.js` for covers, `?v=` in `index.html` for the JS/CSS.
 - **server.ps1**: `harbinger-api` + `harbinger-tunnel` (alias `harbinger`), added 2026-10-09
   (backup `server.ps1.bak-harbinger`).
 - **Tunnel**: `harbinger`, created 2026-10-09. Config `ops/cloudflared-config.yml` is gitignored
