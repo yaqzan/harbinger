@@ -121,7 +121,8 @@ Metacritic (Metacritic's green/yellow/red square) and the audience score (Rotten
 navy pill with the Steam logo and the review % in Steam's colours, blue 70%+ / tan 40-69 / rust
 below; else the PS logo and the PS user score on the same scale x10), then genre and year. The
 remark carries when and how sure: "Leaves Oct 31 · 53% likely" / "· confirmed" (the start-by
-group already says how soon), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
+group already says how soon), coloured by certainty, not fit (2026-10-10): coral mixed into the muted
+grey from 25% to 100% as the odds go 0 to 60%, full and bold when confirmed, one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
 default), how far ahead (8 weeks by default), two switches for the dimmed games (games you own; games on both services), off by default
 (owner, 2026-10-10) and animated: hiding shrinks them out and slides the rest together, showing the
 reverse (FLIP over `data-k` keys in `animatedDraw`; skipped under reduced motion). A tile or row opens a detail
@@ -132,7 +133,7 @@ The cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (ful
 solid ring once confirmed (dashed if only reported). Its colour is fit, not odds, from s = hours you have /
 hours needed: green at s >= 1.5, a gradient to pure yellow at 1.0 (just enough), then to red at s <= 0.5;
 grey for unknown hours and backups. On the board the halo sits on the poster; the stop on the line is a plain fit-colour dot (a
-glowing dot couldn't show confirmed vs likely). Remark text takes the fit colour. Every row carries logos: the service it leaves for a live row, where you
+glowing dot couldn't show confirmed vs likely). Fit colour sits on the ring, the bar and the line dot; the remark is the certainty colour. Every row carries logos: the service it leaves for a live row, where you
 have it for a backup. The fit bar uses the same colour; the odds badge is plain and only on modelled
 games (2026-10-10: no "Confirmed" badge, no "Owned on" ribbon over the cover; the ring and the logos say it).
 Top of the page (owner, 2026-10-10): one **Confirmed exits** panel, the next 3 confirmed date +

@@ -336,7 +336,13 @@
         const rm = el("div", "m-rm"), say = remark(r);
         if (say.startsWith("Leaves ")) { rm.appendChild(el("span", "lv", "Leaves ")); rm.appendChild(document.createTextNode(say.slice(7))); }
         else rm.textContent = say;  // the smallest phones drop the word "Leaves" (.lv) for the hours text
-        if (!r.backup && !done(r) && fitHue(r) != null) rm.style.color = hsl(fitHue(r));  // same colour as the light
+        // the remark says when and how sure, so its colour follows certainty, not fit: faint at low odds,
+        // a stronger coral as they climb (full at 60%), bold coral once confirmed. Coral is used nowhere else.
+        if (!r.backup && !done(r) && !isClaim(r)) {
+          const k = r.band === "Confirmed" ? 1 : r.band === "Reported" ? 0.6 : Math.min(1, (r.p ?? 0) / 0.6);
+          rm.style.color = `color-mix(in srgb, #ff6b5b ${Math.round(25 + 75 * k)}%, var(--muted))`;
+          rm.style.fontWeight = r.band === "Confirmed" ? "800" : k >= 0.75 ? "700" : "600";
+        }
         row.appendChild(rm);
         row.addEventListener("click", () => open(r));
         row.addEventListener("keydown", (e) => { if (e.key === "Enter") open(r); });
