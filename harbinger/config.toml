@@ -74,6 +74,7 @@ sheet_id = "19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw"
 # Your PS Plus tier: none | essential | extra | premium (each includes the tiers below it).
 # Set yours in config.local.toml. "none" leaves PlayStation off the page.
 tier = "none"
+vr = false   # VR-only games stay hidden; set true in config.local.toml if you have a headset
 hard_trophy_rate = 2.0      # flag "100% looks hard" when trophies you lack are rarer than this % of players
 cohorts = [12, 18, 24, 36]  # removals land on the third Monday of the month (308 of 351 since 2024)
 

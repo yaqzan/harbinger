@@ -69,6 +69,10 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 
 - Tier from `[playstation] tier` (none | essential | extra | premium; each includes the ones
   below). The owner is on Extra (config.local.toml). "none" leaves PlayStation off.
+- VR-only games are hidden unless `[playstation] vr = true` (owner, 2026-10-09): the Premium (VR)
+  sub-tier plus titles.toml `[vr_only] playstation` (3 Ubisoft+ games on Extra). The sheet tags
+  VR-optional games "PS4/PSVR" too (Tetris Effect, Rise of the Tomb Raider), so the system
+  column can't decide it; those stay. Hidden games are out of everything PS (catalogue level).
 - Waves: the third Monday of the month (308 of 351 removals since 2024; `model.month_waves(cal=
   "playstation")`). Leaving Soon rows carry the exact date. Same cohorts; announced-wave rule too.
 - Base rates per tier family, measured 2026-10-09 like Game Pass option C: Extra 35/5/17/3%

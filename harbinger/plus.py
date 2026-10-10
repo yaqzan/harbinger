@@ -39,6 +39,11 @@ def first_party(cfg: dict) -> set[str]:
     return {norm(t) for t in cfg.get("titles", {}).get("first_party", {}).get("playstation", [])}
 
 
+def vr_only(cfg: dict) -> set[str]:
+    """VR-only games outside the Premium (VR) sub-tier (titles.toml [vr_only] playstation)."""
+    return {norm(t) for t in cfg.get("titles", {}).get("vr_only", {}).get("playstation", [])}
+
+
 def kind(tier: str | None) -> str | None:
     """Which base-rate table a tier uses: extra, premium (Classics/Remasters/VR), streaming,
     ubisoft (never scored), essential (claim-to-keep)."""
@@ -71,14 +76,18 @@ class PsGame:
     hours: float | None
 
 
-def catalogue(tabs: dict[str, list[dict]], your_tier: str, first_party=frozenset()) -> list[PsGame]:
+def catalogue(tabs: dict[str, list[dict]], your_tier: str, first_party=frozenset(),
+              hide_vr: bool = False, vr_only=frozenset()) -> list[PsGame]:
     """Master List games on the service now (Active or Leaving Soon) that your tier includes.
     A game with several stints counts once, as its newest stint. Keys in `first_party` (Sony's
-    own games) on Extra or Premium get kind "sony"."""
+    own games) on Extra or Premium get kind "sony". `hide_vr` drops VR-only games: the Premium
+    (VR) sub-tier and the keys in `vr_only`; games with an optional VR mode stay."""
     rank = TIERS.get((your_tier or "none").lower(), 0)
     newest: dict[str, dict] = {}
     for r in tabs.get("master", []):
         if r.get("status") not in ("Active", "Leaving Soon"):
+            continue
+        if hide_vr and ("(vr)" in (r.get("tier") or "").lower() or norm(r["title"]) in vr_only):
             continue
         f = family(r.get("tier"))
         if not f or TIERS[f] > rank:

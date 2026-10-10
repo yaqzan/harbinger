@@ -178,3 +178,16 @@ class SonyFirstParty(unittest.TestCase):
         self.assertIn(norm("The Last of Us: Part I"), fp)
         self.assertIn(norm("Marvel’s Spider-Man 2"), fp)
         self.assertNotIn(norm("Risk of Rain 2"), fp)
+
+
+class VrHidden(unittest.TestCase):
+    MASTER = [ps("Job Simulator", "Premium (VR)"), ps("Eagle Flight", "Extra (Ubisoft+ Classics)"),
+              ps("Tetris Effect: Connected", "Extra")]
+
+    def names(self, **kw):
+        return {g.name for g in plus.catalogue({"master": self.MASTER}, "premium", **kw)}
+
+    def test_vr_only_hidden_by_default_flat_games_with_vr_mode_stay(self):
+        hide = dict(hide_vr=not CFG["playstation"]["vr"], vr_only=plus.vr_only(CFG))
+        self.assertEqual(self.names(**hide), {"Tetris Effect: Connected"})
+        self.assertEqual(self.names(), {"Job Simulator", "Eagle Flight", "Tetris Effect: Connected"})  # vr = true

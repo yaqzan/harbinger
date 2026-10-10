@@ -216,3 +216,10 @@ playstation = [
   "Wild Arms 4",
   "WipEout: Omega Collection",
 ]
+
+# VR-only PS Plus games outside the Premium (VR) sub-tier, hidden unless [playstation] vr = true.
+# The sheet tags VR-only and VR-optional games alike ("PS4/PSVR"), so this is kept by hand.
+# Not here on purpose (play without a headset): Tetris Effect, Rise of the Tomb Raider, Dreams,
+# Concrete Genie, Tin Hearts, Chess Ultra, Trackmania Turbo, Transference.
+[vr_only]
+playstation = ["Eagle Flight", "Space Junkies", "Werewolves Within"]
