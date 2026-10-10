@@ -89,6 +89,10 @@ class OneService(unittest.TestCase):
     def test_left_out_games_that_could_leave_come_back_as_backups(self):
         backups = {(r["game"], r["service"].split(" ")[0]): r["backup"] for r in self.one["backups"]}
         self.assertEqual(backups[("Evil West", "Game")], "Also on PS Plus Extra")   # leaving, PS copy stays
+        places = {(r["game"], r["service"].split(" ")[0]): r["places"] for r in self.one["backups"]}
+        self.assertEqual(places[("Evil West", "Game")], ["playstation"])
+        self.assertEqual(backups[("Owned On Steam", "PS")], "Owned on Steam")  # not "on PlayStation"
+        self.assertEqual(places[("Owned On Steam", "PS")], ["steam"])
         self.assertNotIn(("Nine Sols", "PS"), backups)                              # counted once
         self.assertTrue(all(r["wave"] for r in self.one["backups"]))                # nothing safe for good
 

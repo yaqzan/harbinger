@@ -126,6 +126,13 @@ main { margin-bottom: 1.5rem; }
 .odds.thin, .odds.none { color: #c9c7bf; }
 .odds.rep { color: #c9c7bf; outline: 1px dashed #c9c7bf; }
 .tile .cv .dot { position: absolute; top: 7px; left: 7px; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); }
+.plats { position: absolute; right: 5px; bottom: 5px; display: flex; gap: 3px; }
+.plat { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, .6), 0 1px 3px rgba(0, 0, 0, .5); }
+.plat svg { width: 12px; height: 12px; fill: #fff; }
+.plat.xbox { background: #107c10; }
+.plat.playstation { background: #0070d1; }
+.plat.steam { background: #1b2838; }
+.plat.steam svg { width: 14px; height: 14px; }
 .tile .rib { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 4px; font-size: .62rem; font-weight: 700; line-height: 1.2; text-align: center; background: rgba(0, 0, 0, .82); color: #fff; }
 .tile.dim .cv img { filter: grayscale(1) brightness(.55); }
 .tile.dim .nm, .tile.dim .sub { opacity: .45; }

@@ -39,10 +39,12 @@ class Context:
         # Games you own, by sheet key ("CloverPit" -> "clover pit"): Steam first, then PlayStation
         # (bought or on disc). rec["where"] says which.
         self.owned: dict[str, dict] = {}
+        self.owned_on: dict[str, set[str]] = {}  # every library a game is in: "steam", "playstation"
         for lib, where in ((steam, "Steam"), (psn or {}, "PlayStation")):
             for k, r in lib.get("games", {}).items():
                 key = self.match.key(r.get("name") or k, loose=False) or k
                 self.owned.setdefault(key, {"where": where, **r})
+                self.owned_on.setdefault(key, set()).add(where.lower())
         self.claimed = list((psn or {}).get("claimed", []))  # PS Plus games claimed into the library
         self.playing = (psn or {}).get("playing", {})          # every PS game you've played, owned or not
         self.dpm = cfg["sheet"]["days_per_month"]
@@ -429,6 +431,7 @@ def summary(cx: Context, confirmed: list[dict], watch: list[dict]) -> dict:
 
 # ── only on one service ─────────────────────────────────────────────
 
+PLACES = ("xbox", "playstation", "steam")  # the order the page draws the logos in
 ORDER = {"Confirmed": 0, "Likely": 1, "Possible": 2, "Thin": 3, "": 4}
 
 
@@ -464,6 +467,10 @@ class PsSide:
         self.pm = ps_matcher(self.games, cx.cfg) if self.games else None
         pm = self.pm
         self.owned = {pm.key(r.get("name") or "", loose=False) for r in cx.owned.values()} if pm else set()
+        self.owned_on: dict[str, set[str]] = {}  # PS key -> libraries it's in ("steam", "playstation")
+        if pm:
+            for k, r in cx.owned.items():
+                self.owned_on.setdefault(pm.key(r.get("name") or "", loose=False), set()).update(cx.owned_on.get(k, ()))
         self.claimed = {pm.key(n, loose=False) for n in cx.claimed} if pm else set()
         self.playing = {}
         if pm:
@@ -513,7 +520,7 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     ps_name = f"PS Plus {ps['tier'].title()}" if ps else ""
     rows, backups = [], []
 
-    def add(game, service, out, hours, platform, progress="", key="", backup=""):
+    def add(game, service, out, hours, platform, progress="", key="", backup="", places=()):
         if backup and not out["wave"]:
             return  # nothing to lose: it isn't heading out
         wave = out["wave"]
@@ -535,6 +542,7 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             row["unverified"] = unverified[key]
         if backup:
             row["backup"] = backup
+            row["places"] = [p for p in PLACES if p in places]  # where you can still play it
         (backups if backup else rows).append(row)
 
     def xbox_out(key, g):
@@ -547,21 +555,23 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     skipped = {"owned": 0, "both": 0, "claimed": 0, "finished": 0}
     for key, g in on_xbox.items():
         backup = ""
+        places = cx.owned_on.get(key, set()) | ({"playstation"} if key in xbox_backup else set())
         if key in cx.owned:
             skipped["owned"] += 1
             prog = cx.progress(key, g.hours)
             backup = f"Owned on {prog['where']}"
-            add(g.name, "Game Pass", xbox_out(key, g), prog["hours"], g.system, prog["progress"], key, backup)
+            add(g.name, "Game Pass", xbox_out(key, g), prog["hours"], g.system, prog["progress"], key, backup, places)
             continue
         if key in xbox_backup:
             skipped["both"] += 1
             backup = f"Also on {ps_name}"
-        add(g.name, "Game Pass", xbox_out(key, g), g.hours, g.system, key=key, backup=backup)
+        add(g.name, "Game Pass", xbox_out(key, g), g.hours, g.system, key=key, backup=backup, places=places)
     for g in ps_games:
         backup = ""
+        on = side.owned_on.get(g.key, set())
         if g.key in owned_ps:
             skipped["owned"] += 1
-            backup = "Owned on PlayStation"
+            backup = "Owned on Steam" if on == {"steam"} else "Owned on PlayStation"
         elif g.kind == "essential" and g.key in claimed_ps:
             skipped["claimed"] += 1
             backup = "Claimed"  # yours while you subscribe
@@ -571,8 +581,9 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
         if finished and not backup:
             skipped["finished"] += 1
             backup = "Every trophy earned"  # nothing left to lose
+        places = on | ({"playstation"} if g.key in claimed_ps else set())
         add(g.name, f"PS Plus {g.tier}", plus.outlook(g, today, cx.cfg, side.waves_out), hours, g.system, progress,
-            g.key, backup)
+            g.key, backup, places)
     order = lambda r: (ORDER[r["band"]], r["wave"] or "9999", -(r["p"] or 0), r["game"].lower())
     rows.sort(key=order)
     backups.sort(key=order)
