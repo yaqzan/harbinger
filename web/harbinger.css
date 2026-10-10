@@ -248,7 +248,8 @@ td .dots { margin-right: 2px; }
 .m-title .plat { width: 18px; height: 18px; }
 .m-title .plat svg { width: 11px; height: 11px; }
 .m-title .plat.steam svg { width: 12px; height: 12px; }
-.m-facts { color: var(--muted); font-size: .8rem; margin-top: .25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-facts { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .8rem; margin-top: .35rem; min-width: 0; }
+.m-facts .tx { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .mc { flex: none; display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 5px; border-radius: 5px; font-weight: 800; font-size: .82rem; font-variant-numeric: tabular-nums; color: #111; }
 .mc.good { background: #66cc33; }
 .mc.mixed { background: #ffcc33; }

@@ -116,10 +116,12 @@ scrolled to Start now with a "↑ N won't fit" pill at the top edge (`landOnStar
 pill scrolls up). Games with no hours stay off the board (owner, 2026-10-10); research them into
 `titles.toml` `[hours]`) on a
 vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the halo, stacked end to end with room for the ring, then
-Metacritic (Metacritic's green/yellow/red square) + the audience score (2026-10-10, Rotten Tomatoes
-style: a navy pill with the Steam logo and the review % in Steam's colours, blue 70%+ / tan 40-69 /
-rust below; else the PS logo and the PS user score on the same scale x10) + title + platform logo, a
-facts line (odds, genre, year), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
+title + platform logo on the first line; the second line leads with the ratings (2026-10-10):
+Metacritic (Metacritic's green/yellow/red square) and the audience score (Rotten Tomatoes style: a
+navy pill with the Steam logo and the review % in Steam's colours, blue 70%+ / tan 40-69 / rust
+below; else the PS logo and the PS user score on the same scale x10), then genre and year. The
+remark carries when and how sure: "Leaves Oct 31 · 53% likely" / "· confirmed" (the start-by
+group already says how soon), one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
 default), how far ahead (8 weeks by default), two switches for the dimmed games (games you own; games on both services), off by default
 (owner, 2026-10-10) and animated: hiding shrinks them out and slides the rest together, showing the
 reverse (FLIP over `data-k` keys in `animatedDraw`; skipped under reduced motion). A tile or row opens a detail

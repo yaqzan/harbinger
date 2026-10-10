@@ -243,8 +243,8 @@
     const when = fmt(t(r.wave));
     if (isClaim(r)) return `Claim by ${when}`;
     if (r.unverified && r.band === "Reported") return `Reported for ${when}`;
-    if (r.hours != null && r.hours > avail(r)) return `Leaves ${when} · short ${Math.round(r.hours - avail(r))} h`;
-    return `Leaves ${when}, ${inDays(days(r))}`;
+    // when it leaves and how sure that is, together (the start-by group already says how soon)
+    return `Leaves ${when} · ${r.band === "Confirmed" ? "confirmed" : `${oddsLabel(r)} likely`}`;
   };
   // The board runs in order of the last day to start, not the exit date: a 2 h game leaving in
   // two weeks and a 120 h game leaving in three months can be due the same week. Start-by is
@@ -282,7 +282,7 @@
     return b;
   };
   const facts = (r) => [
-    isClaim(r) ? "Monthly game" : r.band === "Confirmed" ? "Confirmed" : r.band === "Reported" ? "Reported" : `${r.band} ${oddsLabel(r)}`,
+    isClaim(r) ? "Monthly game" : "",
     [r.genre, r.year].filter(Boolean).join(" "),
     watching(r) ? "In your queue" : "",
   ].filter(Boolean).join(" · ");
@@ -322,13 +322,15 @@
         row.appendChild(lamp(r));
         const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the halo, on the poster
         const info = el("div", "m-info"), top = el("div", "m-title");
-        top.appendChild(mcBox(r));
-        const us = userBox(r); if (us) top.appendChild(us);
         top.appendChild(el("span", "gn", r.game));
         if (r.mark) top.appendChild(el("span", `mk ${r.mark}`, MARK[r.mark]));
         top.appendChild(places(r, r.backup ? r.places : [svc(r) === "ps" ? "playstation" : "xbox"]));
         info.appendChild(top);
-        info.appendChild(el("div", "m-facts", facts(r)));
+        const sub = el("div", "m-facts");  // the ratings lead the second line: critic, then audience
+        sub.appendChild(mcBox(r));
+        const us = userBox(r); if (us) sub.appendChild(us);
+        sub.appendChild(el("span", "tx", facts(r)));
+        info.appendChild(sub);
         row.appendChild(info);
         row.appendChild(fitCell(r));
         const rm = el("div", "m-rm"), say = remark(r);
