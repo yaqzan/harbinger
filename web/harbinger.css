@@ -254,6 +254,15 @@ td .dots { margin-right: 2px; }
 .mc.mixed { background: #ffcc33; }
 .mc.bad { background: #ff4d4d; color: #fff; }
 .mc.none { background: none; border: 1.5px solid var(--rule); color: var(--muted); font-weight: 400; }
+/* the audience score: a navy pill with the store's logo, the number in the store's review colour */
+.us { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px 0 6px; border-radius: 999px;
+  background: #1b2838; border: 1.5px solid currentColor; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.us svg { width: 13px; height: 13px; fill: #fff; flex: none; }
+.us b { font-weight: 800; }
+.us.ps { background: #0b2552; }
+.us.pos { color: #66c0f4; }
+.us.mix { color: #c9b07a; }
+.us.neg { color: #e0703c; }
 .m-fit .bar { display: block; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
 .m-fit .bar i { display: block; height: 100%; }
 .m-fit .bar.unk { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); opacity: .6; }
@@ -289,6 +298,8 @@ td .dots { margin-right: 2px; }
   .m-title { gap: 7px; }
   .m-title .gn { font-size: .9rem; }
   .mc { height: 21px; min-width: 26px; font-size: .74rem; }
+  .us { height: 21px; font-size: .72rem; padding: 0 6px 0 5px; }
+  .us svg { width: 11px; height: 11px; }
   .m-facts { font-size: .74rem; }
 }
 

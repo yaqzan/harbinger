@@ -264,9 +264,25 @@
     b.title = "Metacritic";
     return b;
   };
+  // The audience score beside the critic one (Rotten Tomatoes style): Steam reviews in Steam's own
+  // colours (blue positive 70%+, tan mixed 40 to 69%, rust negative), else the PlayStation user
+  // score on the same scale (7.0+, 4.0 to 6.9, below). A navy pill with the store's logo, so it
+  // never reads as a second Metacritic box.
+  const userBox = (r) => {
+    const steam = r.rating != null, ps = !steam && r.us != null;
+    if (!steam && !ps) return null;
+    const v = steam ? r.rating : r.us * 10;
+    const b = el("span", `us ${steam ? "steam" : "ps"} ${v >= 70 ? "pos" : v >= 40 ? "mix" : "neg"}`);
+    const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"), path = document.createElementNS(NS, "path");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
+    path.setAttribute("d", LOGO[steam ? "steam" : "playstation"][1]); svg.appendChild(path);
+    b.appendChild(svg);
+    b.appendChild(el("b", null, steam ? `${r.rating}%` : r.us.toFixed(1)));
+    b.title = steam ? `Steam reviews: ${r.rating}% positive${r.reviews ? ` of ${r.reviews.toLocaleString()}` : ""}` : `PlayStation user score: ${r.us.toFixed(1)} of 10`;
+    return b;
+  };
   const facts = (r) => [
     isClaim(r) ? "Monthly game" : r.band === "Confirmed" ? "Confirmed" : r.band === "Reported" ? "Reported" : `${r.band} ${oddsLabel(r)}`,
-    r.rating != null ? `Steam ${r.rating}%` : r.us != null ? `PS users ${r.us.toFixed(1)}` : "",
     [r.genre, r.year].filter(Boolean).join(" "),
     watching(r) ? "In your queue" : "",
   ].filter(Boolean).join(" · ");
@@ -307,6 +323,7 @@
         const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the halo, on the poster
         const info = el("div", "m-info"), top = el("div", "m-title");
         top.appendChild(mcBox(r));
+        const us = userBox(r); if (us) top.appendChild(us);
         top.appendChild(el("span", "gn", r.game));
         if (r.mark) top.appendChild(el("span", `mk ${r.mark}`, MARK[r.mark]));
         top.appendChild(places(r, r.backup ? r.places : [svc(r) === "ps" ? "playstation" : "xbox"]));
