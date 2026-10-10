@@ -3,10 +3,12 @@
 Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchdog.
 
 - **Server**: `py -3.11 -u -m harbinger serve`, stdlib ThreadingHTTPServer on 127.0.0.1:5006.
-  Serves `web/`, `/data.json` (from `harbinger/state/`) and `/api/health`. GET/HEAD only,
+  Serves `web/`, `/data.json` (from `harbinger/state/`), `/art/<file>` and `/api/health`. GET/HEAD only,
   everything no-cache, path traversal refused (tested 2026-10-09).
   `/api/health` answers 200 whenever the server is up (the watchdog restarts on anything else);
   `stale: true` means data.json is over 40 h old, i.e. the scheduled jobs are failing.
+  web/ and data.json are read per request, but a change to `serve.py` (a new route) needs
+  `server.ps1 restart -Service harbinger`: the covers 404'd for hours on 2026-10-09 until it did.
 - **server.ps1**: `harbinger-api` + `harbinger-tunnel` (alias `harbinger`), added 2026-10-09
   (backup `server.ps1.bak-harbinger`).
 - **Tunnel**: `harbinger`, created 2026-10-09. Config `ops/cloudflared-config.yml` is gitignored
