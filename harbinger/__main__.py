@@ -27,6 +27,7 @@ from . import sheet as sheet_mod
 from . import steam as steam_mod
 from . import titles as titles_mod
 from .build import alerts_due, arrival_alert, assemble, leaver_alert, new_leavers, queue_alert
+from .schedule import ingest_due
 
 
 def _wanted(data: dict) -> set[str]:
@@ -174,6 +175,20 @@ def push(data: dict, cfg: dict) -> str:
     return "push: " + ", ".join(out)
 
 
+def _due(cfg: dict, today: date) -> tuple[bool, str]:
+    """For `ingest --if-due`: has today had an ingest, and is a leaving list still expected?"""
+    from .model import next_waves
+    db = store.connect()
+    ran = db.execute("SELECT 1 FROM runs WHERE kind = 'ingest' AND substr(at, 1, 10) = ?",
+                     (today.isoformat(),)).fetchone() is not None
+    announced = set()
+    if OUTPUT_FILE.exists():
+        data = json.loads(OUTPUT_FILE.read_text(encoding="utf-8"))
+        announced = {date.fromisoformat(r["wave"]) for r in data["confirmed"] if r["verified"]}
+    w = cfg["waves"]
+    return ingest_due(today, next_waves(today, w["horizon"]), announced, ran, w["notice_window"])
+
+
 def _changes(game: str | None, imports: int = 5) -> int:
     db = store.connect()
     q = ("SELECT i.fetched_at, c.service || ' ' || c.tab, c.title, c.kind, c.field, c.old, c.new FROM sheet_change c"
@@ -198,6 +213,8 @@ def main(argv=None) -> int:
     ap.add_argument("--game", help="changes: only this title")
     ap.add_argument("--no-forecast", action="store_true", help="ingest: keep the last forecast")
     ap.add_argument("--push", action="store_true", help="ingest: push newly confirmed leavers and queued games to start via Pharos (optional, see config.local.example.toml)")
+    ap.add_argument("--if-due", action="store_true",
+                    help="ingest: skip unless it's the first run today or a leaving list is expected (scheduled task)")
     ap.add_argument("--today", type=date.fromisoformat, help="score as of this date (testing)")
     a = ap.parse_args(argv)
     if a.command == "serve":
@@ -219,6 +236,11 @@ def main(argv=None) -> int:
             return 1
         data = json.loads(OUTPUT_FILE.read_text(encoding="utf-8"))
     elif a.command == "ingest":
+        if a.if_due:
+            due, why = _due(load_config(), a.today or date.today())
+            print(why)
+            if not due:
+                return 0
         data = run("ingest", fetch=True, refresh_forecast=not a.no_forecast, sync_steam=True, today=a.today)
     elif a.command == "steam":
         data = run("steam", fetch=False, refresh_forecast=False, sync_steam=True, today=a.today)

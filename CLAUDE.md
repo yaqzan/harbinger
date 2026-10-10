@@ -17,9 +17,10 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 
 ## Commands
 
-- `py -3.11 -m harbinger ingest [--no-forecast] [--push]`: import sheet + forecast subagent +
+- `py -3.11 -m harbinger ingest [--no-forecast] [--push] [--if-due]`: import sheet + forecast subagent +
   Steam, reconcile titles, rebuild, snapshot (daily task). `--push` alerts on newly confirmed
-  leavers, queued games due a heads-up or start, and new Premium / PS Plus Extra arrivals (`[alerts]`).
+  leavers, queued games due a heads-up or start, and new Premium / PS Plus Extra arrivals (`[alerts]`). `--if-due` (scheduled, 5 ticks a day)
+  skips unless it's the day's first run or a leaving list is expected (`harbinger/schedule.py`).
 - `py -3.11 -m harbinger steam`: Steam + PSN import, rebuild from the database
 - `py -3.11 -m harbinger build [--today YYYY-MM-DD]`: re-score the database after a config or
   titles.toml change. `show`: print the summary. `titles`: match issues. `changes [--game X]`:
@@ -27,7 +28,7 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 - `py -3.11 -m unittest`: tests (model rules, a whole run pinned to Oct 9, 2026, config merge).
   Tests load the shared config only (`load_config(local=None)`).
 - `C:\Development\server.ps1 start|status|logs -Service harbinger`: server (:5006) + tunnel
-- `ops\windows\install-tasks.ps1 -Controller C:\Development\server.ps1`: watchdog + daily ingest
+- `ops\windows\install-tasks.ps1 -Controller C:\Development\server.ps1`: watchdog + ingest ticks
 
 ## Invariants
 

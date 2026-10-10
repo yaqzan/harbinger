@@ -18,10 +18,17 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
   (holds the UUID and hostname); the repo ships `cloudflared-config.example.yml`.
 - **Tasks** (`ops/windows/install-tasks.ps1 -Controller C:\Development\server.ps1`):
   - "Harbinger Watchdog" every 5 min (unelevated falls back to schtasks, no at-logon trigger).
-  - "Harbinger Ingest" daily 14:46 local (Eastern), after Xbox Wire's usual midday posts. Daily
-    since 2026-10-09 (was the 3rd and 18th) so a confirmed leaver pushes within a day. It syncs
-    Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it). Costs one
-    forecast subagent run (~90 s) a day.
+  - "Harbinger Ingest" fires at 06:30, 09:30, 12:30, 15:30, 18:30 local with `--if-due`
+    (`harbinger/schedule.py`): the first tick each day always runs; later ticks run only while a
+    wave is inside `[waves] notice_window` without its list. Once the list is in, they go quiet.
+    It syncs Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it).
+    Each run that works costs one forecast subagent call (~90 s).
+    **Why these times:** the official list goes up in the Xbox app ("Leaving soon") and Xbox Wire,
+    and Pure Xbox writes it up. Pure Xbox's 22 "games are leaving" articles from Jul 2025 to Oct 2026
+    landed 12-16 days before the wave (15 of 22 at exactly 13) on any weekday, the 1st-3rd or
+    15th-18th, between 05:15 and 17:00 Eastern: most at 05:15-07:45, a few around 09:30-10:00 and
+    12:30, weekends into the afternoon. The dataset lives in `tests/test_schedule.py`; add new
+    lists there, and the test fails if the window stops covering them.
   - Jobs run `ops/windows/run-job.ps1`; logs in `ops/windows/logs/{ingest,steam}.log`.
 - **Push** (`ingest --push`), three kinds, one push each, quiet otherwise:
   - New arrivals (owner, 2026-10-09): rows added to the Game Pass Premium tab, or to the PS Plus

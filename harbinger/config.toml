@@ -17,6 +17,9 @@ skip_systems = ["PC"]
 cohorts = [12, 18, 24, 36]  # anniversary months that can trigger a removal
 horizon = 4                 # waves shown on the watchlist and chart
 notice_days = 13            # official notice lands about this long before a wave
+# Days before a wave its leaving list has appeared: 12 to 16 across 22 lists, Jul 2025 to
+# Oct 2026 (Pure Xbox publish times). Scheduled ingests re-check every few hours inside it.
+notice_window = [11, 16]
 # Only these count as confirming a leaver. A leaver reported only elsewhere (Insider Gaming,
 # a forum) shows on the page tagged unverified and is left out of the counts.
 trusted_sources = ["Xbox Wire", "Pure Xbox"]

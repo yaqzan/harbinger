@@ -1,5 +1,5 @@
 # Runs one Harbinger job from Task Scheduler and logs it.
-#   -Job ingest  sheet + forecast subagent + Steam + rebuild; pushes newly confirmed leavers (daily)
+#   -Job ingest  --if-due: sheet + forecast subagent + Steam + rebuild when due; pushes newly confirmed leavers
 #   -Job steam   Steam progress + rebuild from cached inputs (manual)
 # A failed run pages through Pharos (if it sits next to this repo, or -PharosModule points at it)
 # so a dead schedule doesn't go unnoticed.
@@ -23,7 +23,7 @@ $env:PYTHONUTF8 = '1'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Set-Location $Root
 $jobArgs = @('-3.11', '-m', 'harbinger', $Job)
-if ($Job -eq 'ingest') { $jobArgs += '--push' }
+if ($Job -eq 'ingest') { $jobArgs += @('--push', '--if-due') }
 
 Add-Content -Path $Log -Encoding UTF8 -Value ("==== {0}  {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Job)
 $out = & py @jobArgs 2>&1

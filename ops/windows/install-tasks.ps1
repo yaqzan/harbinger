@@ -1,7 +1,9 @@
 # Registers Harbinger's scheduled tasks. All run through hidden_run.vbs (no console flash).
 #   "Harbinger Watchdog"  every 5 min: restart the server / tunnel if down
-#   "Harbinger Ingest"    daily at 14:46: sheet + forecast + Steam, then a push only if a game is
-#                         newly confirmed to leave (after Xbox Wire's usual midday ET posts)
+#   "Harbinger Ingest"    06:30, 09:30, 12:30, 15:30, 18:30 with --if-due: the first tick each day
+#                         always runs; later ticks run only while a leaving list is expected
+#                         ([waves] notice_window). Pushes only newly confirmed leavers.
+#                         Lists have landed 05:15-17:00 Eastern (.claude/docs/ops.md).
 # It also removes the old "Harbinger Steam" task: the daily ingest syncs Steam itself.
 #
 # This machine:  .\install-tasks.ps1 -Controller C:\Development\server.ps1
@@ -55,17 +57,17 @@ try {
 # XML rather than schtasks /sc daily for StartWhenAvailable (a missed tick runs once the
 # machine is back) and the 1 h time limit.
 $ingestArgs = "//B //Nologo `"$vbs`" " + (Quote @('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $runJob, '-Job', 'ingest'))
-$start = (Get-Date -Format 'yyyy-MM-dd') + 'T14:46:00'
+$day = Get-Date -Format 'yyyy-MM-dd'
+$triggers = ('06:30', '09:30', '12:30', '15:30', '18:30' | ForEach-Object {
+    "<CalendarTrigger><StartBoundary>${day}T${_}:00</StartBoundary><Enabled>true</Enabled>" +
+    "<ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger>"
+}) -join "`n    "
 $xml = @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo><Description>Harbinger: sheet, forecast and Steam refresh, push on newly confirmed leavers</Description></RegistrationInfo>
   <Triggers>
-    <CalendarTrigger>
-      <StartBoundary>$start</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>
-    </CalendarTrigger>
+    $triggers
   </Triggers>
   <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
@@ -85,7 +87,7 @@ $xmlPath = Join-Path $env:TEMP 'harbinger-ingest-task.xml'
 schtasks /create /tn "Harbinger Ingest" /xml $xmlPath /f
 if ($LASTEXITCODE -ne 0) { throw "Harbinger Ingest: schtasks exit $LASTEXITCODE" }
 Remove-Item $xmlPath -ErrorAction SilentlyContinue
-Write-Host 'Registered task: Harbinger Ingest (daily, 14:46)'
+Write-Host 'Registered task: Harbinger Ingest (5 ticks a day, --if-due)'
 
 schtasks /query /tn "Harbinger Steam" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
