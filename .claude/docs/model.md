@@ -113,6 +113,18 @@ the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours
 `verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.
 The hero sentence is also live; `summary.takeaway` is still built for the CLI and pushes.
 
+**Phones (2026-10-10).** Under 640px: each Shelf date column is the screen width minus a peek of
+the next one (scroll-snap); the Board drops Via / To 100% / Board by and uses fixed columns with
+short status and remark text (`.long` / `.short` spans, also used for remarks up to 1180px so
+the Board never scrolls sideways); tables with `class="stack"` become one block per row, labelled
+from `data-label` (copied from the header by the JS that fills them); the detail dialog docks to
+the bottom as a sheet. Touch screens (`pointer: coarse`) at any width get 44px controls and
+16px inputs (iOS zooms in on anything smaller). Hover effects sit behind `@media (hover: hover)`.
+Browser floor is iOS Safari 15.4 / Chrome 105 (`<dialog>`, `:has`); `color-mix()` has a plain
+fallback before it. `py -3.11 ops/mobile_check.py [--shots DIR]` is the gate: it loads every
+state at 320/360/390/430 px upright and 844 px on its side and fails on sideways scroll, small
+inputs or targets, and script errors. Run it after any `web/` change.
+
 ## Calibration (shown on the page)
 
 `calibration_rows()` measures leave rates from the sheet: of third-party games that resolved a

@@ -32,6 +32,8 @@
     const root = document.documentElement;
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
+    // the phone's browser bar follows the page, not the system setting
+    document.querySelectorAll("meta[name=theme-color]").forEach((m) => { m.content = dark ? "#fcfcfa" : "#131311"; });
     try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
   });
 
@@ -218,6 +220,7 @@
   };
 
   const num = (v, f) => (v == null ? "" : f ? f(v) : String(v));
+  const heads = [...document.querySelectorAll("#list thead th")].map((th) => th.textContent);
   const listRow = (r) => {
     const tr = el("tr");
     tr.tabIndex = 0;
@@ -225,16 +228,18 @@
     if (coverUrl(r)) { const i = el("img", "art"); i.src = coverUrl(r); i.alt = ""; i.loading = "lazy"; i.width = 24; i.height = 36; g.appendChild(i); }
     g.appendChild(document.createTextNode(r.game));
     tr.appendChild(g);
-    const w = el("td", "nowrap");
+    const w = el("td", "nowrap places");
     w.appendChild(dots(r));
     tr.appendChild(w);
     tr.appendChild(el("td", "num", num(r.mc, Math.round)));
     tr.appendChild(el("td", "num", r.rating != null ? `${r.rating}%` : ""));
     tr.appendChild(el("td", "num", num(r.us, (v) => v.toFixed(1))));
-    tr.appendChild(el("td", "num", num(r.hours)));
+    tr.appendChild(el("td", "num h", num(r.hours)));
     tr.appendChild(el("td", "num", num(r.year)));
     const lv = leaves(r)[0];
     tr.appendChild(el("td", "nowrap", lv ? `${lv.band === "Confirmed" ? "" : `${lv.band} `}${fmt(lv.ms)}` : ""));
+    // each cell carries its column name, shown as a label when a phone stacks the row
+    [...tr.children].forEach((c, i) => { c.dataset.label = heads[i] || ""; });
     tr.addEventListener("click", () => open(r));
     tr.addEventListener("keydown", (e) => { if (e.key === "Enter") open(r); });
     return tr;

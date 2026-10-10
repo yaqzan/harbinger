@@ -25,6 +25,8 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 - `py -3.11 -m harbinger build [--today YYYY-MM-DD]`: re-score the database after a config or
   titles.toml change. `show`: print the summary. `titles`: match issues. `changes [--game X]`:
   what the last sheet imports changed.
+- `py -3.11 ops/mobile_check.py [--shots DIR]`: phone-width check of `web/` against the running
+  server (needs Playwright); run after any page change. Bump `?v=` in the html when CSS/JS changes.
 - `py -3.11 -m unittest`: tests (model rules, a whole run pinned to Oct 9, 2026, config merge).
   Tests load the shared config only (`load_config(local=None)`).
 - `C:\Development\server.ps1 start|status|logs -Service harbinger`: server (:5006) + tunnel

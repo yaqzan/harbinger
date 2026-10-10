@@ -3,14 +3,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fcfcfa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131311" media="(prefers-color-scheme: dark)">
 <title>Harbinger · Game Pass exit radar</title>
 <meta name="description" content="Which Game Pass and PS Plus games are leaving or likely to leave, how long each takes to finish, and the latest day to start.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=3">
+<link rel="stylesheet" href="/harbinger.css?v=6">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
 </head>
 <body>
 <div class="wrap">
@@ -54,7 +56,7 @@
     <section id="board" class="board" aria-label="Departures board" hidden>
       <div class="bh"><span id="board-title">DEPARTURES</span><span id="board-date"></span></div>
       <table>
-        <thead><tr><th>Departs</th><th>Game</th><th class="via">Via</th><th>Status</th><th class="num hrs">To 100%</th><th class="by">Board by</th><th>Remarks</th></tr></thead>
+        <thead><tr><th class="when">Departs</th><th>Game</th><th class="via">Via</th><th class="st">Status</th><th class="num hrs">To 100%</th><th class="by">Board by</th><th class="rm">Remarks</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
@@ -64,14 +66,14 @@
   <section class="card" id="queue">
     <h2>Your queue</h2>
     <p class="note">Games you're tracking, with the next point they could leave.</p>
-    <div class="box"><table id="t-queue"><thead><tr><th>Game</th><th>State</th><th>Next check</th><th>Odds</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+    <div class="box"><table id="t-queue" class="stack"><thead><tr><th>Game</th><th>State</th><th>Next check</th><th>Odds</th><th>Note</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <section class="card">
     <details>
       <summary>Passed a checkpoint quietly</summary>
       <p class="note">Hit an anniversary in the last six weeks and weren't named in that wave's notice.</p>
-      <div class="box"><table id="t-surv"><thead><tr><th>Game</th><th>Checkpoint</th><th>Next risk</th><th>Why</th></tr></thead><tbody></tbody></table></div>
+      <div class="box"><table id="t-surv" class="stack"><thead><tr><th>Game</th><th>Checkpoint</th><th>Next risk</th><th>Why</th></tr></thead><tbody></tbody></table></div>
     </details>
   </section>
 
@@ -79,7 +81,7 @@
     <details>
       <summary>Ubisoft+ Classics bundle</summary>
       <p class="note">About 50 games added together on Oct 1, 2025. The contract length isn't public, so these aren't scored.</p>
-      <div class="box"><table id="t-ubi"><thead><tr><th>Game</th><th>Next anniversary</th><th class="num">Hours</th></tr></thead><tbody></tbody></table></div>
+      <div class="box"><table id="t-ubi" class="stack"><thead><tr><th>Game</th><th>Next anniversary</th><th class="num">Hours</th></tr></thead><tbody></tbody></table></div>
     </details>
   </section>
 
@@ -93,14 +95,14 @@
         <p id="how-play"></p>
         <p>Odds are a model estimate and can be wrong. Completion hours come from the sheets and nobody has checked them. Game Pass means Ultimate on an Xbox console; PC-only games are left out.</p>
       </div>
-      <div class="box"><table id="t-cal"><thead><tr><th>Measure</th><th>Value</th><th>Sample</th><th>Source</th></tr></thead><tbody></tbody></table></div>
+      <div class="box"><table id="t-cal" class="stack"><thead><tr><th>Measure</th><th>Value</th><th>Sample</th><th>Source</th></tr></thead><tbody></tbody></table></div>
     </details>
   </section>
 
   <section class="card">
     <details>
       <summary>Runs and sources</summary>
-      <div class="box"><table id="t-hist"><thead><tr><th>Ingest</th><th class="num">Confirmed</th><th class="num">Likely</th><th class="num">Possible</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+      <div class="box"><table id="t-hist" class="stack"><thead><tr><th>Ingest</th><th class="num">Confirmed</th><th class="num">Likely</th><th class="num">Possible</th><th>Note</th></tr></thead><tbody></tbody></table></div>
       <ul class="sources" id="sources"></ul>
     </details>
   </section>
@@ -120,6 +122,6 @@
   </div>
   <dl id="d-facts"></dl>
 </dialog>
-<script src="/harbinger.js?v=3"></script>
+<script src="/harbinger.js?v=5"></script>
 </body>
 </html>

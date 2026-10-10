@@ -28,6 +28,8 @@
     const root = document.documentElement;
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
+    // the phone's browser bar follows the page, not the system setting
+    document.querySelectorAll("meta[name=theme-color]").forEach((m) => { m.content = dark ? "#fcfcfa" : "#131311"; });
     try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
   });
 
@@ -214,16 +216,17 @@
     }));
   };
 
+  // [text, class, short text for a phone]
   const remark = (r) => {
-    if (r.backup) return [`Rebooked · ${r.backup}`, "m"];
-    if (isClaim(r)) return [`Claim by ${fmt(t(r.wave))}`, "gr"];
-    if (r.unverified && r.band === "Reported") return ["Unverified report", "m"];
+    if (r.backup) return [`Rebooked · ${r.backup}`, "m", "Rebooked"];
+    if (isClaim(r)) return [`Claim by ${fmt(t(r.wave))}`, "gr", "Claim"];
+    if (r.unverified && r.band === "Reported") return ["Unverified report", "m", "Unverified"];
     const u = urgency(r);
-    if (u === "Hours unknown") return ["Hours unknown", "m"];
-    if (u === "Too late") return [`Short ${Math.round(r.hours - avail(r))} h`, "r"];
-    if (u === "Start now") return ["Boarding", "gr blink"];
-    if (u.startsWith("Start within")) return ["Board soon", "gr"];
-    return ["On time", ""];
+    if (u === "Hours unknown") return ["Hours unknown", "m", "Hours ?"];
+    if (u === "Too late") return [`Short ${Math.round(r.hours - avail(r))} h`, "r", `Short ${Math.round(r.hours - avail(r))}h`];
+    if (u === "Start now") return ["Boarding", "gr blink", "Boarding"];
+    if (u.startsWith("Start within")) return ["Board soon", "gr", "Board soon"];
+    return ["On time", "", "On time"];
   };
   const drawBoard = (rows) => {
     $("board-title").textContent = `DEPARTURES · GAME PASS${one.ps_tier !== "none" ? ` + PS PLUS ${one.ps_tier.toUpperCase()}` : ""}`;
@@ -246,8 +249,10 @@
       tr.appendChild(stTd);
       tr.appendChild(el("td", "num hrs", r.hours == null ? "--" : `${r.hours} h`));
       tr.appendChild(el("td", "by", r.hours == null || isClaim(r) || r.backup || urgency(r) === "Too late" ? "--" : startBy(r) <= T0 ? "Now" : fmt(startBy(r))));
-      const [txt, cls] = remark(r);
-      tr.appendChild(el("td", `rm ${cls}`, txt));
+      const [txt, cls, short] = remark(r), rmTd = el("td", `rm ${cls}`);
+      rmTd.appendChild(el("span", "long", txt));
+      rmTd.appendChild(el("span", "short", short));
+      tr.appendChild(rmTd);
       tr.addEventListener("click", () => open(r));
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter") open(r); });
       return tr;
@@ -276,7 +281,13 @@
   // ── the tables below ─────────────────────────────────────────────
   const fill = (tbodyId, rows, build) => {
     const tb = document.querySelector(`#${tbodyId} tbody`);
-    tb.replaceChildren(...rows.map((r) => { const tr = el("tr"); build(r, tr).forEach((td) => tr.appendChild(td)); return tr; }));
+    // each cell carries its column name, shown as a label when a phone stacks the row
+    const heads = [...document.querySelectorAll(`#${tbodyId} thead th`)].map((th) => th.textContent);
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = el("tr");
+      build(r, tr).forEach((td, i) => { td.dataset.label = heads[i] || ""; tr.appendChild(td); });
+      return tr;
+    }));
   };
   const td = (text, cls) => el("td", cls, text);
   const gameTd = (r) => {

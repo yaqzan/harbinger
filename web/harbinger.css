@@ -30,13 +30,12 @@
 body {
   background: var(--bg); color: var(--ink);
   font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
 }
-.wrap { max-width: 72rem; margin: 0 auto; padding: 0 16px 3rem; }
+.wrap { max-width: 72rem; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right)) calc(3rem + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
 nav { display: flex; justify-content: space-between; align-items: baseline; padding: 1.25rem 0 0; }
 .mark { font-family: var(--mono); font-size: .9rem; color: var(--muted); }
 #theme { background: none; border: none; cursor: pointer; color: var(--muted); font-size: .95rem; }
-#theme:hover { color: var(--ink); }
 
 h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.2; }
 
@@ -61,9 +60,9 @@ td.nowrap { white-space: nowrap; }
 tr.thin td { color: var(--muted); }
 
 .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .76rem; font-weight: 600; white-space: nowrap; border: 1px solid transparent; }
-.chip.Doable { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
-.chip.Tight { color: var(--possible); border-color: color-mix(in srgb, var(--possible) 45%, transparent); }
-.chip.late { color: var(--likely); border-color: color-mix(in srgb, var(--likely) 40%, transparent); }
+.chip.Doable { color: var(--ok); border-color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.chip.Tight { color: var(--possible); border-color: var(--possible); border-color: color-mix(in srgb, var(--possible) 45%, transparent); }
+.chip.late { color: var(--likely); border-color: var(--likely); border-color: color-mix(in srgb, var(--likely) 40%, transparent); }
 .chip.quiet { color: var(--muted); border-color: var(--rule); }
 .chip.unv { color: var(--muted); border: 1px dashed var(--thin); margin-left: 6px; font-weight: 500; }
 
@@ -108,7 +107,7 @@ main { margin-bottom: 1.5rem; }
 .cv, .big { position: relative; border-radius: 6px; overflow: hidden; background: var(--card); }
 .cv img, .big img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .cv.blank, .big.blank { display: flex; align-items: center; justify-content: center; padding: 6px; text-align: center; font-size: .7rem; line-height: 1.2; color: var(--muted);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--ink) 10%, var(--card)), var(--card)); border: 1px solid var(--rule); }
+  background: var(--card); background: linear-gradient(160deg, color-mix(in srgb, var(--ink) 10%, var(--card)), var(--card)); border: 1px solid var(--rule); }
 
 /* ── shelf: one column per exit date ── */
 .shelf { display: flex; gap: 1.75rem; overflow-x: auto; padding-bottom: .75rem; scroll-snap-type: x proximity; }
@@ -119,7 +118,7 @@ main { margin-bottom: 1.5rem; }
 .tiles { display: grid; grid-template-columns: repeat(3, 84px); gap: 14px 10px; }
 .tile { display: flex; flex-direction: column; width: 84px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tile .cv { width: 84px; height: 126px; transition: transform .12s; }
-.tile:hover .cv, .tile:focus-visible .cv { transform: translateY(-2px); }
+.tile:focus-visible .cv { transform: translateY(-2px); }
 .tile:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
 .tile .odds { position: absolute; top: 4px; right: 4px; font-size: .66rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: rgba(0, 0, 0, .78); color: #fff; }
 .odds.confirmed { color: #ff7b7b; }
@@ -149,7 +148,7 @@ main { margin-bottom: 1.5rem; }
 .board th { position: static; background: none; color: #8a6500; font-weight: 400; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; border: 0; padding: 8px; }
 .board td { border-bottom: 1px solid #1f1900; padding: 5px 8px; white-space: nowrap; text-transform: uppercase; vertical-align: middle; }
 .board tbody tr { cursor: pointer; }
-.board tbody tr:hover td, .board tbody tr:focus-visible td { background: #171307; }
+.board tbody tr:focus-visible td { background: #171307; }
 .board tbody tr:focus-visible { outline: 1px solid #ffb000; }
 .board .g { display: flex; align-items: center; gap: 8px; min-width: 16rem; max-width: 26rem; }
 .board .g .cv { width: 22px; height: 33px; border-radius: 2px; flex: none; }
@@ -180,24 +179,27 @@ dialog dl { display: grid; grid-template-columns: 7.5rem 1fr; gap: .35rem .8rem;
 dialog dt { color: var(--muted); }
 
 @media (max-width: 640px) {
-  nav { flex-wrap: wrap; }
   .hero { grid-template-columns: 1fr; gap: .6rem; padding-top: 1.25rem; }
   .card { padding: .9rem .8rem; }
-  .shelf { gap: 1.25rem; }
   .board .via, .board .by, .board .hrs, #board-date { display: none; }
-  .board .g { min-width: 0; max-width: 10.5rem; }
+  /* fixed columns so the remark never runs off the edge; the game name takes what's left */
+  .board table { table-layout: fixed; }
+  .board th.when { width: 3.7rem; }
+  .board th.st { width: 3rem; }
+  .board th.rm { width: 5.6rem; }
+  .board td { overflow: hidden; text-overflow: ellipsis; }
+  .board .g { min-width: 0; max-width: none; }
   .board .g .cv { display: none; }
-  .board td, .board th { padding: 5px 5px; }
+  .board th { padding: 5px; }
+  .board td { padding: 11px 5px; }  /* 40px rows for a thumb */
   .board { padding: 10px 8px 6px; }
   .board table { font-size: .72rem; }
-  .board .g { max-width: 9rem; }
   .board .long { display: none; }
   .board .short { display: inline; }
 }
 
 /* ── library page ── */
 .navlink { margin-left: auto; margin-right: .75rem; font-size: .84rem; color: var(--muted); text-decoration: none; }
-.navlink:hover { color: var(--ink); }
 .views a { font-size: .84rem; color: var(--muted); padding: 4px 14px; border-radius: 999px; text-decoration: none; }
 .views a[aria-current="page"] { background: var(--ink); color: var(--bg); }
 .views.small button { padding: 3px 11px; }
@@ -237,3 +239,93 @@ td .dots { margin-right: 2px; }
   #venn { max-width: 240px; margin: 0 auto; }
   .lib-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 }
+
+/* ── board below a wide laptop (a tablet, a phone on its side): short remarks so it fits;
+   the detail sheet still names where else you have the game ── */
+@media (min-width: 641px) and (max-width: 1180px) {
+  .board .rm .long { display: none; }
+  .board .rm .short { display: inline; }
+}
+@media (min-width: 641px) and (max-width: 1000px) {
+  .board .via { display: none; }  /* the dot already names the service */
+  .board .g { min-width: 0; max-width: min(12rem, calc(100vw - 472px)); }
+}
+
+/* ── hover only where there is a mouse, so a tap doesn't leave it stuck ── */
+@media (hover: hover) {
+  #theme:hover, .navlink:hover { color: var(--ink); }
+  .tile:hover .cv { transform: translateY(-2px); }
+  .board tbody tr:hover td { background: #171307; }
+}
+
+/* ── touch: 44px targets wherever the pointer is a finger ── */
+@media (pointer: coarse), (max-width: 640px) {
+  #theme { min-width: 44px; min-height: 44px; font-size: 1.1rem; }
+  .navlink { display: inline-flex; align-items: center; min-height: 44px; margin-right: 0; padding: 0 .4rem; }
+  .views button, .views a, .views.small button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; }
+  /* 16px stops iOS Safari zooming in when a field takes focus */
+  input, select { min-height: 44px; font-size: 16px; }
+  .chk { min-height: 44px; }
+  .more, .chip-r { min-height: 44px; }
+  dialog .x { top: 4px; right: 4px; min-width: 44px; min-height: 44px; }
+  summary { padding: 9px 0; }
+  .box tr[tabindex] td { padding-top: 10px; padding-bottom: 10px; }
+  details[open] summary { margin-bottom: .1rem; }
+}
+
+/* ── phones ── */
+@media (max-width: 640px) {
+  nav { flex-wrap: nowrap; gap: .5rem; padding-top: .75rem; }
+  .views button, .views a { padding: 0 14px; }
+  .ctl { gap: .5rem; }
+  .ctl input[type=search] { flex: 1 1 100%; max-width: none; min-width: 0; }
+  .ctl select { flex: 1 1 40%; min-width: 0; }
+  .ctl .count { flex: none; }
+
+  /* shelf: each date fills the screen, the next one peeks in from the edge */
+  .shelf { margin: 0 calc(-1 * max(16px, env(safe-area-inset-right))) 0 calc(-1 * max(16px, env(safe-area-inset-left)));
+    padding: 0 16px .75rem; scroll-padding: 0 16px; scroll-snap-type: x mandatory; gap: 1.25rem; overscroll-behavior-x: contain; }
+  .col { width: calc(100vw - 72px); max-width: 26rem; }
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
+  .tile:not(.lib) { width: auto; min-width: 0; }
+  .tile:not(.lib) .cv { width: 100%; height: auto; aspect-ratio: 2 / 3; }
+  .tile .odds { font-size: .7rem; }
+
+  /* tables: one block per row. The first cell heads it, the short values run on one line
+     under it with their column name, and the long text (td.why) closes it */
+  .box, .box.tall { max-height: none; overflow: visible; }
+  .stack thead { display: none; }
+  .stack, .stack tbody { display: block; width: 100%; }
+  .stack tr { display: flex; flex-wrap: wrap; align-items: center; gap: 2px .9rem; padding: .6rem 0; border-bottom: 1px solid var(--rule); }
+  .stack tr:last-child { border-bottom: 0; }
+  .stack td { display: inline-flex; align-items: baseline; gap: .3rem; padding: 0; border: 0; min-width: 0; text-align: left; white-space: normal; }
+  .stack td::before { content: attr(data-label); color: var(--muted); font-size: .78rem; }
+  .stack td:empty { display: none; }
+  .stack td:first-child { display: flex; align-items: center; flex: 1 1 100%; padding-bottom: .2rem; font-weight: 600; }
+  .stack td.why { display: block; flex: 1 1 100%; margin-top: .15rem; font-size: .82rem; }
+  .stack td:first-child::before, .stack td.why::before, .stack td.places::before { content: none; }
+  .stack td.places { align-items: center; }
+  .stack td.h::after { content: "h"; margin-left: -.15rem; }
+  .stack img.art { flex: none; }
+  .stack tr[tabindex] { cursor: pointer; }
+  .listbox { padding: 0 .9rem; }
+
+  /* detail: a sheet docked to the bottom of the screen */
+  dialog { margin: auto 0 0; width: 100%; max-width: none; max-height: 85vh; max-height: 85dvh; overflow-y: auto; overscroll-behavior: contain;
+    border-width: 1px 0 0; border-radius: 16px 16px 0 0; padding: 1.1rem max(16px, env(safe-area-inset-right)) calc(1.4rem + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .d-top { grid-template-columns: 84px 1fr; }
+  .d-top .big { width: 84px; height: 126px; }
+  dialog dl { grid-template-columns: 6.5rem 1fr; }
+}
+/* the smallest phones (320 px): the nav row still fits on one line */
+@media (max-width: 359px) {
+  nav { gap: .25rem; }
+  .mark { font-size: .8rem; }
+  .views button, .views a { padding: 0 10px; }
+  .navlink { padding: 0 .2rem; }
+  .col { width: calc(100vw - 56px); }
+  .tiles { gap: 12px 8px; }
+  .tile .odds { font-size: .6rem; padding: 1px 4px; }  /* clears the service dot on ~80px tiles */
+}
+/* the page behind an open sheet stays put */
+html:has(dialog[open]) { overflow: hidden; }
