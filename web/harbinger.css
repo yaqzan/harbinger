@@ -171,36 +171,6 @@ main { margin-bottom: 1.5rem; }
 .tile .sub { font-size: .7rem; color: var(--muted); }
 .more { margin-top: .8rem; font: inherit; font-size: .8rem; color: var(--muted); background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
 
-/* ── board: an airport departures board, dark in both themes ── */
-.board { background: #0a0a09; color: #ffb000; border-radius: 10px; padding: 14px 14px 8px; font-family: var(--mono); overflow-x: auto; }
-.board .bh { display: flex; justify-content: space-between; gap: 1rem; font-size: .8rem; letter-spacing: .12em; border-bottom: 1px solid #3a2d00; padding-bottom: 8px; }
-.board table { font-size: .8rem; }
-.board th { position: static; background: none; color: #8a6500; font-weight: 400; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; border: 0; padding: 8px; }
-.board td { border-bottom: 1px solid #1f1900; padding: 5px 8px; white-space: nowrap; text-transform: uppercase; vertical-align: middle; }
-.board tbody tr { cursor: pointer; }
-.board tbody tr:focus-visible td { background: #171307; }
-.board tbody tr:focus-visible { outline: 1px solid #ffb000; }
-.board .g { display: flex; align-items: center; gap: 8px; min-width: 16rem; max-width: 26rem; }
-.board .g .cv { width: 22px; height: 33px; border-radius: 2px; flex: none; }
-.board .g .cv.blank { padding: 0; }
-.board .g .cv.blank span { display: none; }
-.board .gn { overflow: hidden; text-overflow: ellipsis; }
-.board .lamp { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; vertical-align: 0; background: #2a2618; }
-.board .plats { position: static; display: inline-flex; margin-left: 8px; flex: none; }
-.board .plat { width: 16px; height: 16px; }
-.board .plat svg { width: 10px; height: 10px; }
-.board .plat.steam svg { width: 11px; height: 11px; }
-.board tr.dim .plat { opacity: 1; }
-.board .short { display: none; }
-.board .r { color: #ff6b6b; }
-.board .gr { color: #6fdc8c; }
-.board .b { color: #7fb0ff; }
-.board .m { color: #8a6500; }
-.board tr.dim td:not(:nth-child(2)), .board tr.dim .g > :not(.plats) { opacity: .38; }  /* the logos stay lit */
-.board tr.dim .cv img { filter: grayscale(1); }
-.blink { animation: blink 1.2s steps(2) infinite; }
-@keyframes blink { 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
 
 /* ── detail sheet ── */
 dialog { margin: auto; width: min(30rem, calc(100% - 24px)); border: 1px solid var(--rule); border-radius: 12px; background: var(--bg); color: var(--ink); padding: 1.1rem 1.2rem 1.2rem; }
@@ -218,22 +188,6 @@ dialog dt { color: var(--muted); }
   .top { grid-template-columns: 1fr; gap: .75rem; padding-top: 1rem; }
   .panel { padding: .9rem .8rem; }
   .card { padding: .9rem .8rem; }
-  .board .via, .board .by, .board .hrs, #board-date { display: none; }
-  /* fixed columns so the remark never runs off the edge; the game name takes what's left */
-  .board table { table-layout: fixed; }
-  .board th.when { width: 4.7rem; }  /* lamp + "Oct 15" */
-  .board .lamp { width: 8px; height: 8px; margin-right: 6px; }
-  .board th.st { width: 3rem; }
-  .board th.rm { width: 5.6rem; }
-  .board td { overflow: hidden; text-overflow: ellipsis; }
-  .board .g { min-width: 0; max-width: none; }
-  .board .g .cv { display: none; }
-  .board th { padding: 5px; }
-  .board td { padding: 11px 5px; }  /* 40px rows for a thumb */
-  .board { padding: 10px 8px 6px; }
-  .board table { font-size: .72rem; }
-  .board .long { display: none; }
-  .board .short { display: inline; }
 }
 
 /* ── library page ── */
@@ -278,15 +232,62 @@ td .dots { margin-right: 2px; }
   .lib-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 }
 
-/* ── board below a wide laptop (a tablet, a phone on its side): short remarks so it fits;
-   the detail sheet still names where else you have the game ── */
-@media (min-width: 641px) and (max-width: 1180px) {
-  .board .rm .long { display: none; }
-  .board .rm .short { display: inline; }
+
+/* ── board: a metro line. Dates are stops down the left, lamps sit on the line ── */
+.metro { display: grid; gap: .25rem; }
+.m-group { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0 .9rem; }
+.m-date { padding-top: .9rem; }
+.m-date b { display: block; font-size: 1.35rem; font-weight: 800; line-height: 1.05; }
+.m-date span { display: block; color: var(--muted); font-size: .76rem; margin-top: .2rem; }
+.m-line { border-left: 3px solid var(--rule); margin: .6rem 0; padding: .2rem 0; }
+.m-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem 5.5rem 11rem 13rem; align-items: center; gap: .9rem;
+  padding: .45rem .6rem .45rem 1.5rem; border-radius: 8px; cursor: pointer; }
+.m-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.m-row .lamp { position: absolute; left: -9px; top: 50%; margin-top: -8px; width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid var(--bg); box-sizing: content-box; background: var(--rule); }
+.m-game { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.m-game .cv { width: 26px; height: 39px; border-radius: 3px; flex: none; }
+.m-game .cv.blank { padding: 0; }
+.m-game .cv.blank span { display: none; }
+.m-game .gn { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.m-game .plats { position: static; display: inline-flex; gap: 3px; flex: none; }
+.m-game .plat { width: 18px; height: 18px; }
+.m-game .plat svg { width: 11px; height: 11px; }
+.m-game .plat.steam svg { width: 12px; height: 12px; }
+.m-odds { color: var(--muted); font-size: .82rem; white-space: nowrap; }
+.m-score { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.mc { display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 5px; border-radius: 5px; border: 1.5px solid var(--ink); font-weight: 800; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.mc.none { border-color: var(--rule); color: var(--muted); font-weight: 400; }
+.m-score .user { color: var(--muted); font-size: .74rem; }
+.m-fit .bar { display: block; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+.m-fit .bar i { display: block; height: 100%; }
+.m-fit .bar.unk { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); opacity: .6; }
+.m-fit .ft { display: block; color: var(--muted); font-size: .74rem; margin-top: 3px; white-space: nowrap; }
+.m-rm { font-weight: 700; font-size: .86rem; }
+.m-row.dim > :not(.lamp):not(.m-game), .m-row.dim .m-game > :not(.plats) { opacity: .4; }  /* the logos stay lit */
+.m-row.dim .cv img { filter: grayscale(1); }
+.m-row.dim .m-rm { color: var(--muted); font-weight: 600; }
+
+/* narrower screens: the odds and the user score fold into the game's line */
+@media (max-width: 1000px) {
+  .m-row { grid-template-columns: minmax(0, 1fr) 2.5rem 8.5rem 12.5rem; gap: .7rem; }
+  .m-rm { white-space: nowrap; }
+  .m-odds { display: none; }
+  .m-score .user { display: none; }
 }
-@media (min-width: 641px) and (max-width: 1000px) {
-  .board .via { display: none; }  /* the dot already names the service */
-  .board .g { min-width: 0; max-width: min(12rem, calc(100vw - 472px)); }
+/* phones: the date heads its group, each row is the game over one line of facts */
+@media (max-width: 640px) {
+  .m-group { grid-template-columns: 1fr; }
+  .m-date { display: flex; align-items: baseline; gap: .6rem; padding-top: .9rem; }
+  .m-date span { margin: 0; }
+  .m-line { margin: .4rem 0 .4rem 6px; }
+  .m-row { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "game game game" "score fit rm"; gap: .35rem .7rem; padding: .55rem .2rem .55rem 1.1rem; }
+  .m-game { grid-area: game; }
+  .m-score { grid-area: score; }
+  .m-fit { grid-area: fit; min-width: 0; }
+  .m-fit .ft { overflow: hidden; text-overflow: ellipsis; }
+  .m-rm { grid-area: rm; text-align: right; font-size: .8rem; }
+  .m-row .lamp { top: 1.35rem; margin-top: 0; }
+  .mc { height: 22px; min-width: 28px; font-size: .76rem; }
 }
 
 /* ── hover only where there is a mouse, so a tap doesn't leave it stuck ── */
@@ -294,7 +295,7 @@ td .dots { margin-right: 2px; }
   #theme:hover, .navlink:hover { color: var(--ink); }
   .tile:hover .cv { transform: translateY(-2px); }
   .pick:hover .nm { text-decoration: underline; }
-  .board tbody tr:hover td { background: #171307; }
+  .m-row:hover { background: var(--card); }
 }
 
 /* ── touch: 44px targets wherever the pointer is a finger ── */
