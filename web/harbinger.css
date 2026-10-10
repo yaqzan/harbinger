@@ -116,6 +116,14 @@ nav { align-items: center; gap: 1rem; }
 .switch input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .switch i, .switch i::after { transition: none; } }
 .ctl .count { font: inherit; font-size: .8rem; color: var(--muted); margin-left: auto; }
+/* the filters behind search: inline on a wide screen, folded behind the Filters button on a phone */
+.fmore { display: contents; }
+.fbtn { display: none; align-items: center; gap: 6px; font: inherit; font-size: .84rem; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+.fbtn[aria-expanded="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.fbtn:not([data-n="0"])::after { content: attr(data-n); min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; font-size: .72rem; font-weight: 700;
+  display: inline-grid; place-items: center; background: var(--likely); color: #fff; }
+.exits .lose { display: none; }
 main { margin-bottom: 1.5rem; }
 .empty { color: var(--muted); padding: 2rem 0; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
@@ -306,10 +314,33 @@ td .dots { margin-right: 2px; }
 @media (max-width: 640px) {
   nav { flex-wrap: nowrap; gap: .5rem; padding-top: .75rem; }
   .views button, .views a { padding: 0 14px; }
-  .ctl { gap: .5rem; }
-  .ctl input[type=search] { flex: 1 1 100%; max-width: none; min-width: 0; }
+  .ctl { gap: .5rem; flex-wrap: nowrap; }
+  .ctl.open { flex-wrap: wrap; }
+  .ctl input[type=search] { flex: 1 1 0; max-width: none; min-width: 0; }
   .ctl select { flex: 1 1 40%; min-width: 0; }
   .ctl .count { flex: none; }
+
+  /* open the page on the content: search + Filters on one line, the rest folded */
+  .fbtn { display: inline-flex; flex: none; }
+  .fmore { display: none; }
+  .ctl.open .fmore { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; width: 100%; }
+  .ctl:not(.open) + .legend { display: none; }
+  /* board: the confirmed exits shrink to a row of pills */
+  .top { padding: .4rem 0 .6rem; }
+  .top .panel { background: none; border: 0; padding: 0; }
+  .top .panel h2, #notice, .side .meta { display: none; }
+  .exits { display: flex; gap: .5rem; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .exits li { flex: none; display: flex; align-items: baseline; gap: .5rem; padding: .35rem .8rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--card); }
+  .exits .d { font-size: .92rem; }
+  .exits .d small, .exits .sub { display: none; }
+  .exits div:last-child { flex-direction: row; gap: .4rem; align-items: baseline; }
+  .exits .nm { font-size: .84rem; }
+  .exits .lose { display: inline; font-size: .8rem; color: var(--likely); font-weight: 600; }
+  /* library: no title or Venn, the region chips scroll sideways on one line */
+  .lib-head, #venn, .where .note { display: none; }
+  .where { display: block; margin: .4rem 0 .6rem; }
+  .regions { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .chip-r { flex: none; }
 
   .tile .odds { font-size: .7rem; }
 
@@ -339,6 +370,8 @@ td .dots { margin-right: 2px; }
   dialog dl { grid-template-columns: 6.5rem 1fr; }
 }
 /* the smallest phones (320 px): the nav row still fits on one line */
+.m-fit .fs { display: none; }
+@media (max-width: 380px) { .m-rm .lv, .m-fit .fl { display: none; } .m-fit .fs { display: inline; } }
 @media (max-width: 359px) {
   nav { gap: .25rem; }
   .mark { font-size: .8rem; }

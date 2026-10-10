@@ -317,7 +317,10 @@
       : "Pick one or more. Nothing picked shows every game.";
   };
 
+  // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
+  $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = (keepPage) => {
+    $("fbtn").dataset.n = [ctl.sort.value !== "mc", ctl.genre.value !== "", ctl.rated.checked].filter(Boolean).length;
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
     const out = rows.filter((r) => matches(r));

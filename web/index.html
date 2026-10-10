@@ -9,7 +9,7 @@
 <title>Harbinger · Game Pass exit radar</title>
 <meta name="description" content="Which Game Pass and PS Plus games are leaving or likely to leave, how long each takes to finish, and the latest day to start.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=17">
+<link rel="stylesheet" href="/harbinger.css?v=20">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
@@ -38,6 +38,8 @@
 
   <div class="ctl" id="ctl">
     <input id="q" type="search" placeholder="Search games" aria-label="Search games">
+    <button type="button" class="fbtn" id="fbtn" aria-expanded="false" aria-controls="fmore">Filters</button>
+    <div class="fmore" id="fmore">
     <select id="fs" aria-label="Service"><option value="">Both services</option><option value="Game Pass">Game Pass</option><option value="PS Plus">PS Plus</option></select>
     <select id="fb" aria-label="Odds">
       <option value="2">Likely and up</option>
@@ -52,6 +54,7 @@
     <label class="chk switch"><input type="checkbox" role="switch" id="so"><i aria-hidden="true"></i> Games you own</label>
     <label class="chk switch"><input type="checkbox" role="switch" id="sb"><i aria-hidden="true"></i> On both services</label>
     <span class="count" id="count"></span>
+    </div>
   </div>
 
   <p class="legend" id="legend">
@@ -124,6 +127,6 @@
   </div>
   <dl id="d-facts"></dl>
 </dialog>
-<script src="/harbinger.js?v=16"></script>
+<script src="/harbinger.js?v=19"></script>
 </body>
 </html>

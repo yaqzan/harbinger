@@ -115,6 +115,7 @@
     const h = round(avail(on[0]));
     body.appendChild(el("span", "sub", !rest.length ? "You have all of them elsewhere."
       : `You'd lose ${rest.length}. ${fits ? `${fits} of them still fit` : rest.length === 1 ? "It doesn't fit" : "None of them fit"} in your ${h} h.`));
+    body.appendChild(el("span", "lose", rest.length ? `lose ${rest.length}` : "all covered"));  // the phone's pill
     li.appendChild(body);
     return li;
   }));
@@ -268,7 +269,10 @@
     if (r.hours == null) bar.classList.add("unk");
     else { i.style.width = `${Math.min(100, (r.hours / Math.max(1, avail(r))) * 100)}%`; i.style.background = hsl(fitHue(r)); }
     bar.appendChild(i); c.appendChild(bar);
-    c.appendChild(el("span", "ft", `needs ${r.hours ?? "?"} h · ${left} h left`));
+    const ft = el("span", "ft");
+    ft.appendChild(el("span", "fl", `needs ${r.hours ?? "?"} h · ${left} h left`));
+    ft.appendChild(el("span", "fs", `${r.hours ?? "?"} of ${left} h`));  // the smallest phones
+    c.appendChild(ft);
     return c;
   };
   const drawBoard = (rows) => {
@@ -300,7 +304,9 @@
         info.appendChild(el("div", "m-facts", facts(r)));
         row.appendChild(info);
         row.appendChild(fitCell(r));
-        const rm = el("div", "m-rm", remark(r));
+        const rm = el("div", "m-rm"), say = remark(r);
+        if (say.startsWith("Leaves ")) { rm.appendChild(el("span", "lv", "Leaves ")); rm.appendChild(document.createTextNode(say.slice(7))); }
+        else rm.textContent = say;  // the smallest phones drop the word "Leaves" (.lv) for the hours text
         if (!r.backup && fitHue(r) != null) rm.style.color = hsl(fitHue(r));  // same colour as the light
         row.appendChild(rm);
         row.addEventListener("click", () => open(r));
@@ -312,7 +318,10 @@
     }));
   };
 
+  // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
+  $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = () => {
+    $("fbtn").dataset.n = [ctl.fs.value !== "", ctl.fb.value !== "2", ctl.fr.value !== "56", ctl.so.checked, ctl.sb.checked].filter(Boolean).length;
     const rows = shown();
     $("count").textContent = `${rows.length} game${rows.length === 1 ? "" : "s"}`;
     $("empty").hidden = rows.length > 0;
