@@ -111,6 +111,10 @@ default), how far ahead (8 weeks by default), backups on/off. A tile or row open
 sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against
 the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours_available`,
 `verdict`, `start_by` and `urgency`; change a rule there and in `web/harbinger.js` together.
+Shelf cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (full at 60%+), a
+solid ring once confirmed (dashed if only reported). Its colour is fit, not odds: green while hours
+needed <= half the hours you have, sliding through yellow and orange to red at 100% (won't fit);
+grey for unknown hours and backups. The fit bar uses the same colour; the odds badge is plain.
 The hero sentence is also live; `summary.takeaway` is still built for the CLI and pushes.
 
 **Phones (2026-10-10).** Under 640px: each Shelf date column is the screen width minus a peek of

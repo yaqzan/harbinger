@@ -110,22 +110,20 @@ main { margin-bottom: 1.5rem; }
   background: var(--card); background: linear-gradient(160deg, color-mix(in srgb, var(--ink) 10%, var(--card)), var(--card)); border: 1px solid var(--rule); }
 
 /* ── shelf: one column per exit date ── */
-.shelf { display: flex; gap: 1.75rem; overflow-x: auto; padding-bottom: .75rem; scroll-snap-type: x proximity; }
-.col { flex: none; width: calc(3 * 84px + 2 * 10px); scroll-snap-align: start; }
+.shelf { display: flex; gap: 1.75rem; overflow-x: auto; padding: 4px 14px .75rem; margin: 0 -14px; scroll-snap-type: x proximity; scroll-padding: 0 14px; }  /* room for the halos */
+.col { flex: none; width: calc(3 * 84px + 2 * 12px); scroll-snap-align: start; }
 .col h3 { font-size: 1.05rem; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
 .col h3 small { color: var(--muted); font-weight: 400; font-size: .78rem; }
 .cap { display: flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); margin: 1px 0 .7rem; }
-.tiles { display: grid; grid-template-columns: repeat(3, 84px); gap: 14px 10px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 84px); gap: 16px 12px; }
 .tile { display: flex; flex-direction: column; width: 84px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.tile .cv { width: 84px; height: 126px; transition: transform .12s; }
+.tile .cv { width: 84px; height: 126px; overflow: visible; transition: transform .12s; }
+.tile .cv img { border-radius: 6px; }
 .tile:focus-visible .cv { transform: translateY(-2px); }
 .tile:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
 .tile .odds { position: absolute; top: 4px; right: 4px; font-size: .66rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: rgba(0, 0, 0, .78); color: #fff; }
-.odds.confirmed { color: #ff7b7b; }
-.odds.likely { color: #ffad5c; }
-.odds.possible { color: #f2d06b; }
+/* the halo carries the colour now; the badge is just the number */
 .odds.thin, .odds.none { color: #c9c7bf; }
-.odds.claim { color: #7ee2a0; }
 .odds.rep { color: #c9c7bf; outline: 1px dashed #c9c7bf; }
 .tile .cv .dot { position: absolute; top: 7px; left: 7px; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); }
 .tile .rib { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 4px; font-size: .62rem; font-weight: 700; line-height: 1.2; text-align: center; background: rgba(0, 0, 0, .82); color: #fff; }
@@ -133,6 +131,12 @@ main { margin-bottom: 1.5rem; }
 .tile.dim .nm, .tile.dim .sub { opacity: .45; }
 .hb { display: block; height: 4px; border-radius: 2px; background: var(--rule); margin-top: 5px; overflow: hidden; }
 .hb i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.1rem; color: var(--muted); font-size: .78rem; margin: -.1rem 0 .9rem; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { display: inline-block; width: 12px; height: 16px; border-radius: 3px; background: var(--card); }
+.lg-glow { box-shadow: 0 0 9px 2px hsl(140 85% 55% / .8); }
+.lg-ring { box-shadow: 0 0 0 2px hsl(140 85% 55%); }
+.lg-scale { width: 54px !important; height: 6px !important; background: linear-gradient(90deg, hsl(140 85% 55%), hsl(70 85% 55%), hsl(28 85% 55%), hsl(0 85% 55%)) !important; }
 .hb.ok i { background: var(--ok); }
 .hb.tight i { background: var(--possible); }
 .hb.late i { background: var(--likely); }

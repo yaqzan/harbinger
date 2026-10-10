@@ -134,7 +134,8 @@
   // ── detail sheet ─────────────────────────────────────────────────
   const dlg = $("detail");
   const open = (r) => {
-    $("d-cover").replaceChildren(cover(r, "big"));
+    const big = cover(r, "big"); halo(r, big);
+    $("d-cover").replaceChildren(big);
     $("d-name").textContent = r.game;
     $("d-svc").textContent = [r.service, r.platform].filter(Boolean).join(" · ");
     $("d-backup").textContent = r.backup ? `${r.backup}, so this exit costs you nothing.` : "";
@@ -168,6 +169,25 @@
   const expanded = new Set();
   const CAP = 15;
 
+  // Halo: how bright the glow is says how likely the game leaves; a confirmed exit is a solid
+  // ring instead. The colour says whether you can still finish it: green with room to spare,
+  // through yellow and orange as the hours needed close in on the hours you have, red once
+  // they don't fit. Grey for hours unknown and for games you have elsewhere.
+  const fitHue = (r) => {
+    if (r.backup || r.hours == null) return null;
+    if (isClaim(r)) return 140;
+    const x = r.hours / Math.max(0.1, avail(r));
+    return x <= 0.5 ? 140 : x >= 1 ? 0 : Math.round(140 * (1 - x) / 0.5);
+  };
+  const hsl = (h, a = 1) => (h == null ? `hsl(40 6% 62% / ${a})` : `hsl(${h} 85% 55% / ${a})`);
+  const halo = (r, c) => {
+    const h = fitHue(r);
+    if (r.unverified && r.band === "Reported") { c.style.outline = `2px dashed ${hsl(h)}`; c.style.outlineOffset = "1px"; return; }
+    if (r.band === "Confirmed") { c.style.boxShadow = `0 0 0 3px ${hsl(h, r.backup ? 0.55 : 1)}, 0 0 10px 1px ${hsl(h, r.backup ? 0.15 : 0.45)}`; return; }
+    const k = Math.min(1, (r.p ?? 0) / 0.6);  // 60% and up glows at full strength
+    c.style.boxShadow = `0 0 ${Math.round(4 + 18 * k)}px ${Math.round(3 * k)}px ${hsl(h, (r.backup ? 0.1 : 0.2) + (r.backup ? 0.25 : 0.7) * k)}`;
+  };
+
   const tile = (r) => {
     const b = el("button", `tile ${svc(r)}${r.backup ? " dim" : ""}`);
     b.type = "button";
@@ -176,10 +196,12 @@
     c.appendChild(el("span", `odds ${bandCls(r)}`, oddsLabel(r)));
     c.appendChild(el("span", `dot ${svc(r)}`));
     if (r.backup) c.appendChild(el("span", "rib", r.backup));
+    halo(r, c);
     b.appendChild(c);
     if (!isClaim(r) && !r.backup) {
       const bar = el("span", `hb ${fit(r)}`), i = el("i");
       i.style.width = r.hours == null ? "100%" : `${Math.min(100, (r.hours / Math.max(1, avail(r))) * 100)}%`;
+      if (r.hours != null) i.style.background = hsl(fitHue(r));
       bar.appendChild(i); b.appendChild(bar);
     }
     b.appendChild(el("span", "nm", r.game));
@@ -266,6 +288,7 @@
     $("empty").hidden = rows.length > 0;
     $("shelf").hidden = view !== "shelf" || !rows.length;
     $("board").hidden = view !== "board" || !rows.length;
+    $("legend").hidden = view !== "shelf" || !rows.length;
     document.querySelectorAll(".views button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === view)));
     if (view === "shelf") drawShelf(rows); else drawBoard(rows);
   };
