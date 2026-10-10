@@ -119,7 +119,13 @@ solid ring once confirmed (dashed if only reported). Its colour is fit, not odds
 needed <= half the hours you have, sliding through yellow and orange to red at 100% (won't fit);
 grey for unknown hours and backups. The fit bar uses the same colour; the odds badge is plain and only on modelled
 games (2026-10-10: no "Confirmed" badge, no "Owned on" ribbon over the cover; the ring and the logos say it).
-The hero sentence is also live; `summary.takeaway` is still built for the CLI and pushes.
+Top of the page (owner, 2026-10-10: the old day countdown + sentence meant nothing to them):
+**Start soon** lists up to 5 games you'd lose (no backup) that still fit and are confirmed,
+reported or Likely, or in your queue at any odds, with a start-by inside 8 weeks; overdue starts
+read "Start now" and order by leave date. **Confirmed exits** is a side panel: the next 3
+confirmed date + service groups, how many you'd lose and how many still fit, plus
+`summary.next_notice`. Sync times live under "Runs and sources". `summary.takeaway` is still
+built for the CLI and pushes.
 
 **Phones (2026-10-10).** Under 640px: each Shelf date column is the screen width minus a peek of
 the next one (scroll-snap); the Board drops Via / To 100% / Board by and uses fixed columns with

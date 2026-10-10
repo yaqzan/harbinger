@@ -39,7 +39,7 @@
     if (!r.ok) throw new Error(r.status);
     data = await r.json();
   } catch (e) {
-    $("takeaway").textContent = "No data yet. The first ingest hasn't run.";
+    $("start-note").textContent = "No data yet. The first ingest hasn't run.";
     return;
   }
 
@@ -98,37 +98,66 @@
   const order = (a, b) => a.wave.localeCompare(b.wave) || rank(a) - rank(b) || !!a.backup - !!b.backup || (b.p ?? 0) - (a.p ?? 0) || a.game.localeCompare(b.game);
   items.sort(order);
 
-  // ── hero: the next confirmed exit, live ──────────────────────────
+  // ── top: what to start, then the confirmed exit dates ────────────
+  const svcName = (r) => (svc(r) === "ps" ? "PS Plus" : "Game Pass");
+  const queued = new Set((data.queue || []).map((q) => `${q.service.split(" ")[0]}|${q.key}`));
+  const watching = (r) => queued.has(`${r.service.split(" ")[0]}|${r.key}`);
+  // A pick still fits before it leaves and is confirmed, reported or likely to go (or in your
+  // queue at any odds), with a start-by inside the next 8 weeks. Overdue starts tie at today,
+  // so among those the one that leaves first comes first.
+  const PICK_WEEKS = 8, PICK_CAP = 5;
+  const due = (r) => Math.max(T0, startBy(r));
+  const picks = items.filter((r) => !r.backup && !isClaim(r) && r.hours != null && fit(r) !== "late"
+    && (rank(r) <= 1 || watching(r)) && startBy(r) <= T0 + PICK_WEEKS * 7 * DAY)
+    .sort((a, b) => due(a) - due(b) || a.wave.localeCompare(b.wave) || rank(a) - rank(b) || (b.p ?? 0) - (a.p ?? 0));
+  $("start-note").textContent = picks.length
+    ? `Games that may leave soon and still fit at ${HPW} hours a week. Most urgent first.`
+    : `Nothing you'd lose needs starting in the next ${PICK_WEEKS} weeks.`;
+  $("picks").replaceChildren(...picks.slice(0, PICK_CAP).map((r) => {
+    const li = el("li"), b = el("button", "pick");
+    b.type = "button";
+    b.appendChild(cover(r, "pk-cv"));
+    const txt = el("span", "pk-t");
+    const nm = el("span", "nm", r.game);
+    if (watching(r)) nm.appendChild(el("span", "tag", "In your queue"));
+    txt.appendChild(nm);
+    const when = `${svcName(r)} ${fmt(t(r.wave))}`;
+    const why = r.band === "Confirmed" ? `Leaves ${when}` : r.band === "Reported" ? `Reported to leave ${when}` : `${oddsLabel(r)} chance it leaves ${when}`;
+    txt.appendChild(el("span", "sub", `${why} · ${r.hours} h to finish`));
+    b.appendChild(txt);
+    const sb = startBy(r);
+    b.appendChild(el("span", `by${sb <= T0 ? " now" : ""}`, sb <= T0 ? "Start now" : `Start by ${fmt(sb)}`));
+    b.addEventListener("click", () => open(r));
+    li.appendChild(b);
+    return li;
+  }));
+  if (picks.length > PICK_CAP) $("picks").appendChild(el("li", "more-note", `${picks.length - PICK_CAP} more on the shelf below.`));
+
   const hard = items.filter((r) => r.band === "Confirmed" && !isClaim(r) && !r.unverified);
-  if (hard.length) {
-    const first = hard[0].wave, on = hard.filter((r) => r.wave === first);
-    const services = [...new Set(on.map((r) => (svc(r) === "ps" ? "PS Plus" : "Game Pass")))];
-    const kept = on.filter((r) => r.backup), rest = on.filter((r) => !r.backup);
-    const fits = rest.filter((r) => fit(r) === "ok" || fit(r) === "tight").map((r) => r.game);
+  const exits = [...new Set(hard.map((r) => `${r.wave}|${svcName(r)}`))].slice(0, 3);
+  $("exits").replaceChildren(...exits.map((k) => {
+    const [w, name] = k.split("|");
+    const on = hard.filter((r) => r.wave === w && svcName(r) === name), rest = on.filter((r) => !r.backup);
+    const fits = rest.filter((r) => fit(r) === "ok" || fit(r) === "tight").length;
+    const li = el("li"), d = el("div", "d", fmt(t(w)));
+    d.appendChild(el("small", null, inDays(days(on[0]))));
+    li.appendChild(d);
+    const body = el("div");
+    body.appendChild(el("span", "nm", `${name} · ${on.length} game${on.length === 1 ? "" : "s"}`));
     const h = round(avail(on[0]));
-    let s = `${on.length} game${on.length > 1 ? "s" : ""} leave${on.length > 1 ? "" : "s"} ${services.length === 1 ? services[0] : "Game Pass and PS Plus"} on ${fmt(t(first))}.`;
-    if (kept.length) s += ` You have ${kept.length === on.length ? "all of them" : kept.length} elsewhere.`;
-    const them = kept.length ? "the rest" : "them";
-    if (rest.length) {
-      if (!fits.length) s += ` None of ${them} fits in the ${h} hours you have before then.`;
-      else if (fits.length === rest.length) s += ` All of ${them} still fit in your ${h} hours.`;
-      else s += ` With ${h} hours to play, ${fits.length === 1 ? "only " : ""}${fits.slice(0, 3).join(", ")}${fits.length > 3 ? ` and ${fits.length - 3} more` : ""} can still be finished.`;
-    }
-    const next = hard.find((r) => r.wave !== first);
-    if (next) {
-      const n = hard.filter((r) => r.wave === next.wave).length;
-      s += ` Then ${n} on ${svc(next) === "ps" ? "PS Plus" : "Game Pass"} ${fmt(t(next.wave))}.`;
-    }
-    $("hero-n").textContent = days(on[0]);
-    $("hero-l").textContent = `day${days(on[0]) === 1 ? "" : "s"} to ${fmt(t(first))}`;
-    $("takeaway").textContent = s;
-  } else {
-    $("hero-n").textContent = "0";
-    $("hero-l").textContent = "confirmed exits";
-    $("takeaway").textContent = "Nothing is confirmed to leave yet. The likely ones are below.";
-  }
+    body.appendChild(el("span", "sub", !rest.length ? "You have all of them elsewhere."
+      : `You'd lose ${rest.length}. ${fits ? `${fits} of them still fit` : rest.length === 1 ? "It doesn't fit" : "None of them fit"} in your ${h} h.`));
+    li.appendChild(body);
+    return li;
+  }));
+  if (!exits.length) $("exits").appendChild(el("li", "more-note", "Nothing is confirmed to leave yet."));
+  const notice = data.summary?.next_notice;
+  $("notice").textContent = notice ? `Next Game Pass leaving list expected ${notice}.` : "";
+  $("notice").hidden = !notice;
+
   const src = data.sources;
-  $("meta").textContent = `Updated ${ago(data.generated_at)} · sheet read ${ago(src.sheet_fetched)}${src.ps_sheet_fetched ? ` · PS Plus sheet read ${ago(src.ps_sheet_fetched)}` : ""} · forecast checked ${ago(src.forecast_checked)} · Steam synced ${ago(src.steam_synced)}${src.psn_synced ? ` · PSN synced ${ago(src.psn_synced)}` : ""} · ${HPW} hours a week`;
+  $("meta").textContent = `Updated ${ago(data.generated_at)}`;
+  $("synced").textContent = `Page built ${ago(data.generated_at)} · sheet read ${ago(src.sheet_fetched)}${src.ps_sheet_fetched ? ` · PS Plus sheet read ${ago(src.ps_sheet_fetched)}` : ""} · forecast checked ${ago(src.forecast_checked)} · Steam synced ${ago(src.steam_synced)}${src.psn_synced ? ` · PSN synced ${ago(src.psn_synced)}` : ""}`;
   $("how-play").textContent = `Hours to play assume ${HPW} hours a week. Start by is the exit, minus the weeks of play, minus a ${play.buffer_weeks}-week buffer. A green bar fits with room to spare, amber is tight, red won't fit even if you start today.`;
 
   // ── detail sheet ─────────────────────────────────────────────────

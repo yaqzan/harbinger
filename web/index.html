@@ -9,7 +9,7 @@
 <title>Harbinger · Game Pass exit radar</title>
 <meta name="description" content="Which Game Pass and PS Plus games are leaving or likely to leave, how long each takes to finish, and the latest day to start.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=8">
+<link rel="stylesheet" href="/harbinger.css?v=9">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
@@ -26,12 +26,20 @@
     <button id="theme" aria-label="Toggle color theme">◐</button>
   </nav>
 
-  <header class="hero">
-    <div class="countdown"><span id="hero-n">–</span><small id="hero-l">days</small></div>
-    <div>
-      <p class="take" id="takeaway">Loading…</p>
+  <header class="top">
+    <section class="panel" aria-labelledby="h-start">
+      <h2 id="h-start">Start soon</h2>
+      <p class="note" id="start-note">Loading…</p>
+      <ol class="picks" id="picks"></ol>
+    </section>
+    <aside class="side">
+      <section class="panel" aria-labelledby="h-exits">
+        <h2 id="h-exits">Confirmed exits</h2>
+        <ul class="exits" id="exits"></ul>
+        <p class="note" id="notice"></p>
+      </section>
       <p class="meta" id="meta"></p>
-    </div>
+    </aside>
   </header>
 
   <div class="ctl" id="ctl">
@@ -107,6 +115,7 @@
   <section class="card">
     <details>
       <summary>Runs and sources</summary>
+      <p class="note" id="synced"></p>
       <div class="box"><table id="t-hist" class="stack"><thead><tr><th>Ingest</th><th class="num">Confirmed</th><th class="num">Likely</th><th class="num">Possible</th><th>Note</th></tr></thead><tbody></tbody></table></div>
       <ul class="sources" id="sources"></ul>
     </details>
@@ -127,6 +136,6 @@
   </div>
   <dl id="d-facts"></dl>
 </dialog>
-<script src="/harbinger.js?v=7"></script>
+<script src="/harbinger.js?v=8"></script>
 </body>
 </html>
