@@ -492,6 +492,7 @@ class Game:
     premium_status: str
     premium_added: date | None
     key: str = field(init=False)
+    release: str = ""   # ISO date, or the sheet's own text
 
     def __post_init__(self):
         self.key = norm(self.name)
@@ -503,7 +504,7 @@ def game(r: dict) -> Game:
         added_month=month(r.get("added")), removed_month=month(r.get("removed")), months=_num(r.get("months")),
         hours=_num(r.get("completion_h")), metacritic=_num(r.get("metacritic")), genre=r.get("genre") or "",
         notes=r.get("owner_notes") or "", premium_status=r.get("premium_status") or "",
-        premium_added=month(r.get("premium_added")),
+        premium_added=month(r.get("premium_added")), release=str(r.get("release") or ""),
     )
 
 

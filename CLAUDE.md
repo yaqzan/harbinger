@@ -45,6 +45,6 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 
 ## Docs
 
-Model rules, signals, PS Plus, the one-service list and calibration: `.claude/docs/model.md` · database tables, imports and
-title matching: `.claude/docs/data.md` · hosting, tasks, push:
+Model rules, signals, PS Plus, the one-service list and calibration: `.claude/docs/model.md` · database tables, imports,
+title matching and the library page (`/library`): `.claude/docs/data.md` · hosting, tasks, push:
 `.claude/docs/ops.md` · kanban: vault `Engineering Wiki/Projects/Harbinger/`.

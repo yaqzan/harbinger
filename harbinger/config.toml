@@ -117,6 +117,15 @@ retry_days = 14   # look again for a game nothing had art for
 max_px = 240      # longest side kept, when Pillow is installed
 pause_s = 0.2     # between lookups
 
+# Steam user review scores on the library page (public appreviews, no key).
+[ratings]
+enabled = true
+budget = 250        # games rated per ingest (a first run fills in over a few days)
+refresh_days = 30   # re-read a rating this often
+retry_days = 14     # look again for a game with no Steam app
+pause_s = 0.3       # between calls
+min_reviews = 10    # fewer reviews than this show no score
+
 # Your watched games: set them in config.local.toml, not here.
 [queue]
 gone = []

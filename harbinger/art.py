@@ -241,6 +241,9 @@ def wanted(data: dict) -> dict[str, str]:
     # soonest exit first, dimmed backups included: the shelf shows them side by side
     for r in sorted(one.get("rows", []) + one.get("backups", []), key=lambda r: r.get("wave") or "9999"):
         out.setdefault(r.get("key") or norm(r["game"]), r["game"])
+    # the library page, after everything that can leave soon
+    for r in sorted(data.get("library", []), key=lambda r: -(r.get("mc") or 0)):
+        out.setdefault(r["key"], r["game"])
     return out
 
 
@@ -248,7 +251,7 @@ def attach(data: dict, art: dict[str, str]) -> None:
     """Put `art` on every row whose game has a picture."""
     rows = [r for s in ("confirmed", "queue", "watchlist", "owned") for r in data.get(s, [])]
     one = data.get("one_service", {})
-    rows += one.get("rows", []) + one.get("backups", [])
+    rows += one.get("rows", []) + one.get("backups", []) + data.get("library", [])
     for r in rows:
         url = art.get(r.get("key") or norm(r["game"]))
         if url:

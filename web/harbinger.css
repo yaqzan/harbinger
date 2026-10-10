@@ -194,3 +194,46 @@ dialog dt { color: var(--muted); }
   .board .long { display: none; }
   .board .short { display: inline; }
 }
+
+/* ── library page ── */
+.navlink { margin-left: auto; margin-right: .75rem; font-size: .84rem; color: var(--muted); text-decoration: none; }
+.navlink:hover { color: var(--ink); }
+.views a { font-size: .84rem; color: var(--muted); padding: 4px 14px; border-radius: 999px; text-decoration: none; }
+.views a[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.views.small button { padding: 3px 11px; }
+.dot.steam { background: #8b93a1; }
+.dot.psn { background: transparent; box-shadow: inset 0 0 0 2px var(--ps); }
+.lib-head { padding: 1.5rem 0 .75rem; }
+.where { display: grid; grid-template-columns: 300px 1fr; gap: 1.25rem; align-items: center; margin-bottom: .9rem; }
+#venn { width: 100%; max-width: 300px; height: auto; cursor: pointer; user-select: none; }
+.vc { opacity: .22; }
+.vc.xbox { fill: var(--xbox); }
+.vc.ps { fill: var(--ps); }
+.vc.steam { fill: #8b93a1; }
+.vo { fill: none; stroke: var(--muted); stroke-width: 1; }
+.vsel { fill: var(--ink); opacity: .35; }
+.vt { font: 600 12px system-ui, sans-serif; fill: var(--ink); text-anchor: middle; pointer-events: none; }
+.vn { font: 600 11px system-ui, sans-serif; fill: var(--muted); pointer-events: none; }
+.regions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chip-r { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: .84rem; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.chip-r small { color: var(--muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
+.chip-r.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip-r.on small { color: inherit; opacity: .75; }
+.where .note { margin-top: .6rem; }
+
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 16px 12px; }
+.tile.lib { width: 100%; }
+.tile.lib .cv { width: 100%; height: auto; aspect-ratio: 2 / 3; }
+.tile .lr { display: block; margin-top: 5px; }
+.dots { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; }
+.odds.sc-mc { color: #f2d06b; }
+.odds.sc-steam { color: #7fb0ff; }
+.odds.sc-ps { color: #7ee2a0; }
+.listbox { padding: .4rem .6rem; }
+td .dots { margin-right: 2px; }
+@media (max-width: 640px) {
+  .where { grid-template-columns: 1fr; }
+  #venn { max-width: 240px; margin: 0 auto; }
+  .lib-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+}

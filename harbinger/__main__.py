@@ -17,7 +17,8 @@ import sys
 from pathlib import Path
 from datetime import date, datetime
 
-from . import OUTPUT_FILE, STATE_DIR, load_config, store
+from . import LIBRARY_FILE, OUTPUT_FILE, STATE_DIR, load_config, store
+from . import ratings as ratings_mod
 from . import art as art_mod
 from . import forecast as fc_mod
 from . import plus
@@ -96,6 +97,9 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     if sync_steam:  # network lookups only on ingest and steam; build shows what is already cached
         notes.append(art_mod.fetch(db, art_mod.wanted(data), cfg))
     art_mod.attach(data, art_mod.load(db))
+    if sync_steam:
+        notes.append(ratings_mod.fetch(db, ratings_mod.wanted(data["library"]), cfg))
+    ratings_mod.attach(data["library"], ratings_mod.load(db, ratings_mod.settings(cfg)["min_reviews"]))
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have
@@ -113,9 +117,13 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     data["generated_at"] = datetime.now().isoformat(timespec="seconds")
     data["notes"] = notes
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = OUTPUT_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
-    tmp.replace(OUTPUT_FILE)
+    # the library is its own file: the leaving page doesn't need to download it
+    lib = data.pop("library")
+    for path, body, indent in ((LIBRARY_FILE, {"generated_at": data["generated_at"], "ps_tier": data["one_service"]["ps_tier"],
+                                               "rows": lib}, None), (OUTPUT_FILE, data, 1)):
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(body, indent=indent, separators=(",", ":") if indent is None else None), encoding="utf-8")
+        tmp.replace(path)
     return data
 
 

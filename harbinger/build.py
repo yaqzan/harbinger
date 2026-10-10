@@ -8,7 +8,7 @@ from __future__ import annotations
 import difflib
 from datetime import date
 
-from . import model, plus
+from . import library, model, plus
 from .forecast import for_model
 from .sheet import PREFERRED, Game, Sheet, norm, sequel_gap
 from .titles import Matcher, ps_matcher
@@ -695,6 +695,7 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
     cx.beaten = set()
     for n in cfg.get("queue", {}).get("beaten", []):
         cx.beaten |= {g.key if (g := _find(cx, n)) else norm(n)} | ({pg.key} if (pg := side.find(n)) else set())
+    one = one_service_rows(cx, confirmed, ps)
     watch_all, survivors, ubisoft = scored_rows(cx, {r["key"] for r in confirmed})
     watch = [r for r in watch_all if not r["owned"]]
     owned = ([{"game": r["game"], "key": r["key"], "where": f"Leaving {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
@@ -715,7 +716,8 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "survivors": survivors,
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),
-        "one_service": one_service_rows(cx, confirmed, ps),
+        "one_service": one,
+        "library": library.rows(cx, side, steam, psn, one),
         "sources": {
             "sheet_fetched": sheet.fetched,
             "forecast_checked": forecast.get("checked_at"),

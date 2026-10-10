@@ -3,7 +3,7 @@
 Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchdog.
 
 - **Server**: `py -3.11 -u -m harbinger serve`, stdlib ThreadingHTTPServer on 127.0.0.1:5006.
-  Serves `web/`, `/data.json` (from `harbinger/state/`), `/art/<file>` and `/api/health`. GET/HEAD only,
+  Serves `web/` (`/library` is `library.html`), `/data.json` and `/library.json` (from `harbinger/state/`), `/art/<file>` and `/api/health`. GET/HEAD only,
   everything no-cache, path traversal refused (tested 2026-10-09).
   `/api/health` answers 200 whenever the server is up (the watchdog restarts on anything else);
   `stale: true` means data.json is over 40 h old, i.e. the scheduled jobs are failing.

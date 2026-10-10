@@ -90,6 +90,27 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 - Rows get an `art` path; the page draws it as the shelf tile / board cover (`cover` in `web/harbinger.js`),
   a titled placeholder when missing. `wanted` asks soonest exit first, backups included.
 
+## Library page (`library.py`, `ratings.py`; `/library`)
+
+- `library.rows()` merges everything into one row per game: Game Pass console (Active / Leaving
+  Soon), your PS Plus tier's catalogue, Steam owned, PlayStation owned (bought or disc). Flags
+  `gp`, `ps` (tier text; "Claimed" = a monthly claim the catalogue lacks), `steam`, `psn`. Same game
+  across places is joined with the strict matchers (`cx.match`, `side.pm`), like everywhere else.
+  A PS Plus claim is membership, so it sets `ps`, not `psn`. Rows also carry the sheets' `mc`
+  (Metacritic), `us` (PlayStation user score), hours, genre, release year, played hours, and
+  `gp_leaves` / `ps_leaves` = [wave, band, p] from the one-service list.
+- Written to `state/library.json` (compact), not into `data.json`: the leaving page doesn't load it.
+  `assemble()` returns it as `data["library"]`; `run()` pops it out and writes the file.
+- The page's Venn is three sets (Game Pass, PS Plus, Steam); region id = gp*4 + ps*2 + steam, and
+  region 0 (outside every circle) is the PlayStation-only purchases. Any mix of regions can be picked.
+- **Steam reviews** (`ratings.py`, table `steam_rating`, one row per library key): appid from your
+  Steam library, else exact-title Steam store search (same strict rule as art); then the public
+  appreviews summary. Owned games first. `[ratings] budget` per ingest, `refresh_days`, a game with
+  no Steam app retried after `retry_days`; HTTP trouble ends the run and keeps what's cached.
+  Under `min_reviews` (10) a game shows no score. First fill takes a few daily runs. Metacritic
+  is only the sheets' column: Steam-only games have none, which is why Steam reviews exist.
+- Cover art for the library comes through the same `art.wanted()` list, after the leaving games.
+
 ## Title matching (`titles.py`, every run)
 
 `Matcher` resolves a title to a sheet key, rung by rung (`sheet.Index`): exact, compact (no

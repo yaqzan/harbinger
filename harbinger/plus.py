@@ -63,6 +63,10 @@ def _iso(v) -> date | None:
         return None
 
 
+def _f(v) -> float | None:
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
 @dataclass
 class PsGame:
     name: str
@@ -74,6 +78,10 @@ class PsGame:
     added: date | None
     removed: date | None
     hours: float | None
+    metacritic: float | None = None
+    user_score: float | None = None  # the sheet's PlayStation user score, 0..10
+    genre: str = ""
+    release: str = ""
 
 
 def catalogue(tabs: dict[str, list[dict]], your_tier: str, first_party=frozenset(),
@@ -100,7 +108,9 @@ def catalogue(tabs: dict[str, list[dict]], your_tier: str, first_party=frozenset
 
     return [PsGame(name=r["title"], key=norm(r["title"]), system=r.get("system") or "", tier=r.get("tier") or "",
                    kind=kind_of(r), status=r["status"], added=_iso(r.get("added")),
-                   removed=_iso(r.get("removed")), hours=r.get("completion_h") if isinstance(r.get("completion_h"), float) else None)
+                   removed=_iso(r.get("removed")), hours=r.get("completion_h") if isinstance(r.get("completion_h"), float) else None,
+                   metacritic=_f(r.get("metacritic")), user_score=_f(r.get("user_score")), genre=r.get("genre") or "",
+                   release=str(r.get("release") or ""))
             for r in newest.values()]
 
 

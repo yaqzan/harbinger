@@ -1,0 +1,89 @@
+<!doctype html>
+<!-- hand-written html · no framework, no build step -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbinger · Library</title>
+<meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/harbinger.css?v=3">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <span class="mark">harbinger</span>
+    <div class="views" aria-label="Page">
+      <a href="/">Leaving</a>
+      <a href="/library" aria-current="page">Library</a>
+    </div>
+    <button id="theme" aria-label="Toggle color theme">◐</button>
+  </nav>
+
+  <header class="lib-head">
+    <h1>Library</h1>
+    <p class="meta" id="meta">Loading…</p>
+  </header>
+
+  <section class="where" aria-label="Where a game lives">
+    <svg id="venn" viewBox="0 0 300 250" role="img" aria-label="Venn diagram of Game Pass, PS Plus and Steam. Click a region to filter."></svg>
+    <div>
+      <div class="regions" id="regions"></div>
+      <p class="note" id="where-note">Pick one or more. Nothing picked shows every game.</p>
+    </div>
+  </section>
+
+  <div class="ctl" id="ctl">
+    <input id="q" type="search" placeholder="Search games" aria-label="Search games">
+    <select id="sort" aria-label="Sort by">
+      <option value="mc">Metacritic</option>
+      <option value="rating">Steam reviews</option>
+      <option value="us">PlayStation user score</option>
+      <option value="hours">Shortest to 100%</option>
+      <option value="hoursd">Longest to 100%</option>
+      <option value="year">Newest release</option>
+      <option value="leaves">Leaving soonest</option>
+      <option value="name">A to Z</option>
+    </select>
+    <select id="genre" aria-label="Genre"><option value="">Every genre</option></select>
+    <label class="chk"><input type="checkbox" id="rated"> Only games with that score</label>
+    <div class="views small" role="tablist" aria-label="Layout">
+      <button role="tab" data-layout="grid" aria-selected="true">Grid</button>
+      <button role="tab" data-layout="list" aria-selected="false">List</button>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+
+  <main>
+    <section id="grid" class="lib-grid" aria-label="Games"></section>
+    <section id="list" class="card listbox" aria-label="Games" hidden>
+      <div class="box tall"><table>
+        <thead><tr><th>Game</th><th>Where</th><th class="num">Metacritic</th><th class="num">Steam</th><th class="num">PS users</th><th class="num">To 100%</th><th class="num">Year</th><th>Leaves</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+    <button class="more" id="more" hidden>Show more</button>
+    <p class="empty" id="empty" hidden>Nothing matches.</p>
+  </main>
+
+  <footer>Metacritic and PlayStation user scores come from u/ABattleVet's Game Pass and PS Plus master lists. Steam reviews are the share of positive user reviews on the Steam store, shown from 10 reviews up. Game Pass means Ultimate on an Xbox console.</footer>
+</div>
+
+<dialog id="detail" aria-labelledby="d-name">
+  <form method="dialog"><button class="x" aria-label="Close">×</button></form>
+  <div class="d-top">
+    <div class="d-cover" id="d-cover"></div>
+    <div>
+      <h2 id="d-name"></h2>
+      <p class="d-svc" id="d-svc"></p>
+      <p class="d-backup" id="d-link"></p>
+    </div>
+  </div>
+  <dl id="d-facts"></dl>
+</dialog>
+<script src="/library.js?v=1"></script>
+</body>
+</html>

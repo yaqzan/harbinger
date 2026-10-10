@@ -21,6 +21,7 @@ CONFIG_FILE = PKG_DIR / "config.toml"
 LOCAL_CONFIG_FILE = ROOT / "config.local.toml"
 TITLES_FILE = PKG_DIR / "titles.toml"
 OUTPUT_FILE = STATE_DIR / "data.json"
+LIBRARY_FILE = STATE_DIR / "library.json"  # every game on a service or in your libraries, for /library
 
 
 def _merge(base: dict, over: dict) -> dict:

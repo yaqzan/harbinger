@@ -11,7 +11,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
-from . import OUTPUT_FILE, WEB_DIR, __version__, art
+from . import LIBRARY_FILE, OUTPUT_FILE, WEB_DIR, __version__, art
 
 HOST, PORT = "127.0.0.1", 5006
 STALE_HOURS = 40  # the daily Steam job rebuilds data.json; older than this means a job is failing
@@ -55,6 +55,10 @@ class Handler(BaseHTTPRequestHandler):
             if not OUTPUT_FILE.exists():
                 return self._send(404, b'{"error": "no data yet"}', "application/json")
             return self._send(200, OUTPUT_FILE.read_bytes(), "application/json; charset=utf-8")
+        if path == "/library.json":
+            if not LIBRARY_FILE.exists():
+                return self._send(404, b'{"error": "no data yet"}', "application/json")
+            return self._send(200, LIBRARY_FILE.read_bytes(), "application/json; charset=utf-8")
         if path.startswith(art.URL_PREFIX):
             name = path[len(art.URL_PREFIX):]
             f = art.ART_DIR / name
@@ -63,6 +67,8 @@ class Handler(BaseHTTPRequestHandler):
             ctype = "image/png" if name.endswith(".png") else "image/jpeg"
             return self._send(200, f.read_bytes(), ctype, "public, max-age=86400")
         rel = "index.html" if path in ("/", "") else path.lstrip("/")
+        if "." not in rel.rsplit("/", 1)[-1]:
+            rel += ".html"  # /library -> library.html
         target = (WEB_DIR / rel).resolve()
         if WEB_DIR.resolve() not in target.parents or not target.is_file():
             return self._send(404, b"Not found", "text/plain; charset=utf-8")
