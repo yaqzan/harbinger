@@ -25,6 +25,8 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 - `py -3.11 -m harbinger build [--today YYYY-MM-DD]`: re-score the database after a config or
   titles.toml change. `show`: print the summary. `titles`: match issues. `changes [--game X]`:
   what the last sheet imports changed.
+- `py -3.11 -m harbinger played ["Title" played|playing|dropped|unplayed|auto]`: re-read the played
+  notes (`[played] notes_dir`) and rebuild, or mark one game by hand; lists marks that hit no game.
 - `py -3.11 ops/mobile_check.py [--shots DIR]`: phone-width check of `web/` against the running
   server (needs Playwright); run after any page change. Bump `?v=` in the html when CSS/JS changes.
 - `py -3.11 -m unittest`: tests (model rules, a whole run pinned to Oct 9, 2026, config merge).
@@ -49,5 +51,5 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
 ## Docs
 
 Model rules, signals, PS Plus, the one-service list and calibration: `.claude/docs/model.md` · database tables, imports,
-title matching and the library page (`/library`): `.claude/docs/data.md` · hosting, tasks, push:
+title matching, played marks and the library page (`/library`): `.claude/docs/data.md` · hosting, tasks, push:
 `.claude/docs/ops.md` · kanban: vault `Engineering Wiki/Projects/Harbinger/`.

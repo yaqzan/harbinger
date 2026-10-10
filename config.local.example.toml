@@ -48,6 +48,15 @@ tracking = [
 gone = []
 beaten = []
 
+[played]
+# Optional: a folder of notes, one per game, with Type (PS5, PC, Switch...) and Status (Current,
+# Finished, Dropped) in the frontmatter, like an Obsidian media log. Finished and dropped games
+# are hidden on the page (a switch shows them) and never pushed about; current ones get a badge.
+# Other Types and Status words: [played] types and [played.status] in harbinger/config.toml.
+# Or skip the notes and mark games by hand:
+#   py -3.11 -m harbinger played "Hades" played      (played | playing | dropped | unplayed | auto)
+notes_dir = ""
+
 [push]
 # Optional phone alerts via Pharos (github.com/yaqzan/pharos): a newly confirmed leaver, a queued
 # game to start soon (two weeks before its start-by date, then on it; timing in [alerts] in config.toml),

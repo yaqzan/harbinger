@@ -9,7 +9,8 @@ Pure: libraries in, rows out; no network, no database.
 
 from __future__ import annotations
 
-from .sheet import norm
+from . import played as played_mod
+from .sheet import Index, norm
 
 OWNED_ON_PSN = ("PlayStation", "PS disc")  # a PS Plus claim is membership, not ownership
 
@@ -25,10 +26,12 @@ def _leave(row: dict) -> list | None:
     return [row["wave"], row["band"], row["p"]]
 
 
-def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None = None) -> list[dict]:
+def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None = None,
+         marks: list[dict] | None = None, unmatched: list | None = None) -> list[dict]:
     """One dict per game: {game, key, gp, ps, steam, psn, mc, us, hours, genre, year, played,
-    gp_leaves, ps_leaves, appid}. Sorted by name; the page sorts and filters. `scores`
-    ({key: {mc, us}}, sheet.scores) fills a score the game's own catalogue row lacks."""
+    mark, gp_leaves, ps_leaves, appid}. Sorted by name; the page sorts and filters. `scores`
+    ({key: {mc, us}}, sheet.scores) fills a score the game's own catalogue row lacks. `marks`
+    (played.load) set `mark` (played | playing | dropped); the ones no row takes go in `unmatched`."""
     pm = side.pm
     out: dict[str, dict] = {}
 
@@ -100,6 +103,15 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None
                     if kk and sc.get(kk, {}).get(f) is not None:
                         r[f] = sc[kk][f]
                         break
+
+    # played / playing / dropped, on the row the title lands on (strict, never a new row). A game
+    # only in your libraries has no catalogue key, so its row is found by the strict rungs too.
+    rows_ix = Index(out)
+    row_of = lambda name: k if (k := place(name)) in out else rows_ix.lookup(name, loose=False)[0]
+    for k, st in played_mod.resolve(marks or [], row_of).items():
+        out[k]["mark"] = st
+    if unmatched is not None:
+        unmatched.extend(played_mod.report(marks or [], row_of))
 
     # when a game leaves, per service
     for src in (one.get("rows", []), one.get("backups", [])):

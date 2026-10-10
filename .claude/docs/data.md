@@ -123,6 +123,25 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   the budget lifted (patch `art.settings`): 1,747 coverless library games down to 165, mostly old
   Atari/Antstream titles no store carries. Do the same after a big library jump.
 
+## Played marks (`played.py`, ingest, steam and `played`)
+
+- `played_mark` (source, key): `notes` = a folder of Markdown notes, one per game, `Type` + `Status`
+  in the frontmatter (the owner's Obsidian Reading List, `Reading List/Media`; path in
+  config.local.toml `[played] notes_dir`). `[played] types` = which Types are games,
+  `[played.status]` maps Current/Finished/Dropped to playing/played/dropped (Not Started is skipped).
+  Each import replaces every `notes` row; a missing folder keeps the last one.
+- `manual` = `harbinger played "Title" <status>`, wins over the notes for that game; `unplayed`
+  overrides a note, `auto` deletes the manual row. `[queue] beaten` counts as played (lowest).
+- Strict matching only (no prefix/fuzzy): a wrong match would hide an unplayed game. Library rows
+  take a title by `place()` then the strict rungs over the row keys; board rows by the Game Pass
+  or PS Plus matcher. A note spelled unlike the game goes in `[played.same]` (local: the owner's
+  own titles, 21 on 2026-10-10). First import: 222 game notes, 138 landed, the rest are games on
+  no service or library (Switch, PS2...).
+- Rows get `mark`. Played and dropped keys join `beaten` (no leaver, queue or arrival push). The
+  page hides played/dropped behind a "Games you've played" switch (board and Library, separate
+  memory) and greys them; every mark shows a pill (`.mk`). The unmatched list is printed by
+  `played`, never written to the public JSON.
+
 ## Title matching (`titles.py`, every run)
 
 `Matcher` resolves a title to a sheet key, rung by rung (`sheet.Index`): exact, compact (no

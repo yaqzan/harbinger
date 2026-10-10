@@ -195,7 +195,10 @@
   };
 
   // ── filters ──────────────────────────────────────────────────────
-  const ctl = { q: $("q"), sort: $("sort"), genre: $("genre"), rated: $("rated") };
+  const ctl = { q: $("q"), sort: $("sort"), genre: $("genre"), rated: $("rated"), sp: $("sp") };
+  // played or dropped (your notes, or `harbinger played`): hidden until the switch shows them
+  const done = (r) => r.mark === "played" || r.mark === "dropped";
+  const MARK = { playing: "Playing", played: "Played", dropped: "Dropped" };
   const genres = [...rows.reduce((m, r) => (r.genre ? m.set(r.genre, (m.get(r.genre) || 0) + 1) : m), new Map())].sort((a, b) => b[1] - a[1]);
   genres.forEach(([g]) => { const o = el("option", null, g); o.value = g; ctl.genre.appendChild(o); });
   ctl.sort.value = store.get("sort", "mc");
@@ -203,6 +206,8 @@
   ctl.genre.value = store.get("genre", "");
   if (ctl.genre.value !== store.get("genre", "")) ctl.genre.value = "";
   ctl.rated.checked = store.get("rated", "0") === "1";
+  ctl.sp.checked = store.get("sp", "0") === "1";
+  if (!rows.some(done)) ctl.sp.parentElement.hidden = true;
   if (!hasPs) ctl.sort.querySelector('[value="us"]').remove();
 
   const METRIC = { mc: (r) => r.mc, rating: (r) => r.rating, us: (r) => r.us, hours: (r) => r.hours, hoursd: (r) => r.hours, year: (r) => r.year };
@@ -216,8 +221,9 @@
     leaves: (a, b) => soonest(a) - soonest(b),
     name: () => 0,
   };
-  const matches = (r, skipRegion) => {
+  const matches = (r, skipRegion, withDone = ctl.sp.checked) => {
     const q = ctl.q.value.trim().toLowerCase(), g = ctl.genre.value;
+    if (done(r) && !withDone) return false;
     if (q && !r.game.toLowerCase().includes(q)) return false;
     if (g && r.genre !== g) return false;
     if (ctl.rated.checked && METRIC[ctl.sort.value] && METRIC[ctl.sort.value](r) == null) return false;
@@ -242,7 +248,7 @@
   ].filter(Boolean).join(" · ") || r.genre || "";
 
   const tile = (r) => {
-    const b = el("button", "tile lib");
+    const b = el("button", `tile lib${done(r) ? " dim" : ""}`);
     b.type = "button";
     b.title = r.game;
     const c = cover(r, "cv");
@@ -251,6 +257,7 @@
     c.appendChild(logos(r));
     const lv = leaves(r)[0];
     if (lv) c.appendChild(el("span", "rib", lv.band === "Confirmed" ? `Leaves ${fmt(lv.ms)}` : `${lv.band} · ${fmt(lv.ms)}`));
+    if (r.mark) c.appendChild(el("span", `mk ${r.mark}${lv ? " up" : ""}`, MARK[r.mark]));
     halo(r, c);
     b.appendChild(c);
     b.appendChild(el("span", "nm", r.game));
@@ -278,6 +285,7 @@
     if (r.rating != null) facts.push(["Steam reviews", `${r.rating}% positive of ${r.reviews.toLocaleString()}`]);
     if (r.us != null) facts.push(["PlayStation users", `${r.us.toFixed(1)} of 10`]);
     if (r.hours != null) facts.push(["To 100%", `${r.hours} h`]);
+    if (r.mark) facts.push(["You", MARK[r.mark]]);
     if (r.played) facts.push(["You played", `${r.played} h`]);
     if (r.genre) facts.push(["Genre", r.genre]);
     if (r.year) facts.push(["Released", String(r.year)]);
@@ -320,7 +328,7 @@
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = (keepPage) => {
-    $("fbtn").dataset.n = [ctl.sort.value !== "mc", ctl.genre.value !== "", ctl.rated.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [ctl.sort.value !== "mc", ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked].filter(Boolean).length;
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
     const out = rows.filter((r) => matches(r));
@@ -332,7 +340,8 @@
       if (an !== bn) return an ? 1 : -1;
       return (an ? 0 : SORT[sort](a, b)) || a.game.localeCompare(b.game);
     });
-    $("count").textContent = `${out.length.toLocaleString()} game${out.length === 1 ? "" : "s"}`;
+    const hid = ctl.sp.checked ? 0 : rows.filter((r) => done(r) && matches(r, false, true)).length;
+    $("count").textContent = `${out.length.toLocaleString()} game${out.length === 1 ? "" : "s"}${hid ? ` · ${hid} played hidden` : ""}`;
     $("empty").hidden = out.length > 0;
     $("grid").hidden = !out.length;
     $("more").hidden = out.length <= shown;
@@ -344,13 +353,14 @@
 
   $("more").addEventListener("click", () => { shown += STEP; draw(true); });
   Object.entries(ctl).forEach(([k, n]) => n.addEventListener("input", () => {
-    if (k !== "q") store.set(k, k === "rated" ? (n.checked ? "1" : "0") : n.value);
+    if (k !== "q") store.set(k, n.type === "checkbox" ? (n.checked ? "1" : "0") : n.value);
     draw();
   }));
 
   const have = (f) => rows.filter((r) => r[f] != null).length;
   $("meta").textContent = `${rows.length.toLocaleString()} games · ${rows.filter((r) => r.gp).length} on Game Pass`
     + `${hasPs ? ` · ${rows.filter((r) => r.ps).length} on PS Plus ${lib.ps_tier}` : ""} · ${rows.filter((r) => r.steam).length} on Steam`
+    + `${rows.some((r) => r.mark) ? ` · ${rows.filter(done).length} played · ${rows.filter((r) => r.mark === "playing").length} playing` : ""}`
     + ` · Metacritic for ${have("mc")} · Steam reviews for ${have("rating")} · updated ${ago(lib.generated_at)}`;
   draw();
 })();

@@ -73,20 +73,28 @@ def click(sel):
     return run
 
 
+def filters(page):
+    """Open the folded filters (phones only; wider screens show them inline)."""
+    if page.locator("#fbtn").is_visible():
+        click("#fbtn")(page)
+
+
 def open_all_details(page):
     page.evaluate("document.querySelectorAll('details').forEach((d) => d.open = true)")
 
 
 # (label, steps): each list of steps drives a fresh page into one state
 STATES = [
-    ("leaving-shelf", [go("/#shelf")]),
-    ("leaving-shelf-detail", [go("/#shelf"), click("#shelf .tile")]),
-    ("leaving-board", [go("/#board")]),
-    ("leaving-board-detail", [go("/#board"), click("#board tbody tr")]),
-    ("leaving-sections", [go("/#shelf"), open_all_details]),
-    ("library-grid", [go("/library"), click('[data-layout="grid"]')]),
-    ("library-grid-detail", [go("/library"), click('[data-layout="grid"]'), click("#grid .tile")]),
-    ("library-list", [go("/library"), click('[data-layout="list"]')]),
+    ("leaving-board", [go("/")]),
+    ("leaving-board-detail", [go("/"), click("#board .m-row")]),
+    ("leaving-sections", [go("/"), open_all_details]),
+    ("leaving-filters", [go("/"), filters]),
+    # last per page: the switch is remembered for the rest of the context
+    ("leaving-played", [go("/"), filters, click("label:has(#sp)")]),
+    ("library-grid", [go("/library")]),
+    ("library-grid-detail", [go("/library"), click("#grid .tile")]),
+    ("library-filters", [go("/library"), filters]),
+    ("library-played", [go("/library"), filters, click("label:has(#sp)")]),
 ]
 
 

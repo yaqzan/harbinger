@@ -76,7 +76,7 @@
     const known = byKey.get(`Game|${c.key}`);
     if (known) { known.unverified = c.note; return; }
     items.push({ game: c.game, key: c.key, service: "Game Pass", platform: c.platform, state: "reported", wave: c.wave,
-      p: null, odds: "Reported", band: "Reported", hours: c.hours, why: c.note, progress: c.progress || "", art: c.art, unverified: c.note });
+      p: null, odds: "Reported", band: "Reported", hours: c.hours, why: c.note, progress: c.progress || "", art: c.art, unverified: c.note, mark: c.mark });
   });
   const RANK = { Confirmed: 0, Reported: 1, Likely: 1, Possible: 2, Thin: 3 };
   const rank = (r) => RANK[r.band] ?? 4;
@@ -148,6 +148,7 @@
         : ["Start by", startBy(r) <= T0 ? `Now (${urgency(r).toLowerCase()})` : `${fmt(startBy(r))} (${urgency(r).toLowerCase()})`]);
     }
     if (r.progress) facts.push(["Progress", r.progress]);
+    if (r.mark) facts.push(["You", MARK[r.mark]]);
     if (r.mc != null) facts.push(["Metacritic", String(Math.round(r.mc))]);
     if (r.rating != null) facts.push(["Steam reviews", `${r.rating}% positive of ${r.reviews.toLocaleString()}`]);
     if (r.us != null) facts.push(["PlayStation users", `${r.us.toFixed(1)} of 10`]);
@@ -160,18 +161,24 @@
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
   // ── filters ────────────────────────────────────────────────────
-  const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), so: $("so"), sb: $("sb") };
+  const ctl = { q: $("q"), fs: $("fs"), fb: $("fb"), fr: $("fr"), so: $("so"), sb: $("sb"), sp: $("sp") };
   // a backup is either a game you own (bought, disc, claimed, every trophy) or one the other service also has
   const owned = (r) => r.backup && !r.backup.startsWith("Also on");
+  // played or dropped (your notes, or `harbinger played`): hidden until the switch shows them
+  const done = (r) => r.mark === "played" || r.mark === "dropped";
+  const MARK = { playing: "Playing", played: "Played", dropped: "Dropped" };
   ["fs", "fb", "fr"].forEach((k) => { ctl[k].value = store.get(k, ctl[k].value); });
   // dimmed games (you have them elsewhere) start hidden; each switch remembers its own state
   ctl.so.checked = store.get("so", "0") === "1";
   ctl.sb.checked = store.get("sb", "0") === "1";
+  ctl.sp.checked = store.get("sp", "0") === "1";
+  if (!items.some(done)) ctl.sp.parentElement.hidden = true;
   if (one.ps_tier === "none") { ctl.fs.hidden = true; ctl.sb.parentElement.hidden = true; }
-  const shown = () => {
+  const shown = (withDone = ctl.sp.checked) => {
     const q = ctl.q.value.trim().toLowerCase(), fs = ctl.fs.value, fb = +ctl.fb.value, fr = +ctl.fr.value;
     return items.filter((r) => (!q || r.game.toLowerCase().includes(q)) && (!fs || r.service.startsWith(fs))
-      && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.so.checked : ctl.sb.checked)));
+      && rank(r) < fb && days(r) <= fr && (!r.backup || (owned(r) ? ctl.so.checked : ctl.sb.checked))
+      && (!done(r) || withDone));
   };
 
   // Halo: how bright the glow is says how likely the game leaves; a confirmed exit is a solid
@@ -225,7 +232,8 @@
   // switch hides it.
   const tag = (n, r) => {
     n.dataset.k = `${svc(r)}|${r.key || r.game}|${r.wave}`;
-    if (r.backup) n.dataset.b = owned(r) ? "so" : "sb";
+    const b = [r.backup ? (owned(r) ? "so" : "sb") : "", done(r) ? "sp" : ""].filter(Boolean).join(" ");
+    if (b) n.dataset.b = b;
   };
 
   // What to do about a game, in the board's words.
@@ -291,7 +299,7 @@
       grp.appendChild(head);
       const line = el("div", "m-line");
       its.forEach((r) => {
-        const row = el("div", `m-row${r.backup ? " dim" : ""}`);
+        const row = el("div", `m-row${r.backup || done(r) ? " dim" : ""}`);
         tag(row, r);
         row.tabIndex = 0;
         row.appendChild(lamp(r));
@@ -299,6 +307,7 @@
         const info = el("div", "m-info"), top = el("div", "m-title");
         top.appendChild(mcBox(r));
         top.appendChild(el("span", "gn", r.game));
+        if (r.mark) top.appendChild(el("span", `mk ${r.mark}`, MARK[r.mark]));
         top.appendChild(places(r, r.backup ? r.places : [svc(r) === "ps" ? "playstation" : "xbox"]));
         info.appendChild(top);
         info.appendChild(el("div", "m-facts", facts(r)));
@@ -307,7 +316,7 @@
         const rm = el("div", "m-rm"), say = remark(r);
         if (say.startsWith("Leaves ")) { rm.appendChild(el("span", "lv", "Leaves ")); rm.appendChild(document.createTextNode(say.slice(7))); }
         else rm.textContent = say;  // the smallest phones drop the word "Leaves" (.lv) for the hours text
-        if (!r.backup && fitHue(r) != null) rm.style.color = hsl(fitHue(r));  // same colour as the light
+        if (!r.backup && !done(r) && fitHue(r) != null) rm.style.color = hsl(fitHue(r));  // same colour as the light
         row.appendChild(rm);
         row.addEventListener("click", () => open(r));
         row.addEventListener("keydown", (e) => { if (e.key === "Enter") open(r); });
@@ -321,9 +330,10 @@
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = () => {
-    $("fbtn").dataset.n = [ctl.fs.value !== "", ctl.fb.value !== "2", ctl.fr.value !== "56", ctl.so.checked, ctl.sb.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [ctl.fs.value !== "", ctl.fb.value !== "2", ctl.fr.value !== "56", ctl.so.checked, ctl.sb.checked, ctl.sp.checked].filter(Boolean).length;
     const rows = shown();
-    $("count").textContent = `${rows.length} game${rows.length === 1 ? "" : "s"}`;
+    const hid = ctl.sp.checked ? 0 : shown(true).length - rows.length;
+    $("count").textContent = `${rows.length} game${rows.length === 1 ? "" : "s"}${hid ? ` · ${hid} played hidden` : ""}`;
     $("empty").hidden = rows.length > 0;
     $("board").hidden = !rows.length;
     $("legend").hidden = !rows.length;
@@ -337,7 +347,7 @@
     const host = $("board");
     if (still.matches || !host.animate) return draw();
     if (hiding) {
-      const out = [...host.querySelectorAll(`[data-b="${hiding}"]`)];
+      const out = [...host.querySelectorAll(`[data-b~="${hiding}"]`)];
       await Promise.all(out.map((n) => n.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.8)" }],
         { duration: 200, easing: "ease-in", fill: "forwards" }).finished));
     }

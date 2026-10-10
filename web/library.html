@@ -9,7 +9,7 @@
 <title>Harbinger · Library</title>
 <meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=20">
+<link rel="stylesheet" href="/harbinger.css?v=21">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
@@ -54,6 +54,7 @@
     </select>
     <select id="genre" aria-label="Genre"><option value="">Every genre</option></select>
     <label class="chk"><input type="checkbox" id="rated"> Only games with that score</label>
+    <label class="chk switch"><input type="checkbox" role="switch" id="sp"><i aria-hidden="true"></i> Games you've played</label>
     <span class="count" id="count"></span>
     </div>
   </div>
@@ -79,6 +80,6 @@
   </div>
   <dl id="d-facts"></dl>
 </dialog>
-<script src="/library.js?v=6"></script>
+<script src="/library.js?v=7"></script>
 </body>
 </html>

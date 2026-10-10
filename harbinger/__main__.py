@@ -1,4 +1,4 @@
-"""py -3.11 -m harbinger ingest|steam|build|show|titles|changes|serve
+"""py -3.11 -m harbinger ingest|steam|build|show|titles|changes|played|serve
 
 ingest   import the sheets (Game Pass, PS Plus), refresh the forecast (claude subagent), sync Steam, rebuild, snapshot
 steam    sync Steam and PSN into the database and rebuild from the imported sheets
@@ -6,6 +6,7 @@ build    rebuild data.json from the database (after a config.toml or titles.toml
 show     print the current summary
 titles   re-match titles across sources and list the weak matches and near misses
 changes  what the last sheet imports changed (--game narrows it)
+played   re-read your played notes and rebuild; `played "Title" played|playing|dropped|unplayed|auto` marks one
 serve    the public page on 127.0.0.1:5006
 """
 
@@ -22,6 +23,7 @@ from . import library as library_mod
 from . import ratings as ratings_mod
 from . import art as art_mod
 from . import forecast as fc_mod
+from . import played as played_mod
 from . import plus
 from . import psn as psn_mod
 from . import sheet as sheet_mod
@@ -93,10 +95,13 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
                                _pharos(cfg) if cfg.get("push", {}).get("enabled", True) else None)
         if pushed:
             notes.append(pushed)
+    if sync_steam or kind == "played":
+        if note := played_mod.import_notes(db, cfg):
+            notes.append(note)
     notes.append(titles_mod.reconcile(db, sh, fc, cfg, ps["games"] if ps else ()))
     arrived = store.arrivals(db, cfg["alerts"]["arrival_days"]) if kind == "ingest" and cfg["alerts"]["arrivals"] else []
     data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg), arrived,
-                    sheet_mod.scores(db))
+                    sheet_mod.scores(db), played_mod.load(db, cfg))
     if sync_steam:  # network lookups only on ingest and steam; build shows what is already cached
         notes.append(art_mod.fetch(db, art_mod.wanted(data), cfg))
     art_mod.attach(data, art_mod.load(db))
@@ -123,11 +128,13 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     # the library is its own file: the leaving page doesn't need to download it
     lib = data.pop("library")
+    unmatched = data.pop("played_unmatched")  # your notes' titles: printed by `played`, never published
     for path, body, indent in ((LIBRARY_FILE, {"generated_at": data["generated_at"], "ps_tier": data["one_service"]["ps_tier"],
                                                "play": data["play"], "rows": lib}, None), (OUTPUT_FILE, data, 1)):
         tmp = path.with_suffix(".tmp")
         tmp.write_text(json.dumps(body, indent=indent, separators=(",", ":") if indent is None else None), encoding="utf-8")
         tmp.replace(path)
+    data["played_unmatched"] = unmatched
     return data
 
 
@@ -212,7 +219,8 @@ def _changes(game: str | None, imports: int = 5) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="harbinger", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "serve"])
+    ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "played", "serve"])
+    ap.add_argument("mark", nargs="*", help='played: "Title" played|playing|dropped|unplayed|auto')
     ap.add_argument("--game", help="changes: only this title")
     ap.add_argument("--no-forecast", action="store_true", help="ingest: keep the last forecast")
     ap.add_argument("--push", action="store_true", help="ingest: push newly confirmed leavers and queued games to start via Pharos (optional, see config.local.example.toml)")
@@ -233,6 +241,10 @@ def main(argv=None) -> int:
         return 0
     if a.command == "changes":
         return _changes(a.game)
+    if a.command == "played" and a.mark:
+        if len(a.mark) != 2 or a.mark[1] not in played_mod.STATUSES + ("auto",):
+            ap.error('played: give "Title" and one of ' + ", ".join(played_mod.STATUSES + ("auto",)))
+        played_mod.mark(store.connect(), *a.mark)
     if a.command == "show":
         if not OUTPUT_FILE.exists():
             print("no data.json yet")
@@ -245,6 +257,11 @@ def main(argv=None) -> int:
             if not due:
                 return 0
         data = run("ingest", fetch=True, refresh_forecast=not a.no_forecast, sync_steam=True, today=a.today)
+    elif a.command == "played":
+        data = run("played", fetch=False, refresh_forecast=False, sync_steam=False, today=a.today)
+        lost = data["played_unmatched"]
+        print(f"{len(lost)} marked games match nothing on a service or in your libraries"
+              + (": " + "; ".join(f"{m['title']} ({m['platform'] or m['source']})" for m in lost) if lost else ""))
     elif a.command == "steam":
         data = run("steam", fetch=False, refresh_forecast=False, sync_steam=True, today=a.today)
     else:

@@ -140,3 +140,17 @@ beaten = []
 game = "Superball"
 wave = "2026-10-15"
 source = "Insider Gaming only; not on the sheet"
+
+[played]
+# Games you've played, from a folder of Markdown notes (one per game, Type and Status in the
+# frontmatter, like an Obsidian media log). Set notes_dir in config.local.toml. Notes whose Type
+# isn't listed (films, books) are skipped; a Status not in [played.status] (Not Started) is too.
+# Played and dropped games start hidden on the page; playing ones get a badge.
+notes_dir = ""
+types = ["PC", "Deck", "IOS", "PS5", "PS4", "PS3", "PS2", "PS1", "Vita", "PSP", "Xbox Series X", "Xbox One",
+         "Xbox 360", "Switch", "WiiU", "Wii", "3DS", "DS", "GBA", "Gamecube"]
+
+[played.status]
+Current = "playing"
+Finished = "played"
+Dropped = "dropped"

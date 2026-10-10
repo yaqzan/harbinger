@@ -392,3 +392,15 @@ html:has(dialog[open]) { overflow: hidden; }
 .tile .odds.sc-mc.mixed, .mcs.mixed { background: #ffcc33; color: #2a1d00; }
 .tile .odds.sc-mc.bad, .mcs.bad { background: #ff0000; color: #fff; }
 .mcs { display: inline-block; min-width: 28px; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: .82rem; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* played / playing / dropped (your notes, or `harbinger played`): a pill by the name on the board,
+   on the cover in the Library. Played and dropped games also go grey, like games you have elsewhere. */
+.mk { flex: none; font-size: .62rem; font-weight: 700; line-height: 1.5; padding: 0 6px; border-radius: 999px; letter-spacing: .02em; }
+.mk.playing { background: hsl(212 90% 56%); color: #fff; }
+.mk.played { background: var(--rule); color: var(--ink); }
+.mk.dropped { background: none; color: var(--muted); box-shadow: inset 0 0 0 1px var(--rule); }
+.m-row.dim .m-title > .mk { opacity: 1; }
+.tile .mk { position: absolute; left: 4px; bottom: 4px; }
+.tile .mk.up { bottom: 24px; }  /* above the leaving ribbon */
+.tile .mk.played, .tile .mk.dropped { background: rgba(0, 0, 0, .78); color: #fff; box-shadow: none; }
+.tile.dim .mk { opacity: 1; }

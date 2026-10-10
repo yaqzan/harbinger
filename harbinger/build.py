@@ -8,7 +8,7 @@ from __future__ import annotations
 import difflib
 from datetime import date
 
-from . import library, model, plus
+from . import library, model, played, plus
 from .forecast import for_model
 from .sheet import PREFERRED, Game, Sheet, norm, sequel_gap
 from .titles import Matcher, ps_matcher
@@ -699,15 +699,28 @@ def queue_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]
 
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
              ps: dict | None = None, psn: dict | None = None, arrivals: list[dict] | None = None,
-             scores: dict | None = None) -> dict:
+             scores: dict | None = None, marks: list[dict] | None = None) -> dict:
     cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
     side = PsSide(cx, ps)
     cx.beaten = set()
-    for n in cfg.get("queue", {}).get("beaten", []):
+    beaten_cfg = cfg.get("queue", {}).get("beaten", [])
+    for n in beaten_cfg:
         cx.beaten |= {g.key if (g := _find(cx, n)) else norm(n)} | ({pg.key} if (pg := side.find(n)) else set())
+    # played / playing / dropped (played.py); [queue] beaten counts as played. Strict matches only.
+    marks = (marks or []) + [{"source": "config", "title": n, "status": "played", "platform": None} for n in beaten_cfg]
+    on_xbox = played.resolve(marks, lambda t: cx.match.key(t, loose=False))
+    on_ps = played.resolve(marks, lambda t: side.pm.key(t, loose=False)) if side.pm else {}
+    cx.beaten |= {k for m in (on_xbox, on_ps) for k, st in m.items() if st in played.DONE}  # never pushed about
     one = one_service_rows(cx, confirmed, ps)
+    for r in one["rows"] + one["backups"]:
+        if st := (on_ps if r["service"].startswith("PS") else on_xbox).get(r["key"]):
+            r["mark"] = st
+    for r in confirmed:
+        if st := on_xbox.get(r["key"]):
+            r["mark"] = st
+    unmatched: list[dict] = []
     watch_all, survivors, ubisoft = scored_rows(cx, {r["key"] for r in confirmed})
     watch = [r for r in watch_all if not r["owned"]]
     owned = ([{"game": r["game"], "key": r["key"], "where": f"Leaving {r['wave_label']}", "hours": r["hours"], "progress": r["progress"]}
@@ -729,7 +742,8 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),
         "one_service": one,
-        "library": library.rows(cx, side, steam, psn, one, scores),
+        "library": library.rows(cx, side, steam, psn, one, scores, marks, unmatched),
+        "played_unmatched": unmatched,  # marks on no game here; run() prints them, never writes them
         "sources": {
             "sheet_fetched": sheet.fetched,
             "forecast_checked": forecast.get("checked_at"),
