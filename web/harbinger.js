@@ -179,6 +179,11 @@
         : ["Start by", startBy(r) <= T0 ? `Now (${urgency(r).toLowerCase()})` : `${fmt(startBy(r))} (${urgency(r).toLowerCase()})`]);
     }
     if (r.progress) facts.push(["Progress", r.progress]);
+    if (r.mc != null) facts.push(["Metacritic", String(Math.round(r.mc))]);
+    if (r.rating != null) facts.push(["Steam reviews", `${r.rating}% positive of ${r.reviews.toLocaleString()}`]);
+    if (r.us != null) facts.push(["PlayStation users", `${r.us.toFixed(1)} of 10`]);
+    if (r.genre) facts.push(["Genre", r.genre]);
+    if (r.year) facts.push(["Released", String(r.year)]);
     if (r.why) facts.push(["Why", r.why]);
     $("d-facts").replaceChildren(...facts.flatMap(([k, v]) => [el("dt", null, k), el("dd", null, v)]));
     dlg.showModal();

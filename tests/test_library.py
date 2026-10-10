@@ -97,9 +97,10 @@ class Ratings(unittest.TestCase):
         ratings.attach(rows, ratings.load(self.db, 3))
         self.assertEqual((rows[0]["rating"], rows[0]["reviews"]), (80, 5))
 
-    def test_owned_games_are_asked_first(self):
-        rows = [{"key": "b", "game": "B", "steam": 0}, {"key": "a", "game": "A", "steam": 1, "appid": 5}]
-        self.assertEqual([k for k, _, _ in ratings.wanted(rows)], ["a", "b"])
+    def test_leaving_games_are_asked_first_then_owned(self):
+        rows = [{"key": "c", "game": "C", "steam": 0}, {"key": "b", "game": "B", "steam": 1, "appid": 5},
+                {"key": "a", "game": "A", "steam": 0, "gp_leaves": ["2026-10-15", "Confirmed", 1.0]}]
+        self.assertEqual([k for k, _, _ in ratings.wanted(rows)], ["a", "b", "c"])
 
 
 if __name__ == "__main__":

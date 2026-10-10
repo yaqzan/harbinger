@@ -18,6 +18,7 @@ from pathlib import Path
 from datetime import date, datetime
 
 from . import LIBRARY_FILE, OUTPUT_FILE, STATE_DIR, load_config, store
+from . import library as library_mod
 from . import ratings as ratings_mod
 from . import art as art_mod
 from . import forecast as fc_mod
@@ -101,6 +102,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     if sync_steam:
         notes.append(ratings_mod.fetch(db, ratings_mod.wanted(data["library"]), cfg))
     ratings_mod.attach(data["library"], ratings_mod.load(db, ratings_mod.settings(cfg)["min_reviews"]))
+    library_mod.annotate(data["one_service"], data["library"])
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
     # what the push alerts on: verified leavers the previous ingest didn't have

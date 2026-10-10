@@ -96,6 +96,8 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict) -> list[dict]:
             k = ps_to_row.get(x["key"], x["key"]) if on_ps else x["key"]
             r = out.get(k)
             lv = _leave(x)
+            if r:
+                x["lib"] = k  # the leaving page borrows this row's scores (annotate)
             if r and lv:
                 r["ps_leaves" if on_ps else "gp_leaves"] = lv
     for r in out.values():
@@ -103,3 +105,16 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict) -> list[dict]:
             if not r.get(f):
                 r.pop(f, None)
     return sorted(out.values(), key=lambda r: r["game"].lower())
+
+
+SHARED = ("mc", "us", "rating", "reviews", "genre", "year", "appid")
+
+
+def annotate(one: dict, library: list[dict]) -> None:
+    """Copy each game's scores, genre and release year onto its leaving-list rows, so the
+    leaving page's detail sheet shows them without loading the whole library."""
+    by_key = {r["key"]: r for r in library}
+    for x in one.get("rows", []) + one.get("backups", []):
+        r = by_key.get(x.get("lib"))
+        if r:
+            x.update({f: r[f] for f in SHARED if r.get(f) is not None})

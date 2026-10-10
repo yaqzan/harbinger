@@ -101,6 +101,9 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   `gp_leaves` / `ps_leaves` = [wave, band, p] from the one-service list.
 - Written to `state/library.json` (compact), not into `data.json`: the leaving page doesn't load it.
   `assemble()` returns it as `data["library"]`; `run()` pops it out and writes the file.
+- `library.annotate()` copies a game's scores, genre and year onto its `one_service` rows (they
+  carry `lib`, the library key), so the leaving page's detail sheet shows them without loading
+  `library.json`. Ratings fetch order: games that can leave, then your Steam games, then the rest.
 - The page's Venn is three sets (Game Pass, PS Plus, Steam); region id = gp*4 + ps*2 + steam, and
   region 0 (outside every circle) is the PlayStation-only purchases. Any mix of regions can be picked.
 - **Steam reviews** (`ratings.py`, table `steam_rating`, one row per library key): appid from your

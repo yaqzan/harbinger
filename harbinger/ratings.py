@@ -98,10 +98,11 @@ def load(db: sqlite3.Connection, min_reviews: int = DEFAULTS["min_reviews"]) -> 
 
 
 def wanted(rows: list[dict]) -> list[tuple[str, str, int | None]]:
-    """Library rows as fetch() wants them: games you own on Steam first (appid known)."""
-    own = [(r["key"], r["game"], r.get("appid")) for r in rows if r.get("steam")]
-    rest = [(r["key"], r["game"], r.get("appid")) for r in rows if not r.get("steam")]
-    return own + rest
+    """Library rows as fetch() wants them: games that can leave first (the leaving page shows
+    their score), then games you own on Steam (appid known), then the rest."""
+    def rank(r):
+        return 0 if r.get("gp_leaves") or r.get("ps_leaves") else 1 if r.get("steam") else 2
+    return [(r["key"], r["game"], r.get("appid")) for r in sorted(rows, key=rank)]
 
 
 def attach(rows: list[dict], rated: dict[str, dict]) -> None:
