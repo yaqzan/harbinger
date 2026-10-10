@@ -82,7 +82,10 @@
   const isClaim = (r) => r.state === "claim";
   const oddsLabel = (r) => (isClaim(r) ? "Claim" : r.unverified && r.band === "Reported" ? "Reported" : r.band === "Confirmed" ? "Confirmed" : r.p != null ? `${Math.round(r.p * 100)}%` : "");
   const bandCls = (r) => (isClaim(r) ? "claim" : r.band === "Reported" ? "rep" : (r.band || "none").toLowerCase());
-  const coverUrl = (r) => (/^\/art\/[0-9a-f]{16}\.(jpg|png)$/.test(r.art || "") ? r.art : null);
+  // ?v= busts browser caches: Cloudflare turns a 404's no-cache into a 4-hour max-age, so a cover
+  // that 404'd once (server older than the art route, 2026-10-09) stays broken until the URL changes.
+  const ART_V = 2;
+  const coverUrl = (r) => (/^\/art\/[0-9a-f]{16}\.(jpg|png)$/.test(r.art || "") ? `${r.art}?v=${ART_V}` : null);
   const cover = (r, cls) => {
     const box = el("div", cls);
     const url = coverUrl(r);
@@ -278,7 +281,7 @@
   const td = (text, cls) => el("td", cls, text);
   const gameTd = (r) => {
     const c = td(null, "game");
-    if (coverUrl(r)) { const i = el("img", "art"); i.src = r.art; i.alt = ""; i.loading = "lazy"; i.width = 24; i.height = 36; c.appendChild(i); }
+    if (coverUrl(r)) { const i = el("img", "art"); i.src = coverUrl(r); i.alt = ""; i.loading = "lazy"; i.width = 24; i.height = 36; c.appendChild(i); }
     c.appendChild(document.createTextNode(r.game));
     return c;
   };
