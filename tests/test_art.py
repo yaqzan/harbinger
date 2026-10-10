@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-from harbinger import art, steam, psn
+from harbinger import art, psn, ratings, steam
 
 NOW = datetime(2026, 10, 9, 12, 0)
 PNG = b"\x89PNG"
@@ -15,7 +15,7 @@ PNG = b"\x89PNG"
 
 def db():
     d = sqlite3.connect(":memory:")
-    for s in (steam.SCHEMA, psn.SCHEMA, art.SCHEMA):
+    for s in (steam.SCHEMA, psn.SCHEMA, art.SCHEMA, ratings.SCHEMA):
         d.executescript(s)
     return d
 
@@ -37,6 +37,14 @@ class ArtTest(unittest.TestCase):
         got.assert_called_once_with(1145360)
         search.assert_not_called()
 
+    def test_appid_from_the_ratings_lookup_skips_the_search(self):
+        self.db.execute("INSERT INTO steam_rating (key, name, appid, checked_at) VALUES ('dead cells', 'Dead Cells', 588650, 'x')")
+        with mock.patch.object(art, "steam_art", return_value=(b"x", "jpg")) as got, \
+                mock.patch.object(art, "steam_search") as search:
+            self.assertEqual(art.resolve(self.db, "dead cells", "Dead Cells")[0], "steam")
+        got.assert_called_once_with(588650)
+        search.assert_not_called()
+
     def test_playstation_icon_then_searches(self):
         with mock.patch.object(art, "steam_search", return_value=None), \
                 mock.patch.object(art, "microsoft_art", return_value=(PNG, "png")):
@@ -44,6 +52,19 @@ class ArtTest(unittest.TestCase):
         with mock.patch.object(art, "steam_search", return_value=None), \
                 mock.patch.object(art, "microsoft_art", return_value=None):
             self.assertIsNone(art.resolve(self.db, "x", "X"))
+
+    def test_edition_is_dropped_only_after_the_exact_title_fails(self):
+        seen = []
+        with mock.patch.object(art, "steam_search", side_effect=lambda n: seen.append(n) or (7 if n == "mass effect 2" else None)), \
+                mock.patch.object(art, "microsoft_art", return_value=None), \
+                mock.patch.object(art, "steam_art", return_value=(b"x", "jpg")):
+            self.assertEqual(art.resolve(self.db, "k", "Mass Effect 2: Digital Deluxe Edition")[0], "steam search")
+        self.assertEqual(seen, ["Mass Effect 2: Digital Deluxe Edition", "mass effect 2"])
+        with mock.patch.object(art, "steam_search", side_effect=lambda n: seen.append(n)), \
+                mock.patch.object(art, "microsoft_art", return_value=None):
+            seen.clear()
+            self.assertIsNone(art.resolve(self.db, "k", "Mass Effect 2"))   # no edition, no second try
+        self.assertEqual(seen, ["Mass Effect 2"])
 
     def test_steam_search_needs_the_exact_title(self):
         body = b'{"items": [{"type": "app", "name": "Hades II", "id": 1}, {"type": "app", "name": "Hades", "id": 2}]}'

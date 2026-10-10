@@ -89,7 +89,7 @@
 "Car Mechanic Simulator 2021" = ["Car Mechanic Simulator"]   # the year is the title; PS has the 2018 game
 
 # What a store calls a game the sheet spells differently, for cover art only: "sheet title" =
-# "store title" (or a list, tried in order). Exact titles; art.py never guesses.
+# "store title" (or a list, tried in order). Exact titles; art.py only ever drops an edition suffix.
 [art]
 "Clover Pit" = "CloverPit"
 "Lord of the Rings: Return to Moria" = "The Lord of the Rings: Return to Moria"

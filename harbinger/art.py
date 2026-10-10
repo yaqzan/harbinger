@@ -5,8 +5,10 @@ One row per sheet key in `game_art`. Sources, strictest first (every name match 
 
 1. your Steam library (`steam_game`, appid known)      -> Steam CDN
 2. your PlayStation library (`psn_game.image_url`)      -> Sony's icon
-3. Steam store search, exact name                       -> Steam CDN
+   the appid `ratings.py` already found (`steam_rating`) -> Steam CDN
+3. Steam store search, exact name                      -> Steam CDN
 4. Microsoft Store search (Games), exact name           -> store icon
+5. 3 and 4 again on the title minus its edition ("Premium Edition", "GOTY", ...)
 
 Network runs only in `fetch()` (ingest and steam, never build) and is capped per run by
 `[art] budget`; a miss is retried after `[art] retry_days`. Files live in `state/art/`, are named
@@ -27,7 +29,7 @@ import urllib.request
 from datetime import datetime, timedelta
 
 from . import STATE_DIR
-from .sheet import norm
+from .sheet import norm, strip_edition
 
 ART_DIR = STATE_DIR / "art"
 URL_PREFIX = "/art/"
@@ -157,6 +159,10 @@ def _local_source(db: sqlite3.Connection, key: str) -> tuple[str, int | str] | N
                    " LIMIT 1", (key,)).fetchone()
     if r:
         return "psn", r[0]
+    # the appid the ratings lookup already settled (same strict title rule, or a titles.toml alias)
+    r = db.execute("SELECT appid FROM steam_rating WHERE key = ? AND appid IS NOT NULL", (key,)).fetchone()
+    if r:
+        return "steam", r[0]
     return None
 
 
@@ -186,6 +192,15 @@ def resolve(db: sqlite3.Connection, key: str, name: str, names: list[str] | None
         got = microsoft_art(n)
         if got:
             return "microsoft store", *got
+    # last try: the same game without its edition ("Battlefield 4: Premium Edition" -> "battlefield 4");
+    # a sequel number is never touched, so a sequel still never borrows the original's cover
+    for n in names or [name]:
+        base = strip_edition(norm(clean(n)))
+        if base and base != norm(clean(n)):
+            appid = steam_search(base)
+            got = steam_art(appid) if appid else microsoft_art(base)
+            if got:
+                return ("steam search" if appid else "microsoft store"), *got
     return None
 
 

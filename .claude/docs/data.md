@@ -82,7 +82,9 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 - `game_art` (one row per sheet key) + files in `state/art/` (name = sha1(key)[:16], shrunk to
   `[art] max_px` when Pillow is installed, else kept as downloaded). Served at `/art/<file>`.
 - Source order, every name match exact on `norm()` after dropping "(2020)" / "(Game Preview)":
-  Steam library appid, PSN `image_url`, Steam store search, Microsoft Store autosuggest. Steam
+  Steam library appid, PSN `image_url`, the appid `ratings.py` already found (`steam_rating`), Steam
+  store search, Microsoft Store autosuggest; last, the two searches again minus an edition suffix
+  (`sheet.strip_edition`; a sequel number is never touched). Steam
   art is `library_600x900.jpg`, else `header.jpg`, else the hashed `header_image` from appdetails
   (newer apps). A sheet title a store spells differently goes in `titles.toml` `[art]`.
 - `[art] budget` caps new lookups per run (first fill takes a few daily runs); a miss is retried
@@ -118,7 +120,8 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   sheet's User score, any row. Steam reviews = appreviews. Nothing else is scraped.
 - Cover art for the library comes through the same `art.wanted()` list, after the leaving games, so
   at 150 a run the library waits weeks for a first fill. The 2026-10-10 backfill ran `steam` once with
-  the budget lifted (patch `art.settings`); do the same after a big library jump.
+  the budget lifted (patch `art.settings`): 1,747 coverless library games down to 165, mostly old
+  Atari/Antstream titles no store carries. Do the same after a big library jump.
 
 ## Title matching (`titles.py`, every run)
 
