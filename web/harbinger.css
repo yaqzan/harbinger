@@ -185,12 +185,18 @@ main { margin-bottom: 1.5rem; }
 .board .g .cv.blank { padding: 0; }
 .board .g .cv.blank span { display: none; }
 .board .gn { overflow: hidden; text-overflow: ellipsis; }
+.board .lamp { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; vertical-align: 0; background: #2a2618; }
+.board .plats { position: static; display: inline-flex; margin-left: 8px; flex: none; }
+.board .plat { width: 16px; height: 16px; }
+.board .plat svg { width: 10px; height: 10px; }
+.board .plat.steam svg { width: 11px; height: 11px; }
+.board tr.dim .plat { opacity: 1; }
 .board .short { display: none; }
 .board .r { color: #ff6b6b; }
 .board .gr { color: #6fdc8c; }
 .board .b { color: #7fb0ff; }
 .board .m { color: #8a6500; }
-.board tr.dim td { opacity: .38; }
+.board tr.dim td:not(:nth-child(2)), .board tr.dim .g > :not(.plats) { opacity: .38; }  /* the logos stay lit */
 .board tr.dim .cv img { filter: grayscale(1); }
 .blink { animation: blink 1.2s steps(2) infinite; }
 @keyframes blink { 50% { opacity: .35; } }
@@ -215,7 +221,8 @@ dialog dt { color: var(--muted); }
   .board .via, .board .by, .board .hrs, #board-date { display: none; }
   /* fixed columns so the remark never runs off the edge; the game name takes what's left */
   .board table { table-layout: fixed; }
-  .board th.when { width: 3.7rem; }
+  .board th.when { width: 4.7rem; }  /* lamp + "Oct 15" */
+  .board .lamp { width: 8px; height: 8px; margin-right: 6px; }
   .board th.st { width: 3rem; }
   .board th.rm { width: 5.6rem; }
   .board td { overflow: hidden; text-overflow: ellipsis; }

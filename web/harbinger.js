@@ -243,6 +243,22 @@
     return box;
   };
 
+  // The board's status light: the halo's rules on a small lamp. Colour = fit, glow = odds,
+  // solid lit lamp with a ring = confirmed, dashed = reported only, grey = hours unknown or a backup.
+  const lamp = (r) => {
+    const l = el("span", "lamp"), h = fitHue(r);
+    if (r.unverified && r.band === "Reported") { l.style.border = `1.5px dashed ${hsl(h)}`; return l; }
+    if (r.band === "Confirmed") {
+      l.style.background = hsl(h, r.backup ? 0.45 : 1);
+      l.style.boxShadow = r.backup ? "none" : `0 0 0 2px ${hsl(h, 0.35)}, 0 0 10px 2px ${hsl(h, 0.6)}`;
+      return l;
+    }
+    const k = Math.min(1, (r.p ?? 0) / 0.6);
+    l.style.background = hsl(h, (r.backup ? 0.15 : 0.2) + (r.backup ? 0.2 : 0.65) * k);
+    if (!r.backup) l.style.boxShadow = `0 0 ${Math.round(3 + 9 * k)}px ${Math.round(2 * k)}px ${hsl(h, 0.15 + 0.6 * k)}`;
+    return l;
+  };
+
   const tile = (r) => {
     const b = el("button", `tile ${svc(r)}${r.backup ? " dim" : ""}`);
     b.type = "button";
@@ -312,11 +328,13 @@
     tb.replaceChildren(...rows.map((r) => {
       const tr = el("tr", r.backup ? "dim" : "");
       tr.tabIndex = 0;
-      tr.appendChild(el("td", "when", fmt(t(r.wave))));
+      const when = el("td", "when"); when.appendChild(lamp(r)); when.appendChild(document.createTextNode(fmt(t(r.wave))));
+      tr.appendChild(when);
       const g = el("td"), gi = el("div", "g");
       gi.appendChild(cover(r, "cv"));
       gi.appendChild(el("span", `dot ${svc(r)}`));
       gi.appendChild(el("span", "gn", r.game));
+      if (r.backup) gi.appendChild(places(r));
       g.appendChild(gi); tr.appendChild(g);
       tr.appendChild(el("td", `via ${svc(r) === "ps" ? "b" : "gr"}`, svc(r) === "ps" ? "PS Plus" : "Game Pass"));
       const st = isClaim(r) ? "Monthly" : r.band === "Confirmed" ? "Confirmed" : r.band === "Reported" ? "Reported" : `${r.band} ${oddsLabel(r)}`;
@@ -327,6 +345,7 @@
       tr.appendChild(el("td", "num hrs", r.hours == null ? "--" : `${r.hours} h`));
       tr.appendChild(el("td", "by", r.hours == null || isClaim(r) || r.backup || urgency(r) === "Too late" ? "--" : startBy(r) <= T0 ? "Now" : fmt(startBy(r))));
       const [txt, cls, short] = remark(r), rmTd = el("td", `rm ${cls}`);
+      if (!r.backup && fitHue(r) != null) rmTd.style.color = hsl(fitHue(r));  // same colour as the light
       rmTd.appendChild(el("span", "long", txt));
       rmTd.appendChild(el("span", "short", short));
       tr.appendChild(rmTd);
@@ -343,7 +362,7 @@
     $("empty").hidden = rows.length > 0;
     $("shelf").hidden = view !== "shelf" || !rows.length;
     $("board").hidden = view !== "board" || !rows.length;
-    $("legend").hidden = view !== "shelf" || !rows.length;
+    $("legend").hidden = !rows.length;
     document.querySelectorAll(".views button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === view)));
     if (view === "shelf") drawShelf(rows); else drawBoard(rows);
   };
