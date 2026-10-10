@@ -123,7 +123,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     # the library is its own file: the leaving page doesn't need to download it
     lib = data.pop("library")
     for path, body, indent in ((LIBRARY_FILE, {"generated_at": data["generated_at"], "ps_tier": data["one_service"]["ps_tier"],
-                                               "rows": lib}, None), (OUTPUT_FILE, data, 1)):
+                                               "play": data["play"], "rows": lib}, None), (OUTPUT_FILE, data, 1)):
         tmp = path.with_suffix(".tmp")
         tmp.write_text(json.dumps(body, indent=indent, separators=(",", ":") if indent is None else None), encoding="utf-8")
         tmp.replace(path)

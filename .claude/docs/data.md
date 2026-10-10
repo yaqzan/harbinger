@@ -99,7 +99,7 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   A PS Plus claim is membership, so it sets `ps`, not `psn`. Rows also carry the sheets' `mc`
   (Metacritic), `us` (PlayStation user score), hours, genre, release year, played hours, and
   `gp_leaves` / `ps_leaves` = [wave, band, p] from the one-service list.
-- Written to `state/library.json` (compact), not into `data.json`: the leaving page doesn't load it.
+- Written to `state/library.json` (compact, with the `play` settings), not into `data.json`: the leaving page doesn't load it. `library.js` repeats the shelf's halo rules and logo paths from `harbinger.js` (colour = hours you have / needed, glow = odds, solid ring = confirmed, grey = you have it elsewhere); change them in both.
   `assemble()` returns it as `data["library"]`; `run()` pops it out and writes the file.
 - `library.annotate()` copies a game's scores, genre and year onto its `one_service` rows (they
   carry `lib`, the library key), so the leaving page's detail sheet shows them without loading
