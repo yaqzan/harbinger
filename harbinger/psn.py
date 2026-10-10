@@ -443,15 +443,21 @@ def load(db: sqlite3.Connection, cfg: dict) -> dict:
         own(name, "PS disc")
     for name in cfg.get("playstation", {}).get("discs", []):
         own(name, "PS disc")
-    # Monthly Essential claims are yours for as long as you subscribe, so they count as owned: the
-    # PS Plus sheet's Essential rows (any status, a claim window closes) say which PS_PLUS entries
-    # were claims rather than Extra/Premium catalogue adds. Needs a tier: with none, nothing plays.
+    # Monthly claims (Essential, and the old monthly PS Plus games) are yours for as long as you
+    # subscribe, so they count as owned. A PS_PLUS entry is a claim when the PS Plus sheet lists it as
+    # one, or lists it nowhere in the Extra/Premium catalogue: an Extra add the sheet knows about
+    # (still there, or since removed and lapsed) is not. Needs a tier: with none, nothing plays.
     if cfg.get("playstation", {}).get("tier", "none") != "none":
-        for (name,) in db.execute(
-                "SELECT DISTINCT g.name FROM psn_game g JOIN sheet_row s ON s.key = g.key AND s.service = 'playstation'"
-                " AND lower(s.tier) LIKE 'essential%' WHERE g.present = 1 AND g.kind = 'purchased'"
-                " AND g.membership = 'PS_PLUS'"):
-            own(name, "PS Plus claim")
+        tiers: dict[str, set[str]] = {}
+        for k, t in db.execute("SELECT key, lower(tier) FROM sheet_row WHERE service = 'playstation'"):
+            tiers.setdefault(k, set()).add(t or "")
+        monthly = lambda t: t.startswith("essential") or t.startswith("playstation plus")
+        catalogue = lambda t: t.startswith(("extra", "premium"))
+        for k, name in db.execute("SELECT DISTINCT key, name FROM psn_game WHERE present = 1"
+                                  " AND kind = 'purchased' AND membership = 'PS_PLUS'"):
+            ts = tiers.get(k, set())
+            if any(map(monthly, ts)) or not any(map(catalogue, ts)):
+                own(name, "PS Plus claim")
     claimed = [n for (n,) in db.execute("SELECT DISTINCT name FROM psn_game WHERE kind = 'purchased'"
                                         " AND membership = 'PS_PLUS' AND present = 1")]
     playing = {}

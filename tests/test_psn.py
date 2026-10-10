@@ -74,6 +74,19 @@ class Import(unittest.TestCase):
         sheet.import_rows(self.db, {"master": [r]}, "2026-10-10T06:30:00", None, "playstation")
         self.assertNotIn("hunt showdown 1896", psn.load(self.db, {"playstation": {"tier": "extra"}})["games"])
 
+    def test_claim_without_a_catalogue_row_is_owned(self):
+        # the sheet doesn't list it as Extra/Premium (or spells it differently): it can't be a lapsed add
+        lib = psn.load(self.db, {"playstation": {"tier": "extra"}})
+        self.assertEqual(lib["games"]["hunt showdown 1896"]["where"], "PS Plus claim")
+
+    def test_old_monthly_plus_game_is_a_claim(self):
+        from harbinger import sheet
+        from harbinger.sheet import FIELDS, norm
+        r = {"title": "Hunt: Showdown 1896", "key": norm("Hunt: Showdown 1896"), "stint": 1, "row": 3,
+             **{f: None for f in FIELDS}, "tier": "Playstation Plus (Discontinued)", "status": "Removed"}
+        sheet.import_rows(self.db, {"master": [r]}, "2026-10-09T06:30:00", None, "playstation")
+        self.assertIn("hunt showdown 1896", psn.load(self.db, {"playstation": {"tier": "extra"}})["games"])
+
     def test_apps_and_non_games_never_land(self):
         names = {n for (n,) in self.db.execute("SELECT name FROM psn_game")}
         self.assertFalse(names & {"Spotify", "YouTube", "Kena: Bridge of Spirits Soundtrack", "NBA LIVE 16 DEMO",
