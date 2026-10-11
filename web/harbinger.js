@@ -294,9 +294,11 @@
     if (r.hours == null) bar.classList.add("unk");
     else { i.style.width = `${Math.min(100, (r.hours / Math.max(1, avail(r))) * 100)}%`; i.style.background = hsl(fitHue(r)); }
     bar.appendChild(i); c.appendChild(bar);
+    // needed / have, short enough for the smallest phones; the hours to finish are the bold half
     const ft = el("span", "ft");
-    ft.appendChild(el("span", "fl", `needs ${r.hours ?? "?"} h · ${left} h left`));
-    ft.appendChild(el("span", "fs", `${r.hours ?? "?"} of ${left} h`));  // the smallest phones
+    ft.title = "Hours to 100% / hours you have before it leaves";
+    ft.appendChild(el("b", null, `${r.hours ?? "?"}h`));
+    ft.appendChild(document.createTextNode(` / ${left}h`));
     c.appendChild(ft);
     return c;
   };

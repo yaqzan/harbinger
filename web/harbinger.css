@@ -268,6 +268,7 @@ td .dots { margin-right: 2px; }
 .m-fit .bar i { display: block; height: 100%; }
 .m-fit .bar.unk { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); opacity: .6; }
 .m-fit .ft { display: block; color: var(--muted); font-size: .74rem; margin-top: 3px; white-space: nowrap; }
+.m-fit .ft b { color: var(--ink); font-weight: 800; font-size: .84rem; }
 .m-rm { font-weight: 700; font-size: .86rem; }
 /* the hint the page opens on: Won't fit is just above */
 .m-peek { justify-self: center; display: inline-flex; align-items: center; margin: .2rem auto .1rem; padding: 4px 14px; font: inherit; font-size: .8rem;
@@ -386,8 +387,7 @@ td .dots { margin-right: 2px; }
   dialog dl { grid-template-columns: 6.5rem 1fr; }
 }
 /* the smallest phones (320 px): the nav row still fits on one line */
-.m-fit .fs { display: none; }
-@media (max-width: 380px) { .m-rm .lv, .m-fit .fl { display: none; } .m-fit .fs { display: inline; } }
+@media (max-width: 380px) { .m-rm .lv { display: none; } }
 @media (max-width: 359px) {
   nav { gap: .25rem; }
   .mark { font-size: .8rem; }
