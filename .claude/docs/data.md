@@ -139,7 +139,8 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   no service or library (Switch, PS2...).
 - Rows get `mark`. Played and dropped keys join `beaten` (no leaver, queue or arrival push). The
   page hides played/dropped behind a "Games you've played" switch (board and Library, separate
-  memory) and greys them; every mark shows a pill (`.mk`). The unmatched list is printed by
+  memory) and greys them; every mark shows a pill (`.mk`), except a played Library tile:
+  dimmed, green border and green check (`.tile.played`, `.ck`; owner 2026-10-10), no leave halo. The unmatched list is printed by
   `played`, never written to the public JSON.
 
 ## Title matching (`titles.py`, every run)

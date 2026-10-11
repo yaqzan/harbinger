@@ -248,7 +248,7 @@
   ].filter(Boolean).join(" · ") || r.genre || "";
 
   const tile = (r) => {
-    const b = el("button", `tile lib${done(r) ? " dim" : ""}`);
+    const b = el("button", `tile lib${done(r) ? " dim" : ""}${r.mark === "played" ? " played" : ""}`);
     b.type = "button";
     b.title = r.game;
     const c = cover(r, "cv");
@@ -257,8 +257,13 @@
     c.appendChild(logos(r));
     const lv = leaves(r)[0];
     if (lv) c.appendChild(el("span", "rib", lv.band === "Confirmed" ? `Leaves ${fmt(lv.ms)}` : `${lv.band} · ${fmt(lv.ms)}`));
-    if (r.mark) c.appendChild(el("span", `mk ${r.mark}${lv ? " up" : ""}`, MARK[r.mark]));
-    halo(r, c);
+    if (r.mark === "played") {
+      // a green check in the corner; the green border is the tile's CSS (.tile.played)
+      const ck = el("span", `ck${lv ? " up" : ""}`), svg = sv("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
+      svg.appendChild(sv("path", { d: "M5 12.5l4.5 4.5L19 7.5" }));
+      ck.appendChild(svg); ck.title = "Played"; c.appendChild(ck);
+    } else if (r.mark) c.appendChild(el("span", `mk ${r.mark}${lv ? " up" : ""}`, MARK[r.mark]));
+    if (r.mark !== "played") halo(r, c);  // a game you've finished: its exit odds don't matter
     b.appendChild(c);
     b.appendChild(el("span", "nm", r.game));
     b.appendChild(el("span", "sub", sub(r)));

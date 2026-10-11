@@ -420,3 +420,9 @@ html:has(dialog[open]) { overflow: hidden; }
 .tile .mk.up { bottom: 24px; }  /* above the leaving ribbon */
 .tile .mk.played, .tile .mk.dropped { background: rgba(0, 0, 0, .78); color: #fff; box-shadow: none; }
 .tile.dim .mk { opacity: 1; }
+/* Library: a played game is dimmed, with a green border and a green check */
+.tile.played .cv { box-shadow: 0 0 0 3px hsl(140 70% 42%); border-radius: 6px; }
+.tile .ck { position: absolute; right: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; background: hsl(140 70% 42%); box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); }
+.tile .ck.up { bottom: 24px; }  /* above the leaving ribbon */
+.tile .ck svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
