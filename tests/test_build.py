@@ -72,7 +72,7 @@ class SanityCheck(unittest.TestCase):
 
     def test_summary_matches_expectation(self):
         s = self.d["summary"]
-        self.assertEqual(s["confirmed_count"], 8)
+        self.assertEqual(s["confirmed_count"], 9)  # 8 + Superball (owner-confirmed)
         self.assertEqual(s["finishable_count"], 3)
         self.assertEqual(s["hours_available"], 7.7)
         self.assertEqual(s["days_to_next_wave"], 6)
@@ -86,10 +86,10 @@ class SanityCheck(unittest.TestCase):
         # Superball isn't on the sheet; its 3 h come from titles.toml [hours]
         self.assertEqual(fin, ["Donut County", "Nova Roma (Game Preview)", "The Casting of Frank Stone"])
 
-    def test_superball_is_shown_but_unverified_and_uncounted(self):
+    def test_superball_is_owner_confirmed_and_free(self):
         sb = [r for r in self.d["confirmed"] if r["game"] == "Superball"]
         self.assertEqual(len(sb), 1)
-        self.assertFalse(sb[0]["verified"])
+        self.assertTrue(sb[0]["verified"])
         self.assertEqual(sb[0]["hours"], 3.0)  # researched, titles.toml [hours]
         # Free+ on the store: the game stays after Oct 15, so no start-by verdict
         self.assertEqual(sb[0]["verdict"], "Free to play: only Game Pass perks end")
@@ -120,7 +120,7 @@ class SanityCheck(unittest.TestCase):
 
     def test_chart_counts(self):
         oct15 = self.d["waves"][0]
-        self.assertEqual((oct15["label"], oct15["Confirmed"]), ("Oct 15", 8))
+        self.assertEqual((oct15["label"], oct15["Confirmed"]), ("Oct 15", 9))
 
 
 class SteamOwnership(unittest.TestCase):
@@ -135,8 +135,8 @@ class SteamOwnership(unittest.TestCase):
         self.assertEqual(owned["Forecast Game"]["hours"], 5.0)  # 10 h * half the achievements left
         ew = [r for r in d["confirmed"] if r["game"] == "Evil West"][0]
         self.assertEqual(ew["verdict"], "Owned on Steam")
-        self.assertEqual(d["summary"]["confirmed_count"], 8)
-        self.assertTrue(d["summary"]["takeaway"].startswith("8 games leave Oct 15 and you own 1 of them on Steam."))
+        self.assertEqual(d["summary"]["confirmed_count"], 9)
+        self.assertTrue(d["summary"]["takeaway"].startswith("9 games leave Oct 15 and you own 1 of them on Steam."))
 
 
 class NewLeaverPush(unittest.TestCase):
@@ -152,7 +152,7 @@ class NewLeaverPush(unittest.TestCase):
     def test_first_ingest_and_unverified_and_owned_stay_quiet(self):
         self.assertEqual(new_leavers(self.d["confirmed"], None), [])
         names = [r["game"] for r in new_leavers(self.d["confirmed"], set())]
-        self.assertNotIn("Superball", names)  # only an untrusted outlet reported it
+        self.assertIn("Superball", names)  # owner-confirmed, so it pushes like any new leaver
         steam = {"games": {"evil west": {"name": "Evil West", "appid": 2, "played_h": 0,
                                          "ach_done": None, "ach_total": None}}}
         self.assertNotIn("Evil West", [r["game"] for r in new_leavers(run(steam)["confirmed"], set())])
@@ -162,8 +162,8 @@ class NewLeaverPush(unittest.TestCase):
         self.assertEqual(leaver_alert(one, TODAY), ("Donut County confirmed leaving in 6 days",
                                                     "Donut County 2 h, doable"))
         title, body = leaver_alert(new_leavers(self.d["confirmed"], set()), TODAY)
-        self.assertEqual(title, "8 games confirmed leaving in 6 days")
-        self.assertTrue(body.endswith("+4 more"))
+        self.assertEqual(title, "9 games confirmed leaving in 6 days")
+        self.assertTrue(body.endswith("+5 more"))
         self.assertNotIn("—", title + body)
 
     def test_store_reads_the_last_ingest(self):

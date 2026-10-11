@@ -131,7 +131,7 @@ class Ownership(unittest.TestCase):
         ew = [r for r in d["confirmed"] if r["game"] == "Evil West"][0]
         self.assertEqual(ew["verdict"], "Owned on PlayStation")
         self.assertIn("10/20 trophies", ew["progress"])
-        self.assertTrue(d["summary"]["takeaway"].startswith("8 games leave Oct 15 and you own 1 of them on PlayStation."))
+        self.assertTrue(d["summary"]["takeaway"].startswith("9 games leave Oct 15 and you own 1 of them on PlayStation."))
 
     def test_one_service_list_skips_owned_and_claimed(self):
         d = assemble(CFG_PS, sheet.parse(TABS, "2026-10-09T08:46:00"), FORECAST, {"games": {}}, TODAY, TODAY,

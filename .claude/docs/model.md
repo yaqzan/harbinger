@@ -39,9 +39,10 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 - Bands: Likely >= 45%, Possible 25-44%, Thin < 25%.
 - Confirmed means a trusted outlet named it (`[waves] trusted_sources`: Xbox Wire, Pure Xbox) or it's
   on the sheet's Leaving Soon tab. Anything only another outlet reports (Insider Gaming's Superball,
-  2026-10-09) shows tagged unverified and stays out of the counts. A `[[manual_confirmed]]` entry with
-  `free_to_play = true` (Superball, Free+ on the store) gets the verdict "Free to play: only Game Pass
-  perks end" instead of a Doable/Tight/Too late verdict, since the game stays after the wave. The subagent once labelled an
+  2026-10-09) shows tagged unverified and stays out of the counts. A `[[manual_confirmed]]` entry is
+  unverified unless the owner sets `confirmed = true` after checking the source (Superball, 2026-10-11).
+  `free_to_play = true` (Free+ on the store) gives the verdict "Free to play: only Game Pass perks end"
+  instead of Doable/Tight/Too late, since the game stays after the wave. The subagent once labelled an
   Insider Gaming report as confirmed, so this is enforced in code, not only in the prompt.
 - Announced wave: once a wave has verified confirmed leavers, unnamed games on that wave survived
   it and move to their next checkpoint (and into "Passed a checkpoint quietly").

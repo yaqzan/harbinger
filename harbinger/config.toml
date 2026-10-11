@@ -135,11 +135,13 @@ gone = []
 tracking = []
 beaten = []
 
-# Leavers reported somewhere but not on the sheet. Shown, flagged unverified.
+# Leavers reported somewhere but not on the sheet. Shown as unverified unless `confirmed = true`
+# (the owner has checked the source). Confirmed rows count and get the solid ring.
 [[manual_confirmed]]
 game = "Superball"
 wave = "2026-10-15"
-source = "Insider Gaming only; not on the sheet"
+source = "Xbox store page and Khel Now / TalkeSport reports"
+confirmed = true
 free_to_play = true   # Free+ on the store: the game stays after the wave, only Game Pass perks end
 
 [played]

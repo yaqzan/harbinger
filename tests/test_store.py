@@ -217,7 +217,7 @@ class ConsoleScope(unittest.TestCase):
         cfg = dict(CFG, queue={"tracking": ["Only On PC"], "gone": []})
         fc = dict(FORECAST, confirmed=[{"game": "Only On PC", "wave": "2026-10-31", "source": "Xbox Wire"}])
         d = assemble(cfg, self.sheet, fc, {"games": {}}, TODAY, TODAY)
-        self.assertEqual(d["summary"]["confirmed_count"], 7)  # Nova Roma is PC Game Pass only
+        self.assertEqual(d["summary"]["confirmed_count"], 8)  # Nova Roma is PC Game Pass only
         self.assertNotIn("Only On PC", [r["game"] for r in d["confirmed"] + d["watchlist"]])
         self.assertEqual(d["queue"][0]["state"], "PC only")
 

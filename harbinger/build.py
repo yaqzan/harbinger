@@ -153,7 +153,7 @@ def confirmed_rows(cx: Context) -> list[dict]:
         key = norm(m["game"])
         if key not in entries and not cx.pc_only(m["game"]):
             entries[key] = {"g": cx.by_key.get(key), "name": m["game"], "wave": date.fromisoformat(m["wave"]),
-                            "source": m["source"], "verified": False, "free": bool(m.get("free_to_play"))}
+                            "source": m["source"], "verified": bool(m.get("confirmed")), "free": bool(m.get("free_to_play"))}
     rows = []
     for key, e in entries.items():
         wave = e["wave"]
