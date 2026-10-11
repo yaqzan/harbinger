@@ -129,6 +129,16 @@ retry_days = 14     # look again for a game with no Steam app
 pause_s = 0.3       # between calls
 min_reviews = 10    # fewer reviews than this show no score
 
+[taste]
+# "For you": a 1-5 guess at the stars you'd give a game, a line fitted on the games you rated
+# ([played] score_field) over a blend of the review scores and the game's hours to 100%. Each
+# score is first scaled against the library's own average and spread. Weights from the owner's
+# 208 rated games (2026-10-11): user scores beat critics, Steam adds little. See taste.py.
+enabled = true
+min_rated = 30     # fewer rated games than this: no For you score on the page
+weights = { mc = 0.3, us = 0.6, rating = 0.1 }
+hours_cap = 40     # longer games count as this long (ratings rose up to ~20 h, then went flat)
+
 # Your watched games: set them in config.local.toml, not here.
 [queue]
 gone = []
@@ -152,6 +162,7 @@ free_to_play = true   # Free+ on the store: the game stays after the wave, only 
 notes_dir = ""
 types = ["PC", "Deck", "IOS", "PS5", "PS4", "PS3", "PS2", "PS1", "Vita", "PSP", "Xbox Series X", "Xbox One",
          "Xbox 360", "Switch", "WiiU", "Wii", "3DS", "DS", "GBA", "Gamecube"]
+score_field = "Score /5"   # the frontmatter field holding your 1-5 rating (stars or a digit); trains [taste]
 
 [played.status]
 Current = "playing"

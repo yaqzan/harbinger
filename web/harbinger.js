@@ -155,6 +155,7 @@
     if (r.mc != null) facts.push(["Metacritic", String(Math.round(r.mc))]);
     if (r.rating != null) facts.push(["Steam reviews", `${r.rating}% positive of ${r.reviews.toLocaleString()}`]);
     if (r.us != null) facts.push(["PlayStation users", `${r.us.toFixed(1)} of 10`]);
+    if (r.taste != null) facts.push(["For you", tasteText(r.taste, data.taste)]);
     if (r.genre) facts.push(["Genre", r.genre]);
     if (r.year) facts.push(["Released", String(r.year)]);
     if (r.why) facts.push(["Why", r.why]);
@@ -207,6 +208,10 @@
     const k = Math.min(1, (r.p ?? 0) / 0.6);  // 60% and up glows at full strength
     c.style.boxShadow = `0 0 ${Math.round(4 + 18 * k)}px ${Math.round(3 * k)}px ${hsl(h, (r.backup ? 0.1 : 0.2) + (r.backup ? 0.25 : 0.7) * k)}`;
   };
+
+  // For you (taste.py): brighter gold from 3.8 stars, muted under 3.3
+  const tasteCls = (v) => (v >= 3.75 ? "hi" : v >= 3.25 ? "mid" : "lo");
+  const tasteText = (v, meta) => `${v.toFixed(1)} of 5 stars` + (meta && meta.rated ? `, guessed from the ${meta.rated} games you rated` : "");
 
   // Mini logos for where you can still play a dimmed game. Paths: Simple Icons (CC0), 24x24.
   const LOGO = {
@@ -284,6 +289,14 @@
     b.title = steam ? `Steam reviews: ${r.rating}% positive${r.reviews ? ` of ${r.reviews.toLocaleString()}` : ""}` : `PlayStation user score: ${r.us.toFixed(1)} of 10`;
     return b;
   };
+  // For you: the stars you'd likely give it (taste.py, fitted on your own ratings), a gold star
+  // and one decimal, brighter the higher it is
+  const tasteBox = (r) => {
+    if (r.taste == null) return null;
+    const b = el("span", `tk ${tasteCls(r.taste)}`, `★${r.taste.toFixed(1)}`);
+    b.title = `For you: ${r.taste.toFixed(1)} of 5 stars`;
+    return b;
+  };
   const facts = (r) => [
     isClaim(r) ? "Monthly game" : "",
     [r.genre, r.year].filter(Boolean).join(" "),
@@ -335,6 +348,7 @@
         const sub = el("div", "m-facts");  // the ratings lead the second line: critic, then audience
         sub.appendChild(mcBox(r));
         const us = userBox(r); if (us) sub.appendChild(us);
+        const tk = tasteBox(r); if (tk) sub.appendChild(tk);
         sub.appendChild(el("span", "tx", facts(r)));
         info.appendChild(sub);
         row.appendChild(info);

@@ -53,10 +53,31 @@ class Notes(unittest.TestCase):
             played.import_notes(db, cfg)
         self.assertEqual([(m["source"], m["title"]) for m in played.load(db)], [("manual", "Hades")])
 
+    def test_star_rating_is_read_and_stored(self):
+        self.assertEqual([played.stars(v) for v in ("⭐️" * 4, "3", "4/5", "", "great", "⭐" * 6)],
+                         [4, 3, 4, None, None, None])
+        fm = played.frontmatter('---\nType: "PC"\nScore /5: "⭐⭐"\n---\n')
+        self.assertEqual(fm["Score /5"], "⭐⭐")
+        db = sqlite3.connect(":memory:")
+        db.executescript(played.SCHEMA)
+        with tempfile.TemporaryDirectory() as d:
+            note(Path(d), "Nine Sols", '---\nType: "PC"\nStatus: "Finished"\nScore /5: "⭐⭐⭐⭐⭐"\n---\n')
+            note(Path(d), "Hades", '---\nType: "PC"\nStatus: "Finished"\n---\n')
+            played.import_notes(db, {"played": {"notes_dir": d, "types": ["PC"], "status": {"Finished": "played"}}})
+        self.assertEqual(sorted((m["title"], m["stars"]) for m in played.load(db)), [("Hades", None), ("Nine Sols", 5)])
+
+    def test_migrate_adds_the_stars_column(self):
+        db = sqlite3.connect(":memory:")
+        db.execute("CREATE TABLE played_mark (source TEXT, key TEXT, title TEXT, status TEXT, platform TEXT, updated_at TEXT)")
+        db.execute("INSERT INTO played_mark VALUES ('manual', 'x', 'X', 'played', NULL, 'now')")
+        played.migrate(db)
+        played.migrate(db)  # twice is harmless
+        self.assertEqual(played.load(db)[0]["stars"], None)
+
     def test_missing_folder_keeps_the_last_import(self):
         db = sqlite3.connect(":memory:")
         db.executescript(played.SCHEMA)
-        db.execute("INSERT INTO played_mark VALUES ('notes', 'x', 'X', 'played', 'PC', 'now')")
+        db.execute("INSERT INTO played_mark (source, key, title, status, platform, updated_at) VALUES ('notes', 'x', 'X', 'played', 'PC', 'now')")
         msg = played.import_notes(db, {"played": {"notes_dir": "C:/no/such/folder"}})
         self.assertIn("kept the last import", msg)
         self.assertEqual(len(played.load(db)), 1)

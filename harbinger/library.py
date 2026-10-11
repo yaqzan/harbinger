@@ -110,6 +110,9 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None
     row_of = lambda name: k if (k := place(name)) in out else rows_ix.lookup(name, loose=False)[0]
     for k, st in played_mod.resolve(marks or [], row_of).items():
         out[k]["mark"] = st
+    for m in marks or []:  # your star ratings train taste.py, which drops them before publishing
+        if m.get("stars") and (k := row_of(m["title"])):
+            out[k].setdefault("stars", m["stars"])
     if unmatched is not None:
         unmatched.extend(played_mod.report(marks or [], row_of))
 
@@ -131,7 +134,7 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None
     return sorted(out.values(), key=lambda r: r["game"].lower())
 
 
-SHARED = ("mc", "us", "rating", "reviews", "genre", "year", "appid")
+SHARED = ("mc", "us", "rating", "reviews", "taste", "genre", "year", "appid")
 
 
 def annotate(one: dict, library: list[dict]) -> None:

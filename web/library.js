@@ -49,6 +49,10 @@
   const rows = lib.rows;
   const hasPs = lib.ps_tier && lib.ps_tier !== "none";
 
+  // For you (taste.py; the same as harbinger.js): brighter gold from 3.8 stars, muted under 3.3
+  const tasteCls = (v) => (v >= 3.75 ? "hi" : v >= 3.25 ? "mid" : "lo");
+  const tasteText = (v, meta) => `${v.toFixed(1)} of 5 stars` + (meta && meta.rated ? `, guessed from the ${meta.rated} games you rated` : "");
+
   // ── halo and platform logos: the same rules as the leaving page (harbinger.js) ──
   // Paths: Simple Icons (CC0), 24x24.
   const LOGO = {
@@ -210,11 +214,12 @@
   if (!rows.some(done)) ctl.sp.parentElement.hidden = true;
   if (!hasPs) ctl.sort.querySelector('[value="us"]').remove();
 
-  const METRIC = { mc: (r) => r.mc, rating: (r) => r.rating, us: (r) => r.us, hours: (r) => r.hours, hoursd: (r) => r.hours, year: (r) => r.year };
+  const METRIC = { mc: (r) => r.mc, rating: (r) => r.rating, us: (r) => r.us, taste: (r) => r.taste, hours: (r) => r.hours, hoursd: (r) => r.hours, year: (r) => r.year };
   const SORT = {
     mc: (a, b) => b.mc - a.mc || (b.rating ?? 0) - (a.rating ?? 0),
     rating: (a, b) => b.rating - a.rating || (b.reviews ?? 0) - (a.reviews ?? 0),
     us: (a, b) => b.us - a.us,
+    taste: (a, b) => b.taste - a.taste || (b.mc ?? 0) - (a.mc ?? 0),
     hours: (a, b) => a.hours - b.hours,
     hoursd: (a, b) => b.hours - a.hours,
     year: (a, b) => b.year - a.year,
@@ -243,8 +248,8 @@
     return svg;
   };
   const CLOCK = "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1.1-1.8-3.5-2.1V6.5z";
-  // the scores, stacked top right: Metacritic, Steam reviews, and the PlayStation user score
-  // when that's the sort
+  // the scores, stacked top right: Metacritic, Steam reviews, the PlayStation user score when
+  // that's the sort, then For you (the stars you'd likely give it, learned from your own ratings)
   const scores = (r) => {
     const box = el("span", "scs");
     if (r.mc != null) box.appendChild(el("span", `sc mcs ${mcCls(Math.round(r.mc))}`, String(Math.round(r.mc))));
@@ -257,6 +262,11 @@
     if (ctl.sort.value === "us" && r.us != null) {
       const c = el("span", "sc pu");
       c.append(icon(LOGO.playstation[1]), r.us.toFixed(1));
+      box.appendChild(c);
+    }
+    if (r.taste != null) {
+      const c = el("span", `sc tk ${tasteCls(r.taste)}`, `★${r.taste.toFixed(1)}`);
+      c.title = `For you: ${r.taste.toFixed(1)} of 5 stars`;
       box.appendChild(c);
     }
     return box;
@@ -318,6 +328,7 @@
     if (r.mc != null) facts.push(["Metacritic", String(Math.round(r.mc)), `mcs ${mcCls(Math.round(r.mc))}`]);
     if (r.rating != null) facts.push(["Steam reviews", `${r.rating}% positive of ${r.reviews.toLocaleString()}`]);
     if (r.us != null) facts.push(["PlayStation users", `${r.us.toFixed(1)} of 10`]);
+    if (r.taste != null) facts.push(["For you", tasteText(r.taste, lib.taste)]);
     if (r.hours != null) facts.push(["To 100%", `${r.hours} h`]);
     if (r.mark) facts.push(["You", MARK[r.mark]]);
     if (r.played) facts.push(["You played", `${r.played} h`]);

@@ -123,6 +123,15 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   other tiers, Games with Gold), then Steam's store copy (`appdetails` filters=metacritic, only asked
   for games still without one, cached in `steam_rating.metacritic`). PlayStation user score = the PS
   sheet's User score, any row. Steam reviews = appreviews. Nothing else is scraped.
+- **For you** (`taste.py`, field `taste`, gold ★ chip after the audience score on board, tiles and
+  detail; a Library sort): the stars you'd likely give a game, 1-5. Refitted every build on the
+  library rows that carry your note stars: `stars = a + b*blend + c*ln(hours to 100%)`, blend =
+  `[taste] weights` over each score in SDs from the library's mean. Hours capped at `hours_cap` (40;
+  uncapped, 600-hour live games topped the list). Under `min_rated` rated games: no score. Your stars
+  are popped before publishing; only `taste` and `{rated}` reach the JSON. Why these inputs (owner,
+  2026-10-11, 208 rated games): every review score alone barely beats your average (Spearman ~0.15;
+  you play well-reviewed games, so they can't sort further), PS user > Metacritic > Steam, and length
+  helped most; leave-one-out error 0.72 -> 0.67 stars. Expect a narrow 2.5-4.0 spread.
 - Cover art for the library comes through the same `art.wanted()` list, after the leaving games, so
   at 150 a run the library waits weeks for a first fill. The 2026-10-10 backfill ran `steam` once with
   the budget lifted (patch `art.settings`): 1,747 coverless library games down to 165, mostly old
@@ -134,7 +143,8 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   in the frontmatter (the owner's Obsidian Reading List, `Reading List/Media`; path in
   config.local.toml `[played] notes_dir`). `[played] types` = which Types are games,
   `[played.status]` maps Current/Finished/Dropped to playing/played/dropped (Not Started is skipped).
-  Each import replaces every `notes` row; a missing folder keeps the last one.
+  Each import replaces every `notes` row; a missing folder keeps the last one. `stars` = the note's
+  `[played] score_field` ("Score /5": star emoji or a digit), trains For you, never published.
 - `manual` = `harbinger played "Title" <status>`, wins over the notes for that game; `unplayed`
   overrides a note, `auto` deletes the manual row. `[queue] beaten` counts as played (lowest).
 - Strict matching only (no prefix/fuzzy): a wrong match would hide an unplayed game. Library rows

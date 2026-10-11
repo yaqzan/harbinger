@@ -9,6 +9,9 @@ Two sources, one table (`played_mark`):
 - `manual`: `py -3.11 -m harbinger played "Title" played|playing|dropped|unplayed`. A manual mark
   beats the notes for the same game (`unplayed` overrides a note), and `auto` deletes it.
 
+A note's star rating (`[played] score_field`, "Score /5": 1-5 stars or a digit) is kept in `stars`;
+taste.py learns from it how your ratings follow the review scores.
+
 A mark lands on a game by strict title match (no prefix or fuzzy rungs, like Steam): a wrong match
 would hide a game you haven't played. `resolve` turns the marks into one status per row key.
 """
@@ -30,6 +33,7 @@ CREATE TABLE IF NOT EXISTS played_mark (
   status TEXT NOT NULL,      -- played | playing | dropped | unplayed (manual only: overrides a note)
   platform TEXT,             -- the note's Type (PS5, Switch, ...)
   updated_at TEXT NOT NULL,
+  stars INTEGER,             -- the note's 1-5 rating, NULL when it has none
   PRIMARY KEY (source, key)
 );
 """
@@ -40,12 +44,26 @@ SOURCES = ("manual", "notes", "config")  # first wins for the same game ("config
 RANK = {"playing": 0, "played": 1, "dropped": 2, "unplayed": 3}  # two titles of one source on one game
 
 _FRONT = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.S)
-_LINE = re.compile(r"^([A-Za-z][\w ]*):[ \t]*(.*?)\s*$", re.M)
+_LINE = re.compile(r"^([A-Za-z][\w /]*):[ \t]*(.*?)\s*$", re.M)
+
+
+def migrate(db: sqlite3.Connection) -> None:
+    if "stars" not in {r[1] for r in db.execute("PRAGMA table_info(played_mark)")}:
+        db.execute("ALTER TABLE played_mark ADD COLUMN stars INTEGER")
+
+
+def stars(value: str) -> int | None:
+    """'⭐️⭐️⭐️⭐️' or '4' or '4/5' -> 4; anything else -> None."""
+    n = value.count("⭐")
+    if not n and (m := re.match(r"\s*([1-5])\b", value)):
+        n = int(m.group(1))
+    return n if 1 <= n <= 5 else None
 
 
 def settings(cfg: dict) -> dict:
     p = cfg.get("played", {})
     return {"notes_dir": p.get("notes_dir", ""), "types": set(p.get("types", ())),
+            "score_field": p.get("score_field", "Score /5"),
             "status": {k.lower(): v for k, v in p.get("status", {}).items()},
             "same": {norm(k): v for k, v in p.get("same", {}).items()}}
 
@@ -58,8 +76,8 @@ def frontmatter(text: str) -> dict[str, str]:
     return {k: v.strip().strip('"').strip("'") for k, v in _LINE.findall(m.group(1)) if v.strip()}
 
 
-def read_notes(folder: Path, types: set[str], status_map: dict[str, str]) -> list[dict]:
-    """[{title, status, platform}] for every game note with a mapped Status. The title is the
+def read_notes(folder: Path, types: set[str], status_map: dict[str, str], score_field: str = "Score /5") -> list[dict]:
+    """[{title, status, platform, stars}] for every game note with a mapped Status. The title is the
     note's `Title` property, else its file name."""
     out = []
     for path in sorted(folder.rglob("*.md")):
@@ -72,7 +90,7 @@ def read_notes(folder: Path, types: set[str], status_map: dict[str, str]) -> lis
             continue
         title = fm.get("Title") or path.stem
         if norm(title):
-            out.append({"title": title, "status": st, "platform": fm["Type"]})
+            out.append({"title": title, "status": st, "platform": fm["Type"], "stars": stars(fm.get(score_field, ""))})
     return out
 
 
@@ -83,16 +101,19 @@ def import_notes(db: sqlite3.Connection, cfg: dict) -> str:
     folder = Path(s["notes_dir"])
     if not folder.is_dir():
         return f"played: notes folder not found ({folder}), kept the last import"
-    notes = read_notes(folder, s["types"], s["status"])
+    notes = read_notes(folder, s["types"], s["status"], s["score_field"])
     now = datetime.now().isoformat(timespec="seconds")
     rows = {}
     for n in notes:
         k = norm(n["title"])
         if k not in rows or RANK[n["status"]] < RANK[rows[k][3]]:
-            rows[k] = ("notes", k, n["title"], n["status"], n["platform"], now)
+            rows[k] = ("notes", k, n["title"], n["status"], n["platform"], now, n["stars"] or (rows[k][6] if k in rows else None))
+        elif n["stars"] and not rows[k][6]:
+            rows[k] = rows[k][:6] + (n["stars"],)
     with db:
         db.execute("DELETE FROM played_mark WHERE source = 'notes'")
-        db.executemany("INSERT INTO played_mark VALUES (?, ?, ?, ?, ?, ?)", rows.values())
+        db.executemany("INSERT INTO played_mark (source, key, title, status, platform, updated_at, stars)"
+                       " VALUES (?, ?, ?, ?, ?, ?, ?)", rows.values())
     count = {st: sum(r[3] == st for r in rows.values()) for st in ("played", "playing", "dropped")}
     return "played: " + ", ".join(f"{n} {st}" for st, n in count.items()) + " from notes"
 
@@ -103,15 +124,16 @@ def mark(db: sqlite3.Connection, title: str, status: str) -> None:
     with db:
         db.execute("DELETE FROM played_mark WHERE source = 'manual' AND key = ?", (k,))
         if status != "auto":
-            db.execute("INSERT INTO played_mark VALUES ('manual', ?, ?, ?, NULL, ?)",
+            db.execute("INSERT INTO played_mark (source, key, title, status, platform, updated_at)"
+                       " VALUES ('manual', ?, ?, ?, NULL, ?)",
                        (k, title, status, datetime.now().isoformat(timespec="seconds")))
 
 
 def load(db: sqlite3.Connection, cfg: dict | None = None) -> list[dict]:
     """Every mark; a title in [played.same] is looked up under the name it maps to."""
     same = settings(cfg or {})["same"]
-    return [{"source": s, "title": same.get(norm(t), t), "status": st, "platform": p}
-            for s, t, st, p in db.execute("SELECT source, title, status, platform FROM played_mark")]
+    return [{"source": s, "title": same.get(norm(t), t), "status": st, "platform": p, "stars": n}
+            for s, t, st, p, n in db.execute("SELECT source, title, status, platform, stars FROM played_mark")]
 
 
 def resolve(marks: list[dict], key_of) -> dict[str, str]:

@@ -21,6 +21,7 @@ from datetime import date, datetime
 from . import LIBRARY_FILE, OUTPUT_FILE, STATE_DIR, load_config, store
 from . import library as library_mod
 from . import ratings as ratings_mod
+from . import taste as taste_mod
 from . import art as art_mod
 from . import forecast as fc_mod
 from . import played as played_mod
@@ -108,6 +109,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     if sync_steam:
         notes.append(ratings_mod.fetch(db, ratings_mod.wanted(data["library"]), cfg))
     ratings_mod.attach(data["library"], ratings_mod.load(db, ratings_mod.settings(cfg)["min_reviews"]))
+    data["taste"] = taste_mod.attach(data["library"], cfg)  # needs the Steam scores above
     library_mod.annotate(data["one_service"], data["library"])
     base_at, base = store.baseline(db, kind)
     _apply_deltas(data, base_at, base)
@@ -130,7 +132,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     lib = data.pop("library")
     unmatched = data.pop("played_unmatched")  # your notes' titles: printed by `played`, never published
     for path, body, indent in ((LIBRARY_FILE, {"generated_at": data["generated_at"], "ps_tier": data["one_service"]["ps_tier"],
-                                               "play": data["play"], "rows": lib}, None), (OUTPUT_FILE, data, 1)):
+                                               "play": data["play"], "taste": data["taste"], "rows": lib}, None), (OUTPUT_FILE, data, 1)):
         tmp = path.with_suffix(".tmp")
         tmp.write_text(json.dumps(body, indent=indent, separators=(",", ":") if indent is None else None), encoding="utf-8")
         tmp.replace(path)

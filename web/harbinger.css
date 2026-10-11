@@ -266,6 +266,12 @@ td .dots { margin-right: 2px; }
 .us.pos { color: #66c0f4; }
 .us.mix { color: #c9b07a; }
 .us.neg { color: #e0703c; }
+/* For you: the stars you'd likely give it, a gold star on a dark pill (no ring: it's yours, not a store's) */
+.tk { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 35px; height: 24px; padding: 0 5px; border-radius: 5px;
+  background: #2a2412; font-size: .8rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; white-space: nowrap; }
+.tk.hi { color: #ffd34d; }
+.tk.mid { color: #c9a94a; }
+.tk.lo { color: #8a7d5a; }
 .m-fit .bar { display: block; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
 .m-fit .bar i { display: block; height: 100%; }
 .m-fit .bar.unk { background: repeating-linear-gradient(90deg, var(--thin) 0 3px, transparent 3px 6px); opacity: .6; }
@@ -304,6 +310,7 @@ td .dots { margin-right: 2px; }
   .mc { height: 21px; min-width: 31px; font-size: .74rem; }
   .us { height: 21px; min-width: 31px; font-size: .72rem; padding: 0 3px; }
   .us svg { width: 8px; height: 8px; }
+  .tk { height: 21px; min-width: 31px; font-size: .72rem; padding: 0 3px; }
   .m-facts { font-size: .74rem; }
 }
 
@@ -422,6 +429,7 @@ html:has(dialog[open]) { overflow: hidden; }
 .sc.st.mixed { color: #d7bb84; }
 .sc.st.bad { color: #ef7a5a; }
 .sc.pu { color: #7ee2a0; }
+.sc.tk { min-width: 0; height: auto; padding: 0 3px; font-size: .7rem; border-radius: 4px; background: rgba(0, 0, 0, .8); }
 /* foot: a dark fade up from the bottom edge carries hours, your mark and the exit date */
 .tile.lib .foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; border-radius: 0 0 6px 6px; overflow: hidden;
   background: linear-gradient(to top, rgba(0, 0, 0, .88), rgba(0, 0, 0, .62) 55%, rgba(0, 0, 0, 0)); padding-top: 18px; pointer-events: none; }

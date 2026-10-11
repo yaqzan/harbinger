@@ -45,6 +45,7 @@ def connect(path=DB_FILE) -> sqlite3.Connection:
         db.executescript(schema)
     psn.migrate(db)
     ratings.migrate(db)
+    played.migrate(db)
     return db
 
 
