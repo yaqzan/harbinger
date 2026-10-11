@@ -64,6 +64,10 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
 - `psn_trophy_detail`: every trophy (name, grade, earned + date, rarity % of players, Sony's
   rarity tier). Fetched only for lists whose `last_updated` moved since `psn_trophy.detail_for`
   (up to 120 lists a run, 2 calls each, 0.2 s apart). First fetch: 90 lists, 4,164 trophies, 94 s.
+- Trophy lists join games by exact normalised title, so a list named differently from its game
+  ("Marvel's Spider-Man Remastered" vs "Marvel's Spider-Man") gets no progress (ticket: Match PSN
+  trophy lists to renamed games). A trophy list hidden on the account is invisible to the API: a
+  played game with no list is probably hidden (owner unhides it on the console).
 - `psn_game`: purchased (membership NONE = bought, PS_PLUS = claimed through PS Plus) and played
   (playtime, service none / none_purchased / ps_plus). `psn_trophy`: progress and counts per
   trophy list. `psn_history`: playtime / progress moves.

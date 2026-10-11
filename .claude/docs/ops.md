@@ -18,7 +18,7 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
   (holds the UUID and hostname); the repo ships `cloudflared-config.example.yml`.
 - **Tasks** (`ops/windows/install-tasks.ps1 -Controller C:\Development\server.ps1`):
   - "Harbinger Watchdog" every 5 min (unelevated falls back to schtasks, no at-logon trigger).
-  - "Harbinger Ingest" fires at 06:30, 09:30, 12:30, 15:30, 18:30 local with `--if-due`
+  - "Harbinger Ingest" fires at 06:30, 09:30, 12:30, 15:30, 18:30 local (this box is Eastern; a fork elsewhere should shift them) with `--if-due`
     (`harbinger/schedule.py`): the first tick each day always runs; later ticks run only while a
     wave is inside `[waves] notice_window` without its list. Once the list is in, they go quiet.
     It syncs Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it).
