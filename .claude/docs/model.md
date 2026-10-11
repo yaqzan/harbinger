@@ -129,8 +129,9 @@ navy pill with the Steam logo and the review % in Steam's colours, blue 70%+ / t
 below; else the PS logo and the PS user score on the same scale x10), then genre and year. The
 remark carries when and how sure: "Leaves Oct 31 · 53% likely" / "· confirmed" (the start-by
 group already says how soon), coloured by certainty, not fit (2026-10-10): coral mixed into the muted
-grey from 25% to 100% as the odds go 0 to 60%, full and bold when confirmed, one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Likely and up by
-default), how far ahead (8 weeks by default), two switches for the dimmed games (games you own; games on both services), off by default
+grey from 25% to 100% as the odds go 0 to 60%, full and bold when confirmed, one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Possible and up by
+default), how far ahead (6 months by default). Owner 2026-10-11: was Likely / 8 weeks; Likely
+never reaches past the forecast's waves, so a longer range only shows more with Possible too, two switches for the dimmed games (games you own; games on both services), off by default
 (owner, 2026-10-10) and animated: hiding shrinks them out and slides the rest together, showing the
 reverse (FLIP over `data-k` keys in `animatedDraw`; skipped under reduced motion). A tile or row opens a detail
 sheet. Days left, hours you have, start-by and the fit bar are computed in the browser against

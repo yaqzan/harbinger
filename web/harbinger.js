@@ -376,7 +376,7 @@
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = () => {
-    $("fbtn").dataset.n = [ctl.fs.value !== "", ctl.fb.value !== "2", ctl.fr.value !== "56", ctl.so.checked, ctl.sb.checked, ctl.sp.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [ctl.fs.value !== "", ctl.fb.value !== "3", ctl.fr.value !== "183", ctl.so.checked, ctl.sb.checked, ctl.sp.checked].filter(Boolean).length;
     const rows = shown();
     const hid = ctl.sp.checked ? 0 : shown(true).length - rows.length;
     $("count").textContent = `${rows.length} game${rows.length === 1 ? "" : "s"}${hid ? ` · ${hid} played hidden` : ""}`;
