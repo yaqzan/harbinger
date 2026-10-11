@@ -47,6 +47,11 @@ tracking = [
 ]
 gone = []
 beaten = []
+# xbox_only: games whose save is on Xbox. A Steam/PlayStation copy or the PS Plus copy then
+#   doesn't count as a backup, and its progress doesn't shrink the hours.
+# hours_left: your own estimate of the hours left, beating the sheet and library progress.
+xbox_only = []
+hours_left = {}   # e.g. { "Nine Sols" = 12, "Hades" = 8 }
 
 [played]
 # Optional: a folder of notes, one per game, with Type (PS5, PC, Switch...) and Status (Current,

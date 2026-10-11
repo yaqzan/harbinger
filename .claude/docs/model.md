@@ -52,6 +52,10 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
 - Queue push stage (`queue_stage`): heads-up from `[alerts] lead_days` before start-by, start from
   start-by on. Unknown hours count as 0. Each queued game is judged alone; nothing sequences the
   queue yet, so overlapping windows aren't flagged (Play plan ticket).
+- Personal overrides (`config.local.toml` `[queue]`, 2026-10-10): `xbox_only` drops a game's Steam/PSN
+  ownership and its PS Plus copy (the save is on Xbox, so neither is a backup); `hours_left` is
+  your own hours left and beats the sheet, `[hours]` and library progress everywhere (queue note
+  "your hours"). Owner's Nine Sols: 12 h (Eigong on Standard + a Story Mode cleanup run).
 - Queue across services (`build.queue_rows`, 2026-10-09): a name is looked up on Game Pass, then
   your PS Plus tier (`PsSide`, shared with the one-service list). A game on both follows the copy
   that is safe for longer: a next wave under `[alerts] min_p` counts as none in sight (Indika's 5%
