@@ -253,12 +253,12 @@
   // two weeks and a 120 h game leaving in three months can be due the same week. Start-by is
   // model.start_by (exit, minus the weeks of play, minus the buffer); claims are due on their date.
   const startGroup = (r) => {
-    if (isClaim(r)) return { key: String(t(r.wave)), at: t(r.wave), label: fmt(t(r.wave)), sub: `start by, ${inDays(days(r))}` };
+    if (isClaim(r)) return { key: String(t(r.wave)), at: t(r.wave), pre: "Start by", label: fmt(t(r.wave)), sub: inDays(days(r)) };
     // Won't fit sits above Start now: the page lands on Start now and peeks at it (landOnStart)
     if (r.hours > avail(r)) return { key: "late", at: -2, label: "Won't fit", sub: "not even starting today" };
     const sb = startBy(r);
     if (sb <= T0) return { key: "now", at: -1, label: "Start now", sub: "the start-by date has passed" };
-    return { key: String(sb), at: sb, label: fmt(sb), sub: `start by, ${inDays(Math.round((sb - T0) / DAY))}` };
+    return { key: String(sb), at: sb, pre: "Start by", label: fmt(sb), sub: inDays(Math.round((sb - T0) / DAY)) };
   };
   // Metacritic in Metacritic's own colours: green 75+, yellow 50 to 74, red under 50
   const mcBox = (r) => {
@@ -316,6 +316,7 @@
       const its = gr0.its.sort((a, b) => !!a.backup - !!b.backup || a.wave.localeCompare(b.wave) || (b.p ?? 0) - (a.p ?? 0));
       const grp = el("div", "m-group"), head = el("div", "m-date");
       head.dataset.k = `h|${gr0.key}`;
+      if (gr0.pre) head.appendChild(el("small", null, gr0.pre));  // "Start by" reads above the date, never after it
       head.appendChild(el("b", null, gr0.label));
       head.appendChild(el("span", null, gr0.sub));
       grp.appendChild(head);

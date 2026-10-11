@@ -232,6 +232,7 @@ td .dots { margin-right: 2px; }
 .metro { display: grid; gap: .25rem; }
 .m-group { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0 .9rem; }
 .m-date { padding-top: .9rem; }
+.m-date small { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-bottom: .15rem; }
 .m-date b { display: block; font-size: 1.35rem; font-weight: 800; line-height: 1.05; }
 .m-date span { display: block; color: var(--muted); font-size: .76rem; margin-top: .2rem; }
 .m-line { border-left: 3px solid var(--rule); margin: .5rem 0; padding: 2px 0; }
@@ -288,7 +289,7 @@ td .dots { margin-right: 2px; }
 @media (max-width: 640px) {
   .m-group { grid-template-columns: 1fr; }
   .m-date { display: flex; align-items: baseline; gap: .6rem; padding-top: .9rem; }
-  .m-date span { margin: 0; }
+  .m-date span, .m-date small { margin: 0; }
   .m-line { margin: .4rem 0 .4rem 6px; }
   .m-row { grid-template-columns: 46px minmax(0, 1fr) auto; grid-template-areas: "cv info info" "cv fit rm"; gap: .3rem .7rem; padding: 5px .2rem 5px 1.1rem; }
   .m-cv { grid-area: cv; width: 46px; height: 69px; }
