@@ -45,6 +45,15 @@ class Context:
                 key = self.match.key(r.get("name") or k, loose=False) or k
                 self.owned.setdefault(key, {"where": where, **r})
                 self.owned_on.setdefault(key, set()).add(where.lower())
+        q = cfg.get("queue", {})
+        # [queue] xbox_only: your save is on Xbox, so a Steam/PlayStation copy or a PS Plus copy
+        # is no backup. [queue] hours_left: your own hours left, beating the sheet and progress.
+        self.xbox_only = {self.match.key(n, loose=False) or norm(n) for n in q.get("xbox_only", [])}
+        for key in self.xbox_only:
+            self.owned.pop(key, None)
+            self.owned_on.pop(key, None)
+        self.hours_left = {self.match.key(n, loose=False) or norm(n): float(h)
+                           for n, h in q.get("hours_left", {}).items()}
         self.claimed = list((psn or {}).get("claimed", []))  # PS Plus games claimed into the library
         self.playing = (psn or {}).get("playing", {})          # every PS game you've played, owned or not
         # [hours] in titles.toml: researched hours for games the sheet leaves blank or doesn't list
@@ -52,6 +61,8 @@ class Context:
         for g in sheet.games + sheet.leaving:
             if g.hours is None and g.key in self.hours_fix:
                 g.hours = self.hours_fix[g.key]
+            if g.key in self.hours_left:
+                g.hours = self.hours_left[g.key]
         self.dpm = cfg["sheet"]["days_per_month"]
         self.cohorts = cfg["waves"]["cohorts"]
         self.play = cfg["play"]
@@ -100,7 +111,7 @@ class Context:
         share = s.get("share")  # Sony's grade-weighted trophy progress, when PlayStation has it
         if share is None and s.get("ach_total"):
             share = s["ach_done"] / s["ach_total"]
-        left = model.remaining_hours(hours, s.get("played_h"), share)
+        left = self.hours_left[key] if key in self.hours_left else model.remaining_hours(hours, s.get("played_h"), share)
         bits = [f"{s['played_h']:g} h played"] if s.get("played_h") else []
         if share is not None:
             bits.append(f"{s['ach_done']}/{s['ach_total']} {'trophies' if s['where'] != 'Steam' else 'achievements'}")
@@ -142,7 +153,7 @@ def confirmed_rows(cx: Context) -> list[dict]:
         key = norm(m["game"])
         if key not in entries and not cx.pc_only(m["game"]):
             entries[key] = {"g": cx.by_key.get(key), "name": m["game"], "wave": date.fromisoformat(m["wave"]),
-                            "source": m["source"], "verified": False}
+                            "source": m["source"], "verified": False, "free": bool(m.get("free_to_play"))}
     rows = []
     for key, e in entries.items():
         wave = e["wave"]
@@ -152,7 +163,12 @@ def confirmed_rows(cx: Context) -> list[dict]:
         sheet_hours = g.hours if g else cx.hours_fix.get(key)
         prog = cx.progress(key, sheet_hours)
         avail = model.hours_available(today, wave, cx.play["hours_per_week"])
-        verdict = f"Owned on {prog['where']}" if prog["owned"] else model.verdict(prog["hours"], avail, cx.play)
+        if prog["owned"]:
+            verdict = f"Owned on {prog['where']}"
+        elif e.get("free"):
+            verdict = "Free to play: only Game Pass perks end"  # the game stays, so no start-by deadline
+        else:
+            verdict = model.verdict(prog["hours"], avail, cx.play)
         if not e["verified"]:
             note = f"Unverified: {e['source']}"
         else:
@@ -328,7 +344,9 @@ def queue_rows(cx: Context, confirmed: list[dict], side: "PsSide | None" = None)
         if g is not None and g.key in cx.owned:
             _note(row, f"you own it on {cx.owned[g.key]['where']}")
         pg, on_gp = None, g is not None and (g.key in conf or g.status in ("Active", "Leaving Soon"))
-        if side and side.pm:  # the same game on PS Plus: strict, like the one-service list
+        if g is not None and g.key in cx.hours_left:
+            _note(row, "your hours")
+        if side and side.pm and not (g is not None and g.key in cx.xbox_only):  # the same game on PS Plus: strict, like the one-service list
             pg = side.find(g.name, loose=False) if g else None
             if pg is None and not on_gp and not cx.pc_only(name):
                 pg = side.find(name)
@@ -522,6 +540,7 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
     # both copies stay on the list.
     ps_leaving = {g.key for g in ps_games if g.status == "Leaving Soon"}
     both = {k: pk for k, pk in ((g.key, pm.key(g.name, loose=False)) for g in on_xbox.values()) if pk} if pm else {}
+    xbox_only_ps = {both.pop(k) for k in cx.xbox_only if k in both}  # their PS Plus copy is out entirely
     xbox_backup = {k for k, pk in both.items() if pk not in ps_leaving}   # Game Pass games safe on PS Plus
     ps_backup = {pk for k, pk in both.items() if k not in conf}           # PS Plus games safe on Game Pass
     owned_ps, claimed_ps = side.owned, side.claimed
@@ -575,6 +594,8 @@ def one_service_rows(cx: Context, confirmed: list[dict], ps: dict | None) -> dic
             backup = f"Also on {ps_name}"
         add(g.name, "Game Pass", xbox_out(key, g), g.hours, g.system, key=key, backup=backup, places=places)
     for g in ps_games:
+        if g.key in xbox_only_ps:
+            continue
         backup = ""
         on = side.owned_on.get(g.key, set())
         if g.key in owned_ps:

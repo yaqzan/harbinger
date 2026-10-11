@@ -140,6 +140,7 @@ beaten = []
 game = "Superball"
 wave = "2026-10-15"
 source = "Insider Gaming only; not on the sheet"
+free_to_play = true   # Free+ on the store: the game stays after the wave, only Game Pass perks end
 
 [played]
 # Games you've played, from a folder of Markdown notes (one per game, Type and Status in the
