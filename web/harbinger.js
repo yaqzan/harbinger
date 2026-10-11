@@ -280,7 +280,7 @@
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
     path.setAttribute("d", LOGO[steam ? "steam" : "playstation"][1]); svg.appendChild(path);
     b.appendChild(svg);
-    b.appendChild(el("b", null, steam ? `${r.rating}%` : r.us.toFixed(1)));
+    b.appendChild(el("b", null, steam ? String(r.rating) : r.us.toFixed(1)));  // no % sign: the pill stays as narrow as the Metacritic box
     b.title = steam ? `Steam reviews: ${r.rating}% positive${r.reviews ? ` of ${r.reviews.toLocaleString()}` : ""}` : `PlayStation user score: ${r.us.toFixed(1)} of 10`;
     return b;
   };

@@ -250,15 +250,17 @@ td .dots { margin-right: 2px; }
 .m-title .plat.steam svg { width: 12px; height: 12px; }
 .m-facts { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .8rem; margin-top: .35rem; min-width: 0; }
 .m-facts .tx { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.mc { flex: none; display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 5px; border-radius: 5px; font-weight: 800; font-size: .82rem; font-variant-numeric: tabular-nums; color: #111; }
+.mc { flex: none; display: inline-grid; place-items: center; min-width: 35px; height: 24px; padding: 0 5px; border-radius: 5px; font-weight: 800; font-size: .82rem; font-variant-numeric: tabular-nums; color: #111; }
 .mc.good { background: #66cc33; }
 .mc.mixed { background: #ffcc33; }
 .mc.bad { background: #ff4d4d; color: #fff; }
 .mc.none { background: none; border: 1.5px solid var(--rule); color: var(--muted); font-weight: 400; }
-/* the audience score: a navy pill with the store's logo, the number in the store's review colour */
-.us { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px 0 6px; border-radius: 999px;
-  background: #1b2838; border: 1.5px solid currentColor; font-size: .8rem; font-variant-numeric: tabular-nums; }
-.us svg { width: 13px; height: 13px; fill: #fff; flex: none; }
+/* the audience score: a navy pill with the store's logo, the number in the store's review colour.
+   Same min-width as .mc, so a two-digit score is exactly as wide as the Metacritic box; the ring is
+   an inset shadow so it adds no width. */
+.us { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 35px; height: 24px; padding: 0 4px; border-radius: 999px;
+  background: #1b2838; box-shadow: inset 0 0 0 1.5px currentColor; font-size: .8rem; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.us svg { width: 9px; height: 9px; fill: #fff; flex: none; }
 .us b { font-weight: 800; }
 .us.ps { background: #0b2552; }
 .us.pos { color: #66c0f4; }
@@ -299,9 +301,9 @@ td .dots { margin-right: 2px; }
   .m-rm { grid-area: rm; text-align: right; font-size: .78rem; white-space: nowrap; }
   .m-title { gap: 7px; }
   .m-title .gn { font-size: .9rem; }
-  .mc { height: 21px; min-width: 26px; font-size: .74rem; }
-  .us { height: 21px; font-size: .72rem; padding: 0 6px 0 5px; }
-  .us svg { width: 11px; height: 11px; }
+  .mc { height: 21px; min-width: 31px; font-size: .74rem; }
+  .us { height: 21px; min-width: 31px; font-size: .72rem; padding: 0 3px; }
+  .us svg { width: 8px; height: 8px; }
   .m-facts { font-size: .74rem; }
 }
 
@@ -412,12 +414,14 @@ html:has(dialog[open]) { overflow: hidden; }
 .scs { position: absolute; top: 5px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .sc { display: inline-flex; align-items: center; gap: 3px; font-size: .66rem; font-weight: 800; line-height: 1.45; padding: 0 5px; border-radius: 4px;
   font-variant-numeric: tabular-nums; background: rgba(0, 0, 0, .8); color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
-.sc.mcs { min-width: 0; font-size: .7rem; }
-.sc svg { width: 10px; height: 10px; fill: currentColor; flex: none; }
+.sc { justify-content: center; min-width: 31px; }  /* Metacritic and Steam chips share one width */
+.sc.mcs { min-width: 31px; font-size: .7rem; }
+.sc.st, .sc.pu { gap: 2px; padding: 0 3px; font-size: .7rem; letter-spacing: -.02em; }
+.sc svg { width: 8px; height: 8px; fill: currentColor; flex: none; }
 .sc.st.good { color: #66c0f4; }
 .sc.st.mixed { color: #d7bb84; }
 .sc.st.bad { color: #ef7a5a; }
-.sc.us { color: #7ee2a0; }
+.sc.pu { color: #7ee2a0; }
 /* foot: a dark fade up from the bottom edge carries hours, your mark and the exit date */
 .tile.lib .foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; border-radius: 0 0 6px 6px; overflow: hidden;
   background: linear-gradient(to top, rgba(0, 0, 0, .88), rgba(0, 0, 0, .62) 55%, rgba(0, 0, 0, 0)); padding-top: 18px; pointer-events: none; }

@@ -125,8 +125,8 @@ pill scrolls up). Games with no hours stay off the board (owner, 2026-10-10); re
 vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the halo, stacked end to end with room for the ring, then
 title + platform logo on the first line; the second line leads with the ratings (2026-10-10):
 Metacritic (Metacritic's green/yellow/red square) and the audience score (Rotten Tomatoes style: a
-navy pill with the Steam logo and the review % in Steam's colours, blue 70%+ / tan 40-69 / rust
-below; else the PS logo and the PS user score on the same scale x10), then genre and year. The
+navy pill with the Steam logo and the review score, no % sign, in Steam's colours, blue 70+ / tan 40-69 / rust
+below, exactly as wide as the Metacritic box: both share one min-width; else the PS logo and the PS user score on the same scale x10), then genre and year. The
 remark carries when and how sure: "Leaves Oct 31 · 53% likely" / "· confirmed" (the start-by
 group already says how soon), coloured by certainty, not fit (2026-10-10): coral mixed into the muted
 grey from 25% to 100% as the odds go 0 to 60%, full and bold when confirmed, one fit bar of hours needed vs hours left before it leaves, and the remark). Filters: service, odds band (Possible and up by

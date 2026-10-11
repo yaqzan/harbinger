@@ -251,11 +251,11 @@
     if (r.rating != null) {
       const c = el("span", `sc st ${steamCls(r.rating)}`);
       c.title = `Steam reviews, ${r.rating}% positive`;
-      c.append(icon(LOGO.steam[1]), `${r.rating}%`);
+      c.append(icon(LOGO.steam[1]), String(r.rating));  // no % sign, so it matches the Metacritic chip's width
       box.appendChild(c);
     }
     if (ctl.sort.value === "us" && r.us != null) {
-      const c = el("span", "sc us");
+      const c = el("span", "sc pu");
       c.append(icon(LOGO.playstation[1]), r.us.toFixed(1));
       box.appendChild(c);
     }
