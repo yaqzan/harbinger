@@ -223,7 +223,6 @@ td .dots { margin-right: 2px; }
 @media (max-width: 640px) {
   .where { grid-template-columns: 1fr; }
   #venn { max-width: 240px; margin: 0 auto; }
-  .lib-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 }
 
 
@@ -400,11 +399,40 @@ td .dots { margin-right: 2px; }
 html:has(dialog[open]) { overflow: hidden; }
 
 /* ── library: platform logos top-left, Metacritic bands, halo as on the shelf ── */
-.tile.lib .cv .plats { right: auto; bottom: auto; top: 5px; left: 5px; }
+/* Bigger posters at the same column count: the gap gave up 6px and the track minimum took it
+   (min + gap stays 122px, 110px on a phone). The scores and hours moved onto the poster, so the
+   name is the only line under it. */
+.lib-grid { grid-template-columns: repeat(auto-fill, minmax(114px, 1fr)); gap: 12px 8px; padding: 6px; }
+.tile.lib .cv .plats { right: auto; bottom: auto; top: 5px; left: 5px; flex-direction: column; }
 .tile.lib .cv .plat { width: 18px; height: 18px; }
 .tile.lib .cv .plat svg { width: 11px; height: 11px; }
 .tile.lib .cv .plat.steam svg { width: 13px; height: 13px; }
-.lib-grid { gap: 18px 14px; padding: 6px; }
+.tile.lib .nm { -webkit-line-clamp: 1; line-clamp: 1; margin-top: 5px; font-weight: 600; }
+/* scores, top right: one chip each, stacked */
+.scs { position: absolute; top: 5px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.sc { display: inline-flex; align-items: center; gap: 3px; font-size: .66rem; font-weight: 800; line-height: 1.45; padding: 0 5px; border-radius: 4px;
+  font-variant-numeric: tabular-nums; background: rgba(0, 0, 0, .8); color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+.sc.mcs { min-width: 0; font-size: .7rem; }
+.sc svg { width: 10px; height: 10px; fill: currentColor; flex: none; }
+.sc.st.good { color: #66c0f4; }
+.sc.st.mixed { color: #d7bb84; }
+.sc.st.bad { color: #ef7a5a; }
+.sc.us { color: #7ee2a0; }
+/* foot: a dark fade up from the bottom edge carries hours, your mark and the exit date */
+.tile.lib .foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; border-radius: 0 0 6px 6px; overflow: hidden;
+  background: linear-gradient(to top, rgba(0, 0, 0, .88), rgba(0, 0, 0, .62) 55%, rgba(0, 0, 0, 0)); padding-top: 18px; pointer-events: none; }
+.tile.lib .fr { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 5px 5px; min-height: 22px; }
+.hrs { display: inline-flex; align-items: center; gap: 3px; font-size: .74rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }
+.hrs svg { width: 11px; height: 11px; fill: currentColor; flex: none; }
+.tile.lib .foot .mk, .tile.lib .foot .ck, .tile.lib .foot .rib { position: static; }
+.tile.lib .foot .mk { margin-left: auto; }
+.tile.lib .foot .ck { width: 18px; height: 18px; margin-left: auto; box-shadow: none; }
+.tile.lib .foot .ck svg { width: 12px; height: 12px; }
+/* exit strip: red when confirmed, amber when likely, plain dark otherwise */
+.tile.lib .rib { background: rgba(0, 0, 0, .55); padding: 3px 4px; }
+.tile.lib .rib.confirmed { background: #b91c1c; }
+.tile.lib .rib.likely { background: #b45309; }
+@media (max-width: 640px) { .lib-grid { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); } }
 .tile .odds.sc-mc.good, .mcs.good { background: #66cc33; color: #0b1a05; }
 .tile .odds.sc-mc.mixed, .mcs.mixed { background: #ffcc33; color: #2a1d00; }
 .tile .odds.sc-mc.bad, .mcs.bad { background: #ff0000; color: #fff; }

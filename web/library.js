@@ -234,39 +234,68 @@
   // ── drawing ──────────────────────────────────────────────────────
   const STEP = 96;
   let shown = STEP;
-  const scoreOf = (r) => {
-    const s = ctl.sort.value;
-    if (s === "rating" && r.rating != null) return [`${r.rating}%`, "steam"];
-    if (s === "us" && r.us != null) return [r.us.toFixed(1), "ps"];
-    if (r.mc != null) return [String(Math.round(r.mc)), "mc"];
-    if (r.rating != null) return [`${r.rating}%`, "steam"];
-    return null;
+  // Steam's own review colours: blue 70% and up, tan 40 to 69, red under 40
+  const steamCls = (n) => (n >= 70 ? "good" : n >= 40 ? "mixed" : "bad");
+  const icon = (d, cls) => {
+    const svg = sv("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
+    if (cls) svg.setAttribute("class", cls);
+    svg.appendChild(sv("path", { d }));
+    return svg;
   };
-  const sub = (r) => [
-    r.rating != null ? `Steam ${r.rating}%` : "",
-    r.hours != null ? `${r.hours} h` : "",
-  ].filter(Boolean).join(" · ") || r.genre || "";
+  const CLOCK = "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6zM11 6.5v6.1l4.6 2.8 1.1-1.8-3.5-2.1V6.5z";
+  // the scores, stacked top right: Metacritic, Steam reviews, and the PlayStation user score
+  // when that's the sort
+  const scores = (r) => {
+    const box = el("span", "scs");
+    if (r.mc != null) box.appendChild(el("span", `sc mcs ${mcCls(Math.round(r.mc))}`, String(Math.round(r.mc))));
+    if (r.rating != null) {
+      const c = el("span", `sc st ${steamCls(r.rating)}`);
+      c.title = `Steam reviews, ${r.rating}% positive`;
+      c.append(icon(LOGO.steam[1]), `${r.rating}%`);
+      box.appendChild(c);
+    }
+    if (ctl.sort.value === "us" && r.us != null) {
+      const c = el("span", "sc us");
+      c.append(icon(LOGO.playstation[1]), r.us.toFixed(1));
+      box.appendChild(c);
+    }
+    return box;
+  };
 
   const tile = (r) => {
     const b = el("button", `tile lib${done(r) ? " dim" : ""}${r.mark === "played" ? " played" : ""}`);
     b.type = "button";
     b.title = r.game;
     const c = cover(r, "cv");
-    const sc = scoreOf(r);
-    if (sc) c.appendChild(el("span", `odds sc-${sc[1]}${sc[1] === "mc" ? ` ${mcCls(r.mc)}` : ""}`, sc[0]));
     c.appendChild(logos(r));
+    c.appendChild(scores(r));
+    // the foot of the poster: hours to 100% and your mark on one line, the exit date under them
     const lv = leaves(r)[0];
-    if (lv) c.appendChild(el("span", "rib", lv.band === "Confirmed" ? `Leaves ${fmt(lv.ms)}` : `${lv.band} · ${fmt(lv.ms)}`));
+    const row = el("span", "fr");
+    if (r.hours != null) {
+      const h = el("span", "hrs");
+      h.title = `${r.hours} h to 100%`;
+      // tinted like the halo when it can leave: do the hours fit before it goes
+      const hue = lv ? fitHue(r, lv, hasElsewhere(r, lv)) : null;
+      if (hue != null) h.style.color = `hsl(${hue} 90% 62%)`;
+      h.append(icon(CLOCK), `${r.hours} h`);
+      row.appendChild(h);
+    }
     if (r.mark === "played") {
-      // a green check in the corner; the green border is the tile's CSS (.tile.played)
-      const ck = el("span", `ck${lv ? " up" : ""}`), svg = sv("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
+      // a green check; the green border is the tile's CSS (.tile.played)
+      const ck = el("span", "ck"), svg = sv("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
       svg.appendChild(sv("path", { d: "M5 12.5l4.5 4.5L19 7.5" }));
-      ck.appendChild(svg); ck.title = "Played"; c.appendChild(ck);
-    } else if (r.mark) c.appendChild(el("span", `mk ${r.mark}${lv ? " up" : ""}`, MARK[r.mark]));
+      ck.appendChild(svg); ck.title = "Played"; row.appendChild(ck);
+    } else if (r.mark) row.appendChild(el("span", `mk ${r.mark}`, MARK[r.mark]));
+    if (row.childNodes.length || lv) {
+      const foot = el("span", "foot");
+      if (row.childNodes.length) foot.appendChild(row);
+      if (lv) foot.appendChild(el("span", `rib ${lv.band.toLowerCase()}`, lv.band === "Confirmed" ? `Leaves ${fmt(lv.ms)}` : `${lv.band} · ${fmt(lv.ms)}`));
+      c.appendChild(foot);
+    }
     if (r.mark !== "played") halo(r, c);  // a game you've finished: its exit odds don't matter
     b.appendChild(c);
     b.appendChild(el("span", "nm", r.game));
-    b.appendChild(el("span", "sub", sub(r)));
     b.addEventListener("click", () => open(r));
     return b;
   };
