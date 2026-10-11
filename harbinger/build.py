@@ -177,6 +177,7 @@ def confirmed_rows(cx: Context) -> list[dict]:
             "game": e["name"], "key": key, "wave": wave.isoformat(), "wave_label": fmt(wave, today),
             "hours": prog["hours"], "verdict": verdict, "platform": g.system if g else "",
             "note": note, "verified": e["verified"], "owned": prog["owned"], "progress": prog["progress"],
+            "off_sheet": g is None,  # not in the Game Pass catalogue rows: the page draws it from here
         })
     rows.sort(key=lambda r: (r["wave"], r["hours"] if r["hours"] is not None else 999))
     return rows

@@ -72,11 +72,14 @@
   const one = data.one_service || { rows: [], backups: [], ps_tier: "none" };
   const items = [...one.rows, ...(one.backups || [])].filter((r) => r.wave && t(r.wave) >= T0);
   const byKey = new Map(items.map((r) => [`${r.service.split(" ")[0]}|${r.key}`, r]));
-  (data.confirmed || []).filter((c) => !c.verified && t(c.wave) >= T0).forEach((c) => {
+  // Off-sheet leavers have no catalogue row: unverified ones draw as Reported, confirmed ones as Confirmed.
+  (data.confirmed || []).filter((c) => (!c.verified || c.off_sheet) && t(c.wave) >= T0).forEach((c) => {
     const known = byKey.get(`Game|${c.key}`);
-    if (known) { known.unverified = c.note; return; }
-    items.push({ game: c.game, key: c.key, service: "Game Pass", platform: c.platform, state: "reported", wave: c.wave,
-      p: null, odds: "Reported", band: "Reported", hours: c.hours, why: c.note, progress: c.progress || "", art: c.art, unverified: c.note, mark: c.mark });
+    if (known) { if (!c.verified) known.unverified = c.note; return; }
+    const ok = !!c.verified;
+    items.push({ game: c.game, key: c.key, service: "Game Pass", platform: c.platform, state: ok ? "confirmed" : "reported", wave: c.wave,
+      p: ok ? 1 : null, odds: ok ? "Confirmed" : "Reported", band: ok ? "Confirmed" : "Reported", hours: c.hours, why: c.note,
+      progress: c.progress || "", art: c.art, unverified: ok ? undefined : c.note, mark: c.mark });
   });
   const RANK = { Confirmed: 0, Reported: 1, Likely: 1, Possible: 2, Thin: 3 };
   const rank = (r) => RANK[r.band] ?? 4;
