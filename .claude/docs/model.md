@@ -151,6 +151,15 @@ the board's Start now group says the same thing); its "In your queue" tag moved 
 facts line. Sync times live under "Runs and sources". `summary.takeaway` is still
 built for the CLI and pushes.
 
+**Tab swipe (`web/swipe.js`, owner 2026-10-11).** On touch screens, swipe left on the Board opens
+the Library, right on the Library opens the Board (one way each). The other page preloads into a
+hidden iframe (coarse pointers, after load) and tracks the finger, so a swipe can be held half way;
+past a third of the width or a flick finishes, else it springs back. `.wrap` gets `touch-action:
+pan-y` so sideways drags reach the script; touches on controls, sideways scrollers and the 20px
+edges (the phone's own back swipe) are left alone. The landing fades in from the swipe via a
+cross-document view transition (`@view-transition` in the CSS); the `pagereveal` guard in each
+html head skips it unless `sessionStorage harbinger.swiped` is set, so tab clicks stay instant.
+
 **Phones (2026-10-10).** Owner: opening the app must land on the board / the tiles, no scrolling.
 Under 640px both pages keep only search + a **Filters** button above the content (`.fbtn`, badge =
 filters changed from the default; `.fmore` holds the rest and is `display: contents` on wider screens).

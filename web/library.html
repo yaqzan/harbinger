@@ -9,10 +9,11 @@
 <title>Harbinger · Library</title>
 <meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=26">
+<link rel="stylesheet" href="/harbinger.css?v=27">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
+<script>addEventListener("pagereveal",(e)=>{if(!e.viewTransition)return;try{if(sessionStorage.getItem("harbinger.swiped")){sessionStorage.removeItem("harbinger.swiped");return}}catch(x){}e.viewTransition.skipTransition()})</script>
 </head>
 <body>
 <div class="wrap">
@@ -81,5 +82,6 @@
   <dl id="d-facts"></dl>
 </dialog>
 <script src="/library.js?v=8"></script>
+<script src="/swipe.js?v=1"></script>
 </body>
 </html>

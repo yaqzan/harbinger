@@ -426,3 +426,6 @@ html:has(dialog[open]) { overflow: hidden; }
   width: 22px; height: 22px; border-radius: 50%; background: hsl(140 70% 42%); box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); }
 .tile .ck.up { bottom: 24px; }  /* above the leaving ribbon */
 .tile .ck svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+/* swipe between tabs (swipe.js): the new page fades in from the finished swipe; pagereveal in the html skips it for every other navigation */
+@view-transition { navigation: auto; }
