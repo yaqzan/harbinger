@@ -151,6 +151,10 @@ the board's Start now group says the same thing); its "In your queue" tag moved 
 facts line. Sync times live under "Runs and sources". `summary.takeaway` is still
 built for the CLI and pushes.
 
+**Detail sheet motion (`web/sheet.js` + the `sheet-*` keyframes in `harbinger.css`).** Opens with a rise/fade
+(slide up on phones); every close (x, backdrop, Esc) plays it backwards by patching `dialog.close()`. On touch, pulling
+down from the top of the sheet drags it with the finger; past 90px or a flick it leaves, else it springs back.
+
 **Tab swipe (`web/swipe.js`, owner 2026-10-11).** On touch screens, swipe left on the Board opens
 the Library, right on the Library opens the Board (one way each). The other page preloads into a
 hidden iframe (coarse pointers, after load) and tracks the finger, so a swipe can be held half way;
