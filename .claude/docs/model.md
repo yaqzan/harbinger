@@ -166,6 +166,9 @@ pan-y` so sideways drags reach the script; touches on controls, sideways scrolle
 edges (the phone's own back swipe) are left alone. The landing fades in from the swipe via a
 cross-document view transition (`@view-transition` in the CSS); the `pagereveal` guard in each
 html head skips it unless `sessionStorage harbinger.swiped` is set, so tab clicks stay instant.
+No blank flash on landing: the page script is `defer blocking="render"` in the head, and a page reached by
+a swipe (`harbinger.swiped` = timestamp, 10 s) draws from the JSON the preview frame cached in sessionStorage,
+so the first paint is already full; a background fetch reloads only if the data changed.
 
 **Phones (2026-10-10).** Owner: opening the app must land on the board / the tiles, no scrolling.
 Under 640px both pages keep only search + a **Filters** button above the content (`.fbtn`, badge =
