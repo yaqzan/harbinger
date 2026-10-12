@@ -235,10 +235,21 @@ td .dots { margin-right: 2px; }
 .m-date b { display: block; font-size: 1.35rem; font-weight: 800; line-height: 1.05; }
 .m-date span { display: block; color: var(--muted); font-size: .76rem; margin-top: .2rem; }
 .m-line { border-left: 3px solid var(--rule); margin: .5rem 0; padding: 2px 0; }
-.m-row { position: relative; display: grid; grid-template-columns: 54px minmax(0, 1fr) 11rem 13rem; align-items: center; gap: 1rem;
-  padding: 5px .6rem 5px 1.4rem; border-radius: 8px; cursor: pointer; }  /* 5px + 5px: room for the ring between posters */
+.m-row { position: relative; display: grid; grid-template-columns: 66px minmax(0, 1fr) 11rem 13rem; align-items: center; gap: 1rem;
+  padding: 3px .6rem 3px 1.4rem; border-radius: 8px; cursor: pointer; }  /* the plates stack end to end, the ring sits inside them */
 .m-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-.m-row .lamp { position: absolute; left: -8.5px; top: 50%; margin-top: -7px; width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--bg); box-sizing: content-box; }
+/* the stop on the line is the console's mark; the row carries a faint wash of its colour and the poster sits
+   on a dark plate of it, so the fit glow never lands on a green (or blue) row */
+.m-row .stop { position: absolute; left: -17px; top: 50%; margin-top: -12px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  border: 2.5px solid var(--bg); box-sizing: content-box; }
+.stop svg { width: 14px; height: 14px; fill: #fff; }
+.stop.xbox { background: #107c10; }
+.stop.playstation { background: #0070d1; }
+.m-row.p-xbox { background: linear-gradient(90deg, rgba(16, 124, 16, .14), transparent 55%); }
+.m-row.p-ps { background: linear-gradient(90deg, rgba(0, 112, 209, .16), transparent 55%); }
+.m-plate { padding: 6px; border-radius: 12px; }
+.p-xbox .m-plate { background: linear-gradient(160deg, #0d3b0d, #071a07); }
+.p-ps .m-plate { background: linear-gradient(160deg, #0a2a5c, #06142e); }
 .m-cv { width: 54px; height: 81px; border-radius: 5px; overflow: hidden; }
 .m-cv.blank { font-size: .6rem; padding: 3px; }
 .m-info { min-width: 0; }
@@ -286,10 +297,11 @@ td .dots { margin-right: 2px; }
 .m-row.dim .m-title { opacity: 1 !important; }
 .m-row.dim .m-title > :not(.plats) { opacity: .4; }  /* the logos stay lit */
 .m-row.dim .m-cv img { filter: grayscale(1) brightness(.6); }
+.m-row.dim .m-plate { opacity: .7; }
 .m-row.dim .m-rm { color: var(--muted); font-weight: 600; }
 
 @media (max-width: 1000px) {
-  .m-row { grid-template-columns: 54px minmax(0, 1fr) 9rem 12rem; gap: .8rem; }
+  .m-row { grid-template-columns: 66px minmax(0, 1fr) 9rem 12rem; gap: .8rem; }
   .m-rm { white-space: nowrap; }
 }
 /* phones: the date heads its group; poster on the left, title over fit and remark */
@@ -298,8 +310,9 @@ td .dots { margin-right: 2px; }
   .m-date { display: flex; align-items: baseline; gap: .6rem; padding-top: .9rem; }
   .m-date span, .m-date small { margin: 0; }
   .m-line { margin: .4rem 0 .4rem 6px; }
-  .m-row { grid-template-columns: 46px minmax(0, 1fr) auto; grid-template-areas: "cv info info" "cv fit rm"; gap: .3rem .7rem; padding: 5px .2rem 5px 1.1rem; }
-  .m-cv { grid-area: cv; width: 46px; height: 69px; }
+  .m-row { grid-template-columns: 58px minmax(0, 1fr) auto; grid-template-areas: "cv info info" "cv fit rm"; gap: .3rem .7rem; padding: 3px .2rem 3px 1.1rem; }
+  .m-plate { grid-area: cv; }
+  .m-cv { width: 46px; height: 69px; }
   .m-info { grid-area: info; }
   .m-fit { grid-area: fit; min-width: 0; }
   .m-fit .bar { display: none; }

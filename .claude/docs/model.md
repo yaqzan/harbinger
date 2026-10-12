@@ -123,7 +123,7 @@ scrolled to Start now with a "↑ N won't fit" pill at the top edge (`landOnStar
 pill scrolls up). Games with no hours stay off the board (owner, 2026-10-10); research them into
 `titles.toml` `[hours]`) on a
 vertical line, so a short game due soon and a long one due later sit where they compete for time; each row is a poster carrying the halo, stacked end to end with room for the ring, then
-title + platform logo on the first line; the second line leads with the ratings (2026-10-10):
+title on the first line (a backup row adds where you have it); the second line leads with the ratings (2026-10-10):
 Metacritic (Metacritic's green/yellow/red square) and the audience score (Rotten Tomatoes style: a
 navy pill with the Steam logo and the review score, no % sign, in Steam's colours, blue 70+ / tan 40-69 / rust
 below, exactly as wide as the Metacritic box: both share one min-width; else the PS logo and the PS user score on the same scale x10), then genre and year. The
@@ -140,9 +140,12 @@ the viewer's today with `data.play` (the `[play]` table), mirroring `model.hours
 The cue (owner, 2026-10-10): a halo whose brightness follows the leave odds (full at 60%+), a
 solid ring once confirmed (dashed if only reported). Its colour is fit, not odds, from s = hours you have /
 hours needed: green at s >= 1.5, a gradient to pure yellow at 1.0 (just enough), then to red at s <= 0.5;
-grey for unknown hours and backups. On the board the halo sits on the poster; the stop on the line is a plain fit-colour dot (a
-glowing dot couldn't show confirmed vs likely). Fit colour sits on the ring, the bar and the line dot; the remark is the certainty colour. Every row carries logos: the service it leaves for a live row, where you
-have it for a backup. The fit bar uses the same colour; the odds badge is plain and only on modelled
+grey for unknown hours and backups. On the board the halo sits on the poster, which sits on a dark console-coloured plate
+(`.m-plate`) so the fit glow never lands on the row's green or blue wash. The stop on the line is the
+console's mark in a 24px circle (Xbox green, PlayStation blue), not a fit dot (owner, 2026-10-12,
+mockup B); the row carries a faint wash of the same colour. Fit colour sits on the ring and the bar; the
+remark is the certainty colour. The title line carries logos only on a backup row (where you have it).
+The fit bar uses the same colour; the odds badge is plain and only on modelled
 games (2026-10-10: no "Confirmed" badge, no "Owned on" ribbon over the cover; the ring and the logos say it).
 Top of the page (owner, 2026-10-10): one **Confirmed exits** panel, the next 3 confirmed date +
 service groups side by side with how many you'd lose and how many still fit, plus

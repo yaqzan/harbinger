@@ -230,11 +230,14 @@
     return box;
   };
 
-  // The board's stop on the line: just the fit colour. Odds and certainty live on the cover's halo.
-  const lamp = (r) => {
-    const l = el("span", "lamp");
-    l.style.background = hsl(fitHue(r), r.backup ? 0.45 : 1);
-    return l;
+  // The board's stop on the line: the console's mark. Fit and odds live on the cover's halo.
+  const stop = (r) => {
+    const p = svc(r) === "ps" ? "playstation" : "xbox";
+    const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"), path = document.createElementNS(NS, "path");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
+    path.setAttribute("d", LOGO[p][1]); svg.appendChild(path);
+    const b = el("span", `stop ${p}`); b.title = svcName(r); b.appendChild(svg);
+    return b;
   };
 
   // Keys for the switch animation: which element is which game across a redraw, and which
@@ -335,15 +338,16 @@
       grp.appendChild(head);
       const line = el("div", "m-line");
       its.forEach((r) => {
-        const row = el("div", `m-row${r.backup || done(r) ? " dim" : ""}`);
+        const row = el("div", `m-row p-${svc(r)}${r.backup || done(r) ? " dim" : ""}`);
         tag(row, r);
         row.tabIndex = 0;
-        row.appendChild(lamp(r));
-        const c = cover(r, "cv m-cv"); halo(r, c); row.appendChild(c);  // the halo, on the poster
+        row.appendChild(stop(r));
+        const c = cover(r, "cv m-cv"); halo(r, c);  // the halo, on the poster
+        const plate = el("div", "m-plate"); plate.appendChild(c); row.appendChild(plate);  // a dark console-coloured plate keeps the glow off the row tint
         const info = el("div", "m-info"), top = el("div", "m-title");
         top.appendChild(el("span", "gn", r.game));
         if (r.mark) top.appendChild(el("span", `mk ${r.mark}`, MARK[r.mark]));
-        top.appendChild(places(r, r.backup ? r.places : [svc(r) === "ps" ? "playstation" : "xbox"]));
+        if (r.backup) top.appendChild(places(r, r.places));  // where else you can play it; the line's stop already names the console
         info.appendChild(top);
         const sub = el("div", "m-facts");  // the ratings lead the second line: critic, then audience
         sub.appendChild(mcBox(r));
