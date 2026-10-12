@@ -407,6 +407,19 @@ td .dots { margin-right: 2px; }
 /* the page behind an open sheet stays put */
 html:has(dialog[open]) { overflow: hidden; }
 
+/* the sheet eases in: a short rise and fade on desktop, a slide up from the bottom edge on phones */
+@keyframes sheet-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+dialog[open] { animation: sheet-in .22s cubic-bezier(.2, .8, .2, 1); }
+dialog[open]::backdrop { animation: sheet-fade .22s ease-out; }
+@media (max-width: 640px) {
+  dialog[open] { animation: sheet-up .28s cubic-bezier(.2, .8, .2, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog[open], dialog[open]::backdrop { animation: none; }
+}
+
 /* ── library: platform logos top-left, Metacritic bands, halo as on the shelf ── */
 /* Bigger posters at the same column count: the gap gave up 6px and the track minimum took it
    (min + gap stays 122px, 110px on a phone). The scores and hours moved onto the poster, so the
