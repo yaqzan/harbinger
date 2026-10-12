@@ -94,7 +94,7 @@
     if (go) {
       place(innerWidth * dir, true);
       // the new page fades in from this frame's picture instead of flashing blank (pagereveal in the html)
-      try { sessionStorage.setItem("harbinger.swiped", "1"); } catch (x) {}
+      try { sessionStorage.setItem("harbinger.swiped", String(Date.now())); } catch (x) {}
       done(() => location.assign(target));
     } else {
       place(0, true);

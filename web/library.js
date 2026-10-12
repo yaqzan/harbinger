@@ -37,11 +37,22 @@
     try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
   });
 
+  // After a tab swipe the preview frame has just fetched this file: draw from that copy so the first
+  // paint already has the page in it (a fetch would show an empty page for a moment), then check it.
   let lib;
   try {
-    const r = await fetch("/library.json", { cache: "no-cache" });
-    if (!r.ok) throw new Error(r.status);
-    lib = await r.json();
+    let text = null, hot = false;
+    try { if (Date.now() - Number(sessionStorage.getItem("harbinger.swiped")) < 10000) { text = sessionStorage.getItem("harbinger.json.library"); hot = text !== null; } } catch (e) {}
+    const fresh = async () => {
+      const r = await fetch("/library.json", { cache: "no-cache" });
+      if (!r.ok) throw new Error(r.status);
+      const body = await r.text();
+      try { sessionStorage.setItem("harbinger.json.library", body); } catch (e) {}
+      return body;
+    };
+    if (hot) fresh().then((b) => { if (b !== text) location.reload(); }, () => {});
+    else text = await fresh();
+    lib = JSON.parse(text);
   } catch (e) {
     $("meta").textContent = "No data yet. The first ingest hasn't run.";
     return;
