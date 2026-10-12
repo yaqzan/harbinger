@@ -159,16 +159,17 @@ built for the CLI and pushes.
 down from the top of the sheet drags it with the finger; past 90px or a flick it leaves, else it springs back.
 
 **Tab swipe (`web/swipe.js`, owner 2026-10-11).** On touch screens, swipe left on the Board opens
-the Library, right on the Library opens the Board (one way each). The other page preloads into a
+the Library, right on the Library opens the Board (one way each). The other page loads once into a
 hidden iframe (coarse pointers, after load) and tracks the finger, so a swipe can be held half way;
-past a third of the width or a flick finishes, else it springs back. `.wrap` gets `touch-action:
-pan-y` so sideways drags reach the script; touches on controls, sideways scrollers and the 20px
-edges (the phone's own back swipe) are left alone. The landing fades in from the swipe via a
-cross-document view transition (`@view-transition` in the CSS); the `pagereveal` guard in each
-html head skips it unless `sessionStorage harbinger.swiped` is set, so tab clicks stay instant.
-No blank flash on landing: the page script is `defer blocking="render"` in the head, and a page reached by
-a swipe (`harbinger.swiped` = timestamp, 10 s) draws from the JSON the preview frame cached in sessionStorage,
-so the first paint is already full; a background fetch reloads only if the data changed.
+past a third of the width or a flick finishes, else it springs back. Finishing never reloads: the frame
+becomes the visible page (`history.pushState`, `popstate` flips back) and the page you left parks
+underneath. The framed copy of swipe.js only posts the finger to its parent; tab links (either document)
+slide the same way, and the theme syncs through the `storage` event. Not loaded yet = a normal
+navigation whose landing fades in via the cross-document view transition (`@view-transition`; the
+`pagereveal` guard in each html head skips it unless `sessionStorage harbinger.swiped` is a fresh
+timestamp) and is drawn before first paint (page script `defer blocking="render"`, JSON cached by the
+preview in sessionStorage). `.wrap` gets `touch-action: pan-y` so sideways drags reach the script;
+touches on controls, sideways scrollers and the 20px edges (the phone's own back swipe) are left alone.
 
 **Phones (2026-10-10).** Owner: opening the app must land on the board / the tiles, no scrolling.
 Under 640px both pages keep only search + a **Filters** button above the content (`.fbtn`, badge =
