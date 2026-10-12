@@ -353,6 +353,7 @@
       return [el("dt", null, k), dd];
     }));
     dlg.showModal();
+    window.sheetTrailer($("d-trailer"), r.trailer);
   };
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 

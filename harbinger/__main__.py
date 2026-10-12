@@ -63,8 +63,12 @@ def _ps(db, cfg: dict) -> dict | None:
     return {"games": games, "fetched": fetched, "tier": tier.title()}
 
 
-def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, today: date | None = None) -> dict:
+def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, today: date | None = None,
+        backfill: bool = False) -> dict:
     cfg = load_config()
+    if backfill:  # look again at every miss now (not after retry_days) and take them all in one go
+        for k in ("art", "ratings"):
+            cfg[k] = {**cfg.get(k, {}), "retry_days": 0, "budget": 100000}
     STATE_DIR.mkdir(exist_ok=True)
     today = today or date.today()
     notes = []
@@ -109,6 +113,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     if sync_steam:
         notes.append(ratings_mod.fetch(db, ratings_mod.wanted(data["library"]), cfg))
     ratings_mod.attach(data["library"], ratings_mod.load(db, ratings_mod.settings(cfg)["min_reviews"]))
+    ratings_mod.attach_trailers(data, ratings_mod.trailers(db))
     data["taste"] = taste_mod.attach(data["library"], cfg)  # needs the Steam scores above
     library_mod.annotate(data["one_service"], data["library"])
     base_at, base = store.baseline(db, kind)
@@ -137,6 +142,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
         tmp.write_text(json.dumps(body, indent=indent, separators=(",", ":") if indent is None else None), encoding="utf-8")
         tmp.replace(path)
     data["played_unmatched"] = unmatched
+    data["gaps"] = _gaps(lib)  # printed by --backfill, never published
     return data
 
 
@@ -219,6 +225,23 @@ def _changes(game: str | None, imports: int = 5) -> int:
     return 0
 
 
+def _gaps(lib: list[dict]) -> list[str]:
+    """What the library page still lacks after a run, so a backfill says what is left and why."""
+    miss = {
+        "cover": [r["game"] for r in lib if not r.get("art")],
+        "Steam app": [r["game"] for r in lib if r.get("appid") is None],
+        "Steam reviews": [r["game"] for r in lib if r.get("appid") is not None and r.get("rating") is None],
+        "Metacritic": [r["game"] for r in lib if r.get("mc") is None],
+        "trailer": [r["game"] for r in lib if r.get("appid") is not None and not r.get("trailer")],
+    }
+    out = [f"{len(lib)} games, still without: " + ", ".join(f"{len(v)} {k}" for k, v in miss.items())]
+    # a cover or Steam app that a store would have under another name is fixed in titles.toml [art]
+    if miss["cover"]:
+        out.append("no cover (add a store title under [art] in harbinger/titles.toml): " + "; ".join(miss["cover"][:25])
+                   + (f"; +{len(miss['cover']) - 25} more" if len(miss["cover"]) > 25 else ""))
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="harbinger", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "played", "serve"])
@@ -228,6 +251,8 @@ def main(argv=None) -> int:
     ap.add_argument("--push", action="store_true", help="ingest: push newly confirmed leavers and queued games to start via Pharos (optional, see config.local.example.toml)")
     ap.add_argument("--if-due", action="store_true",
                     help="ingest: skip unless it's the first run today or a leaving list is expected (scheduled task)")
+    ap.add_argument("--backfill", action="store_true",
+                    help="steam/ingest: retry every game with no cover, Steam score or trailer now, with no per-run cap")
     ap.add_argument("--today", type=date.fromisoformat, help="score as of this date (testing)")
     a = ap.parse_args(argv)
     if a.command == "serve":
@@ -258,14 +283,15 @@ def main(argv=None) -> int:
             print(why)
             if not due:
                 return 0
-        data = run("ingest", fetch=True, refresh_forecast=not a.no_forecast, sync_steam=True, today=a.today)
+        data = run("ingest", fetch=True, refresh_forecast=not a.no_forecast, sync_steam=True, today=a.today,
+                   backfill=a.backfill)
     elif a.command == "played":
         data = run("played", fetch=False, refresh_forecast=False, sync_steam=False, today=a.today)
         lost = data["played_unmatched"]
         print(f"{len(lost)} marked games match nothing on a service or in your libraries"
               + (": " + "; ".join(f"{m['title']} ({m['platform'] or m['source']})" for m in lost) if lost else ""))
     elif a.command == "steam":
-        data = run("steam", fetch=False, refresh_forecast=False, sync_steam=True, today=a.today)
+        data = run("steam", fetch=False, refresh_forecast=False, sync_steam=True, today=a.today, backfill=a.backfill)
     else:
         data = run("build", fetch=False, refresh_forecast=False, sync_steam=False, today=a.today)
     s = data["summary"]
@@ -275,6 +301,9 @@ def main(argv=None) -> int:
           f"next notice {s['next_notice']}")
     for n in data.get("notes", []):
         print(" -", n)
+    if a.backfill:
+        for line in data["gaps"]:
+            print(" -", line)
     if a.command == "ingest" and a.push:
         print(" -", push(data, load_config()))
     return 0

@@ -118,6 +118,17 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   appreviews summary. Owned games first. `[ratings] budget` per ingest, `refresh_days`, a game with
   no Steam app retried after `retry_days`; HTTP trouble ends the run and keeps what's cached.
   Under `min_reviews` (10) a game shows no score. First fill takes a few daily runs.
+- **Trailers** (`steam_rating.trailer`, `trailer_poster`, `trailer_checked_at`): the same appdetails call that
+  finds Metacritic (`filters=metacritic,movies`, `ratings.details`). The API lists only HLS/DASH streams now,
+  so the player uses the 480p mp4 of the same movie id (`cdn.akamai.steamstatic.com/steam/apps/<id>/movie480.mp4`,
+  Range-seekable, ~4 MB); a HEAD check keeps a dead file out. Movie order: gameplay, then others, teasers and
+  announcements last (`rank_movies`). No hit is rechecked after `refresh_days`. Rows carry `trailer {src, poster}`
+  (`attach_trailers`, board and library rows by key). `web/sheet.js` `sheetTrailer` plays it muted in the detail
+  sheet, seeks to 25% (max 30 s, clips under 15 s start at 0) on `loadedmetadata`, skips autoplay under reduced
+  motion / Data Saver, and drops the `src` on close. Nothing is downloaded or cached on this box.
+- **Backfill**: `py -3.11 -m harbinger steam --backfill` (or `ingest --backfill`) sets `retry_days` 0 and no
+  budget for art and ratings, so every miss is retried now; Steam's 429 still ends the run early. It prints
+  what is still missing. A cover or Steam app a store spells differently goes in `titles.toml` `[art]`.
 - **Where each score comes from** (a game's own catalogue row first, then the next): Metacritic =
   Game Pass sheet, PS Plus sheet, any other sheet row for the title (`sheet.scores`: removed games,
   other tiers, Games with Gold), then Steam's store copy (`appdetails` filters=metacritic, only asked

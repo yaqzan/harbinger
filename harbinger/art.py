@@ -262,12 +262,16 @@ def wanted(data: dict) -> dict[str, str]:
     return out
 
 
+def rows(data: dict) -> list[dict]:
+    """Every game row the page can show a cover or trailer on."""
+    out = [r for s in ("confirmed", "queue", "watchlist", "owned") for r in data.get(s, [])]
+    one = data.get("one_service", {})
+    return out + one.get("rows", []) + one.get("backups", []) + data.get("library", [])
+
+
 def attach(data: dict, art: dict[str, str]) -> None:
     """Put `art` on every row whose game has a picture."""
-    rows = [r for s in ("confirmed", "queue", "watchlist", "owned") for r in data.get(s, [])]
-    one = data.get("one_service", {})
-    rows += one.get("rows", []) + one.get("backups", []) + data.get("library", [])
-    for r in rows:
+    for r in rows(data):
         url = art.get(r.get("key") or norm(r["game"]))
         if url:
             r["art"] = url

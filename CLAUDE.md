@@ -21,7 +21,8 @@ Steam account and watched games, and runs it. The owner's instance is https://ha
   Steam, reconcile titles, rebuild, snapshot (daily task). `--push` alerts on newly confirmed
   leavers, queued games due a heads-up or start, and new Premium / PS Plus Extra arrivals (`[alerts]`). `--if-due` (scheduled, 5 ticks a day)
   skips unless it's the day's first run or a leaving list is expected (`harbinger/schedule.py`).
-- `py -3.11 -m harbinger steam`: Steam + PSN import, rebuild from the database
+- `py -3.11 -m harbinger steam [--backfill]`: Steam + PSN import, rebuild from the database. `--backfill` retries every
+  missing cover, Steam score and trailer now, uncapped, and prints what is still missing
 - `py -3.11 -m harbinger build [--today YYYY-MM-DD]`: re-score the database after a config or
   titles.toml change. `show`: print the summary. `titles`: match issues. `changes [--game X]`:
   what the last sheet imports changed.

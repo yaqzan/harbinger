@@ -172,6 +172,7 @@
     if (r.why) facts.push(["Why", r.why]);
     $("d-facts").replaceChildren(...facts.flatMap(([k, v]) => [el("dt", null, k), el("dd", null, v)]));
     dlg.showModal();
+    window.sheetTrailer($("d-trailer"), r.trailer);
   };
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 

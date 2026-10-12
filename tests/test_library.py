@@ -1,5 +1,6 @@
 """The library list (one row per game across Game Pass, PS Plus, Steam, PlayStation) and Steam ratings."""
 
+import json
 import sqlite3
 import unittest
 from datetime import date, datetime
@@ -73,6 +74,10 @@ class Ratings(unittest.TestCase):
         self.db = sqlite3.connect(":memory:")
         self.db.executescript(ratings.SCHEMA)
         self.cfg = {"ratings": {"budget": 2, "pause_s": 0}}
+        # no network: the store call that finds Metacritic and a trailer answers "neither" unless a test says otherwise
+        p = mock.patch.object(ratings, "details", return_value=(None, None))
+        self.details = p.start()
+        self.addCleanup(p.stop)
 
     def test_owned_appid_skips_the_search_and_budget_caps_the_run(self):
         wanted = [("a", "A", 1, False), ("b", "B", None, False), ("c", "C", None, False)]
@@ -111,21 +116,64 @@ class Ratings(unittest.TestCase):
         self.assertEqual([w[0] for w in ratings.wanted(rows)], ["a", "b", "c"])
 
     def test_metacritic_is_asked_only_for_games_without_one_and_filled_in_by_attach(self):
-        with mock.patch.object(ratings, "summary", return_value=(9, 10)),                 mock.patch.object(ratings, "metacritic", return_value=81) as m:
+        with mock.patch.object(ratings, "summary", return_value=(9, 10)),                 mock.patch.object(ratings, "details", return_value=(81, None)) as m:
             ratings.fetch(self.db, [("a", "A", 1, True), ("b", "B", 2, False)], self.cfg, NOW)
-        m.assert_called_once_with(1)
+        # both games are new, so both are asked for a trailer; only "a" lacks a Metacritic score
+        self.assertEqual([c.args[0] for c in m.call_args_list], [1, 2])
         rows = [{"key": "a", "game": "A"}, {"key": "b", "game": "B", "mc": 50.0}]
         ratings.attach(rows, ratings.load(self.db))
         self.assertEqual((rows[0]["mc"], rows[1]["mc"]), (81.0, 50.0))
+        self.assertIsNone(self.db.execute("SELECT metacritic FROM steam_rating WHERE key = 'b'").fetchone()[0])
 
     def test_a_cached_game_is_asked_for_metacritic_once(self):
         self.db.execute("INSERT INTO steam_rating (key, name, appid, positive, total, checked_at)"
                         " VALUES ('a', 'A', 1, 9, 10, '2026-10-09T00:00:00')")
-        with mock.patch.object(ratings, "summary") as sm, mock.patch.object(ratings, "metacritic", return_value=None) as m:
+        with mock.patch.object(ratings, "summary") as sm, mock.patch.object(ratings, "details", return_value=(None, None)) as m:
             ratings.fetch(self.db, [("a", "A", 1, True)], self.cfg, NOW)
             ratings.fetch(self.db, [("a", "A", 1, True)], self.cfg, NOW)
         sm.assert_not_called()
         m.assert_called_once_with(1)
+
+    def test_a_cached_game_without_a_trailer_check_gets_one_and_it_reaches_the_page(self):
+        self.db.execute("INSERT INTO steam_rating (key, name, appid, positive, total, checked_at)"
+                        " VALUES ('a', 'A', 1, 9, 10, '2026-10-09T00:00:00')")
+        film = {"src": "https://cdn.akamai.steamstatic.com/steam/apps/5/movie480.mp4", "poster": "https://x/p.jpg", "name": "T"}
+        with mock.patch.object(ratings, "summary") as sm, mock.patch.object(ratings, "details", return_value=(None, film)):
+            ratings.fetch(self.db, [("a", "A", 1, False)], self.cfg, NOW)
+        sm.assert_not_called()  # reviews are fresh: only the trailer is fetched
+        data = {"library": [{"key": "a", "game": "A"}], "queue": [{"game": "A"}], "confirmed": [{"game": "B"}]}
+        ratings.attach_trailers(data, ratings.trailers(self.db))
+        self.assertEqual(data["library"][0]["trailer"], {"src": film["src"], "poster": film["poster"]})
+        self.assertEqual(data["queue"][0]["trailer"]["src"], film["src"])  # matched by sheet key off the name
+        self.assertNotIn("trailer", data["confirmed"][0])
+
+
+class Trailers(unittest.TestCase):
+    MOVIES = [{"id": 1, "name": "Game - Announcement Trailer"}, {"id": 2, "name": "Game - Launch Trailer"},
+              {"id": 3, "name": "Game - Gameplay Trailer"}, {"name": "no id"}]
+
+    def test_gameplay_first_announcements_last(self):
+        self.assertEqual([m["id"] for m in ratings.rank_movies(self.MOVIES)], [3, 2, 1])
+
+    def _answer(self, body, live=True):
+        resp = json.dumps({"7": body}).encode()
+        return mock.patch.object(art, "_get", return_value=(resp, "application/json")),             mock.patch.object(ratings, "_live", return_value=live)
+
+    def test_the_best_movie_with_a_live_mp4_wins_and_metacritic_rides_along(self):
+        g, lv = self._answer({"success": True, "data": {"metacritic": {"score": 88}, "movies": self.MOVIES}})
+        with g, lv:
+            mc, tr = ratings.details(7)
+        self.assertEqual(mc, 88)
+        self.assertEqual(tr["src"], "https://cdn.akamai.steamstatic.com/steam/apps/3/movie480.mp4")
+
+    def test_a_dead_mp4_means_no_trailer_not_a_broken_player(self):
+        g, lv = self._answer({"success": True, "data": {"movies": self.MOVIES}}, live=False)
+        with g, lv:
+            self.assertEqual(ratings.details(7), (None, None))
+
+    def test_a_failed_call_is_false_so_the_run_stops_and_tries_again(self):
+        with mock.patch.object(art, "_get", side_effect=OSError):
+            self.assertIs(ratings.details(7), False)
 
 
 if __name__ == "__main__":
