@@ -346,10 +346,19 @@ class Config(unittest.TestCase):
 
 class TrustedSources(unittest.TestCase):
     def test_untrusted_outlet_cannot_confirm(self):
-        fc = dict(FORECAST, confirmed=[{"game": "Superball", "wave": "2026-10-15", "source": "Insider Gaming"},
+        fc = dict(FORECAST, confirmed=[{"game": "Rumour Game", "wave": "2026-10-15", "source": "Insider Gaming"},
                                        {"game": "Quiet Game", "wave": "2026-10-31", "source": "Xbox Wire"}])
         d = assemble(CFG, parse(TABS, "2026-10-09T08:46:00"), fc, {"games": {}}, TODAY, TODAY)
         conf = {r["game"]: r for r in d["confirmed"]}
-        self.assertFalse(conf["Superball"]["verified"])
+        self.assertFalse(conf["Rumour Game"]["verified"])
         self.assertTrue(conf["Quiet Game"]["verified"])
-        self.assertEqual(d["summary"]["confirmed_count"], 9)  # 8 + Quiet Game, not Superball
+        self.assertEqual(d["summary"]["confirmed_count"], 10)  # 9 + Quiet Game, not Rumour Game
+
+    def test_owner_confirmation_beats_an_untrusted_forecast_listing(self):
+        # The forecast subagent lists Superball from Insider Gaming; [[manual_confirmed]] still wins.
+        fc = dict(FORECAST, confirmed=[{"game": "Superball", "wave": "2026-10-15", "source": "Insider Gaming"}])
+        d = assemble(CFG, parse(TABS, "2026-10-09T08:46:00"), fc, {"games": {}}, TODAY, TODAY)
+        sb = [r for r in d["confirmed"] if r["game"] == "Superball"]
+        self.assertEqual(len(sb), 1)
+        self.assertTrue(sb[0]["verified"])
+        self.assertEqual(sb[0]["verdict"], "Free to play: only Game Pass perks end")

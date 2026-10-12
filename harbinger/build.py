@@ -151,9 +151,16 @@ def confirmed_rows(cx: Context) -> list[dict]:
                             "source": src if ok else f"{src} only; not on the sheet", "verified": ok}
     for m in cx.cfg.get("manual_confirmed", []):
         key = norm(m["game"])
-        if key not in entries and not cx.pc_only(m["game"]):
+        if cx.pc_only(m["game"]):
+            continue
+        e = entries.get(key)
+        if e is None:
             entries[key] = {"g": cx.by_key.get(key), "name": m["game"], "wave": date.fromisoformat(m["wave"]),
                             "source": m["source"], "verified": bool(m.get("confirmed")), "free": bool(m.get("free_to_play"))}
+        else:  # the forecast listed it too (untrusted outlet): the owner's entry still decides
+            e["free"] = bool(m.get("free_to_play"))
+            if m.get("confirmed") and not e["verified"]:
+                e.update(verified=True, source=m["source"])
     rows = []
     for key, e in entries.items():
         wave = e["wave"]
