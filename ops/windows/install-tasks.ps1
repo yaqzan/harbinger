@@ -4,6 +4,9 @@
 #                         always runs; later ticks run only while a leaving list is expected
 #                         ([waves] notice_window). Pushes only newly confirmed leavers.
 #                         Lists have landed 05:15-17:00 Eastern (.claude/docs/ops.md).
+#   "Harbinger Fill"      every 20 min: `harbinger fill` finishes covers, Steam scores and trailers
+#                         the ingest queued (120 games a run, one call a second, backs off for an
+#                         hour when Steam pushes back); a run with nothing due writes nothing.
 # It also removes the old "Harbinger Steam" task: the daily ingest syncs Steam itself.
 #
 # This machine:  .\install-tasks.ps1 -Controller C:\Development\server.ps1
@@ -88,6 +91,37 @@ schtasks /create /tn "Harbinger Ingest" /xml $xmlPath /f
 if ($LASTEXITCODE -ne 0) { throw "Harbinger Ingest: schtasks exit $LASTEXITCODE" }
 Remove-Item $xmlPath -ErrorAction SilentlyContinue
 Write-Host 'Registered task: Harbinger Ingest (5 ticks a day, --if-due)'
+
+$fillArgs = "//B //Nologo `"$vbs`" " + (Quote @('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $runJob, '-Job', 'fill'))
+$fillXml = @"
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>Harbinger: paced fill of covers, Steam scores and trailers</Description></RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <Repetition><Interval>PT20M</Interval><Duration>P3650D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition>
+      <StartBoundary>${day}T00:10:00</StartBoundary><Enabled>true</Enabled>
+    </TimeTrigger>
+  </Triggers>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author">
+    <Exec><Command>wscript.exe</Command><Arguments>$([System.Security.SecurityElement]::Escape($fillArgs))</Arguments></Exec>
+  </Actions>
+</Task>
+"@
+$fillPath = Join-Path $env:TEMP 'harbinger-fill-task.xml'
+[System.IO.File]::WriteAllText($fillPath, $fillXml, [System.Text.Encoding]::Unicode)
+schtasks /create /tn "Harbinger Fill" /xml $fillPath /f
+if ($LASTEXITCODE -ne 0) { throw "Harbinger Fill: schtasks exit $LASTEXITCODE" }
+Remove-Item $fillPath -ErrorAction SilentlyContinue
+Write-Host 'Registered task: Harbinger Fill (every 20 min)'
 
 schtasks /query /tn "Harbinger Steam" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {

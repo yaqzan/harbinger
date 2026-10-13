@@ -63,12 +63,21 @@ def _ps(db, cfg: dict) -> dict | None:
     return {"games": games, "fetched": fetched, "tier": tier.title()}
 
 
+def paced(cfg: dict, *, backfill: bool = False, fill: bool = False) -> dict:
+    """cfg with the cover and rating fetches set for a backfill (every miss now, no cap, cooldown
+    ignored) or a fill (small batches, one call a second, so a 20-minute task never trips Steam)."""
+    over = {}
+    if backfill:
+        over = {"art": {"retry_days": 0, "budget": 100000},
+                "ratings": {"retry_days": 0, "budget": 100000, "respect_cooldown": False}}
+    elif fill:
+        over = {"art": {"budget": 40, "pause_s": 1.0}, "ratings": {"budget": 120, "pause_s": 1.0}}
+    return {**cfg, **{k: {**cfg.get(k, {}), **v} for k, v in over.items()}}
+
+
 def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, today: date | None = None,
-        backfill: bool = False) -> dict:
-    cfg = load_config()
-    if backfill:  # look again at every miss now (not after retry_days) and take them all in one go
-        for k in ("art", "ratings"):
-            cfg[k] = {**cfg.get(k, {}), "retry_days": 0, "budget": 100000}
+        backfill: bool = False, fill: bool = False) -> dict:
+    cfg = paced(load_config(), backfill=backfill, fill=fill)
     STATE_DIR.mkdir(exist_ok=True)
     today = today or date.today()
     notes = []
@@ -107,11 +116,15 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     arrived = store.arrivals(db, cfg["alerts"]["arrival_days"]) if kind == "ingest" and cfg["alerts"]["arrivals"] else []
     data = assemble(cfg, sh, fc, steam_mod.load(db), today, as_of, ps, psn_mod.load(db, cfg), arrived,
                     sheet_mod.scores(db), played_mod.load(db, cfg))
-    if sync_steam:  # network lookups only on ingest and steam; build shows what is already cached
+    before = db.total_changes
+    if sync_steam or fill:  # network lookups only on ingest, steam and fill; build shows what is already cached
         notes.append(art_mod.fetch(db, art_mod.wanted(data), cfg))
     art_mod.attach(data, art_mod.load(db))
-    if sync_steam:
+    if sync_steam or fill:
         notes.append(ratings_mod.fetch(db, ratings_mod.wanted(data["library"]), cfg))
+    if fill and db.total_changes == before:  # nothing was due: leave the published files and the run log alone
+        data["notes"] = notes
+        return data
     ratings_mod.attach(data["library"], ratings_mod.load(db, ratings_mod.settings(cfg)["min_reviews"]))
     ratings_mod.attach_trailers(data, ratings_mod.trailers(db))
     data["taste"] = taste_mod.attach(data["library"], cfg)  # needs the Steam scores above
@@ -244,7 +257,7 @@ def _gaps(lib: list[dict]) -> list[str]:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="harbinger", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["ingest", "steam", "build", "show", "titles", "changes", "played", "serve"])
+    ap.add_argument("command", choices=["ingest", "steam", "fill", "build", "show", "titles", "changes", "played", "serve"])
     ap.add_argument("mark", nargs="*", help='played: "Title" played|playing|dropped|unplayed|auto')
     ap.add_argument("--game", help="changes: only this title")
     ap.add_argument("--no-forecast", action="store_true", help="ingest: keep the last forecast")
@@ -290,6 +303,8 @@ def main(argv=None) -> int:
         lost = data["played_unmatched"]
         print(f"{len(lost)} marked games match nothing on a service or in your libraries"
               + (": " + "; ".join(f"{m['title']} ({m['platform'] or m['source']})" for m in lost) if lost else ""))
+    elif a.command == "fill":
+        data = run("fill", fetch=False, refresh_forecast=False, sync_steam=False, today=a.today, fill=True)
     elif a.command == "steam":
         data = run("steam", fetch=False, refresh_forecast=False, sync_steam=True, today=a.today, backfill=a.backfill)
     else:

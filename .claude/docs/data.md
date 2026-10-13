@@ -127,8 +127,9 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   sheet, seeks to 25% (max 30 s, clips under 15 s start at 0) on `loadedmetadata`, skips autoplay under reduced
   motion / Data Saver, and drops the `src` on close. Nothing is downloaded or cached on this box.
 - **Backfill**: `py -3.11 -m harbinger steam --backfill` (or `ingest --backfill`) sets `retry_days` 0 and no
-  budget for art and ratings, so every miss is retried now; Steam's 429 still ends the run early. It prints
-  what is still missing. A cover or Steam app a store spells differently goes in `titles.toml` `[art]`.
+  budget for art and ratings and ignores the cooldown, so every miss is retried now; a push-back from Steam
+  still ends the run early and stamps the cooldown. It prints what is still missing. `harbinger fill` is the
+  quiet version the 20-minute task runs (`__main__.paced`); see ops.md. A cover or Steam app a store spells differently goes in `titles.toml` `[art]`.
 - **Where each score comes from** (a game's own catalogue row first, then the next): Metacritic =
   Game Pass sheet, PS Plus sheet, any other sheet row for the title (`sheet.scores`: removed games,
   other tiers, Games with Gold), then Steam's store copy (`appdetails` filters=metacritic, only asked

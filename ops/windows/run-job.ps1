@@ -1,10 +1,12 @@
 # Runs one Harbinger job from Task Scheduler and logs it.
 #   -Job ingest  --if-due: sheet + forecast subagent + Steam + rebuild when due; pushes newly confirmed leavers
 #   -Job steam   Steam progress + rebuild from cached inputs (manual)
+#   -Job fill    covers, Steam scores and trailers still due, in small paced batches; exits
+#                quietly when nothing is due or Steam asked us to wait (every 20 min, no page on failure)
 # A failed run pages through Pharos (if it sits next to this repo, or -PharosModule points at it)
 # so a dead schedule doesn't go unnoticed.
 param(
-    [ValidateSet('ingest', 'steam')][string]$Job = 'ingest',
+    [ValidateSet('ingest', 'steam', 'fill')][string]$Job = 'ingest',
     [string]$PharosModule = ''
 )
 
@@ -31,7 +33,7 @@ $code = $LASTEXITCODE
 $out | ForEach-Object { Add-Content -Path $Log -Encoding UTF8 -Value "$_" }
 Add-Content -Path $Log -Value "exit $code"
 
-if ($code -ne 0) {
+if ($code -ne 0 -and $Job -ne 'fill') {
     if (-not $PharosModule) { $PharosModule = Join-Path (Split-Path $Root -Parent) 'Pharos\Pharos.psm1' }
     if (-not (Test-Path $PharosModule)) { exit $code }
     try {

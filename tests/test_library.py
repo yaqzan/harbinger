@@ -3,9 +3,10 @@
 import json
 import sqlite3
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from unittest import mock
 
+from harbinger import __main__ as cli
 from harbinger import art, ratings
 from harbinger.build import assemble
 from harbinger.sheet import norm, parse
@@ -146,6 +147,37 @@ class Ratings(unittest.TestCase):
         self.assertEqual(data["library"][0]["trailer"], {"src": film["src"], "poster": film["poster"]})
         self.assertEqual(data["queue"][0]["trailer"]["src"], film["src"])  # matched by sheet key off the name
         self.assertNotIn("trailer", data["confirmed"][0])
+
+    def test_a_stop_sets_a_cooldown_that_later_runs_respect(self):
+        with mock.patch.object(ratings, "summary", return_value=None):
+            ratings.fetch(self.db, [("a", "A", 1, False)], self.cfg, NOW)
+        self.assertEqual(ratings.cooldown_until(self.db), NOW + timedelta(hours=1))
+        with mock.patch.object(ratings, "summary") as sm:
+            note = ratings.fetch(self.db, [("a", "A", 1, False)], self.cfg, NOW + timedelta(minutes=30))
+        self.assertEqual(note, "ratings: cooling down until 13:00")
+        sm.assert_not_called()
+        with mock.patch.object(ratings, "summary", return_value=(9, 10)):  # an hour on, it asks again
+            note = ratings.fetch(self.db, [("a", "A", 1, False)], self.cfg, NOW + timedelta(minutes=61))
+        self.assertEqual(note, "ratings: 1 rated, 0 not on Steam")
+
+    def test_a_backfill_ignores_the_cooldown(self):
+        ratings._cool_down(self.db, NOW, 1)
+        cfg = cli.paced({"ratings": {"pause_s": 0}}, backfill=True)
+        with mock.patch.object(ratings, "summary", return_value=(9, 10)) as sm:
+            ratings.fetch(self.db, [("a", "A", 1, False)], cfg, NOW)
+        sm.assert_called_once_with(1)
+
+
+class Paced(unittest.TestCase):
+    def test_fill_is_small_and_slow_backfill_is_unbounded_and_plain_runs_are_untouched(self):
+        base = {"art": {"budget": 150, "max_px": 240}, "ratings": {"budget": 250}}
+        self.assertEqual(cli.paced(base), base)
+        f = cli.paced(base, fill=True)
+        self.assertEqual((f["art"]["budget"], f["art"]["pause_s"], f["art"]["max_px"]), (40, 1.0, 240))
+        self.assertEqual((f["ratings"]["budget"], f["ratings"]["pause_s"]), (120, 1.0))
+        b = cli.paced(base, backfill=True)
+        self.assertEqual((b["art"]["retry_days"], b["ratings"]["budget"], b["ratings"]["respect_cooldown"]), (0, 100000, False))
+        self.assertEqual(base["art"]["budget"], 150)  # the input is not mutated
 
 
 class Trailers(unittest.TestCase):

@@ -22,6 +22,12 @@ Standard machine pattern (GameNight/Arbiter): one port, own tunnel, 5-min watchd
     (`harbinger/schedule.py`): the first tick each day always runs; later ticks run only while a
     wave is inside `[waves] notice_window` without its list. Once the list is in, they go quiet.
     It syncs Steam too, so the old "Harbinger Steam" task is gone (the installer deletes it).
+  - "Harbinger Fill" every 20 min: `harbinger fill` (`run-job.ps1 -Job fill`) finishes the covers, Steam
+    scores and trailers ingest queued, 40 covers + 120 ratings a run at one call a second. A run with
+    nothing due writes nothing (compares `db.total_changes`). Steam pushing back (any failed rating or
+    appdetails call) stamps `fill_state.cooldown_until` +1 h (`[ratings] cooldown_hours`); every run,
+    ingest included, then skips ratings until it passes. A failed fill does not page. Ingest still
+    owns discovery: fill never imports a sheet or syncs Steam.
     Each run that works costs one forecast subagent call (~90 s).
     **Why these times:** the official list goes up in the Xbox app ("Leaving soon") and Xbox Wire,
     and Pure Xbox writes it up. Pure Xbox's 22 "games are leaving" articles from Jul 2025 to Oct 2026

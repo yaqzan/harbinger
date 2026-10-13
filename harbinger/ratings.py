@@ -26,7 +26,8 @@ DETAILS = "https://store.steampowered.com/api/appdetails?appids={appid}&filters=
 # is the one file every browser plays with a plain <video> and seeks with a Range request
 MOVIE_MP4 = "https://cdn.akamai.steamstatic.com/steam/apps/{id}/movie480.mp4"
 MOVIE_TRIES = 2   # best-ranked movies checked for a live mp4 before giving up
-DEFAULTS = {"enabled": True, "budget": 250, "refresh_days": 30, "retry_days": 14, "pause_s": 0.3, "min_reviews": 10}
+DEFAULTS = {"enabled": True, "budget": 250, "refresh_days": 30, "retry_days": 14, "pause_s": 0.3, "min_reviews": 10,
+            "cooldown_hours": 1.0, "respect_cooldown": True}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS steam_rating (
@@ -40,6 +41,8 @@ CREATE TABLE IF NOT EXISTS steam_rating (
   trailer_poster TEXT,
   trailer_checked_at TEXT  -- NULL = never asked
 );
+CREATE TABLE IF NOT EXISTS fill_state (k TEXT PRIMARY KEY, v TEXT NOT NULL);  -- "cooldown_until": ISO time
+
 """
 
 
@@ -55,6 +58,18 @@ def migrate(db: sqlite3.Connection) -> None:
 
 def settings(cfg: dict) -> dict:
     return {**DEFAULTS, **cfg.get("ratings", {})}
+
+
+def cooldown_until(db: sqlite3.Connection) -> datetime | None:
+    """When Steam last pushed back, the time before which no run asks it again."""
+    r = db.execute("SELECT v FROM fill_state WHERE k = 'cooldown_until'").fetchone()
+    return datetime.fromisoformat(r[0]) if r else None
+
+
+def _cool_down(db: sqlite3.Connection, now: datetime, hours: float) -> None:
+    until = (now + timedelta(hours=hours)).isoformat(timespec="seconds")
+    db.execute("INSERT OR REPLACE INTO fill_state VALUES ('cooldown_until', ?)", (until,))
+    db.commit()
 
 
 def summary(appid: int) -> tuple[int, int] | None:
@@ -121,6 +136,9 @@ def fetch(db: sqlite3.Connection, wanted: list[tuple], cfg: dict, now: datetime 
     if not s["enabled"]:
         return "ratings: disabled"
     now = now or datetime.now()
+    until = cooldown_until(db)
+    if s["respect_cooldown"] and until and until > now:  # Steam pushed back recently: don't keep knocking
+        return f"ratings: cooling down until {until:%H:%M}"
     stamp = now.isoformat(timespec="seconds")
     cached = {k: (a, c, m, t, ta) for k, a, c, m, t, ta in db.execute(
         "SELECT key, appid, checked_at, mc_checked_at, trailer, trailer_checked_at FROM steam_rating")}
@@ -179,6 +197,8 @@ def fetch(db: sqlite3.Connection, wanted: list[tuple], cfg: dict, now: datetime 
         db.commit()
         done += bool(appid)
         miss += not appid
+    if stopped:
+        _cool_down(db, now, s["cooldown_hours"])
     left = len(todo) - done - miss if stopped else max(0, len(todo) - s["budget"])
     return (f"ratings: {done} rated, {miss} not on Steam" + (", Steam stopped answering" if stopped else "")
             + (f", {left} left for the next run" if left else ""))
