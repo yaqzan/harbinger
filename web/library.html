@@ -9,12 +9,12 @@
 <title>Harbinger · Library</title>
 <meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=34">
+<link rel="stylesheet" href="/harbinger.css?v=35">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
 <script>addEventListener("pagereveal",(e)=>{if(!e.viewTransition)return;try{if(sessionStorage.getItem("harbinger.swiped")){sessionStorage.removeItem("harbinger.swiped");return}}catch(x){}e.viewTransition.skipTransition()})</script>
-<script src="/library.js?v=14" defer blocking="render"></script>
+<script src="/library.js?v=15" defer blocking="render"></script>
 </head>
 <body>
 <div class="wrap">
@@ -32,18 +32,8 @@
     <p class="meta" id="meta">Loading…</p>
   </header>
 
-  <section class="where" aria-label="Where a game lives">
-    <svg id="venn" viewBox="0 0 300 250" role="img" aria-label="Venn diagram of Game Pass, PS Plus and Steam. Click a region to filter."></svg>
-    <div>
-      <div class="regions" id="regions"></div>
-      <p class="note" id="where-note">Pick one or more. Nothing picked shows every game.</p>
-    </div>
-  </section>
-
-  <div class="ctl" id="ctl">
+  <div class="ctl lib-ctl" id="ctl">
     <input id="q" type="search" placeholder="Search games" aria-label="Search games">
-    <button type="button" class="fbtn" id="fbtn" aria-expanded="false" aria-controls="fmore">Filters</button>
-    <div class="fmore" id="fmore">
     <select id="sort" aria-label="Sort by">
       <option value="mc">Metacritic</option>
       <option value="rating">Steam reviews</option>
@@ -55,11 +45,23 @@
       <option value="leaves">Leaving soonest</option>
       <option value="name">A to Z</option>
     </select>
-    <select id="genre" aria-label="Genre"><option value="">Every genre</option></select>
-    <label class="chk"><input type="checkbox" id="soon"> Leaving in 6 months</label>
-    <label class="chk"><input type="checkbox" id="rated"> Only games with that score</label>
-    <label class="chk switch"><input type="checkbox" role="switch" id="sp"><i aria-hidden="true"></i> Games you've played</label>
+    <button type="button" class="fbtn" id="fbtn" aria-expanded="false" aria-controls="fmore" data-n="0">Filters</button>
     <span class="count" id="count"></span>
+    <div class="fmore" id="fmore">
+      <section class="where" aria-label="Where a game lives">
+        <svg id="venn" viewBox="0 0 300 250" role="img" aria-label="Venn diagram of Game Pass, PS Plus and Steam. Click a region to filter."></svg>
+        <div>
+          <div class="regions" id="regions"></div>
+          <p class="note" id="where-note">Pick one or more. Nothing picked shows every game.</p>
+        </div>
+      </section>
+      <div class="frow">
+        <select id="genre" aria-label="Genre"><option value="">Every genre</option></select>
+        <label class="chk switch"><input type="checkbox" role="switch" id="soon"><i aria-hidden="true"></i> Leaving in 6 months</label>
+        <label class="chk switch"><input type="checkbox" role="switch" id="rated"><i aria-hidden="true"></i> Only games with that score</label>
+        <label class="chk switch"><input type="checkbox" role="switch" id="sp"><i aria-hidden="true"></i> Games you've played</label>
+        <button type="button" class="clr" id="clr">Clear filters</button>
+      </div>
     </div>
   </div>
 

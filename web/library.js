@@ -389,7 +389,8 @@
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = (keepPage) => {
-    $("fbtn").dataset.n = [ctl.sort.value !== "mc", ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [sel.size > 0, ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
+    $("clr").hidden = $("fbtn").dataset.n === "0";
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
     const out = rows.filter((r) => matches(r));
@@ -412,6 +413,12 @@
     drawRegions();
   };
 
+  $("clr").addEventListener("click", () => {
+    sel.clear(); store.set("regions", "");
+    ctl.genre.value = ""; ctl.rated.checked = ctl.sp.checked = ctl.soon.checked = false;
+    ["genre", "rated", "sp", "soon"].forEach((k) => store.set(k, ctl[k].type === "checkbox" ? "0" : ""));
+    draw();
+  });
   $("more").addEventListener("click", () => { shown += STEP; draw(true); });
   Object.entries(ctl).forEach(([k, n]) => n.addEventListener("input", () => {
     if (k !== "q") store.set(k, n.type === "checkbox" ? (n.checked ? "1" : "0") : n.value);
@@ -424,4 +431,5 @@
     + `${rows.some((r) => r.mark) ? ` · ${rows.filter(done).length} played · ${rows.filter((r) => r.mark === "playing").length} playing` : ""}`
     + ` · Metacritic for ${have("mc")} · Steam reviews for ${have("rating")} · updated ${ago(lib.generated_at)}`;
   draw();
+  if ($("fbtn").dataset.n !== "0") $("fbtn").click();  // a remembered filter is hidden otherwise
 })();
