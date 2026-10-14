@@ -106,6 +106,7 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   (Metacritic), `us` (PlayStation user score), hours, genre, release year, played hours, and
   `gp_leaves` / `ps_leaves` = [wave, band, p] from the one-service list.
 - Written to `state/library.json` (compact, with the `play` settings), not into `data.json`: the leaving page doesn't load it. `library.js` repeats the board's halo rules and logo paths from `harbinger.js` (colour = hours you have / needed, glow = odds, solid ring = confirmed, grey = you have it elsewhere); change them in both.
+- "Leaving in 6 months" filter (`#soon`, `library.js`): keeps games whose soonest Game Pass / PS Plus exit (confirmed or likely, not past) is within 6 calendar months, i.e. what the board shows; combine with any sort (Metacritic, Steam, For you).
 - Library poster: logos stacked top left, score chips stacked top right (Metacritic in its bands, Steam score with no % sign in Steam's blue / tan / red, both chips one min-width, PS user score only when sorted by it), and a dark foot carrying hours to 100% (tinted with the halo's fit colour when it can leave), your mark and the exit strip (red confirmed, amber likely). Only the name sits under the poster. Grid track min + gap stays 122px (110px phone) so the column count matches the old 108 + 14 layout; widen one, shrink the other.
   `assemble()` returns it as `data["library"]`; `run()` pops it out and writes the file.
 - `library.annotate()` copies a game's scores, genre and year onto its `one_service` rows (they

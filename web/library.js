@@ -144,6 +144,8 @@
   const mcCls = (n) => (n >= 75 ? "good" : n >= 50 ? "mixed" : "bad");
 
   const soonest = (r) => { const l = leaves(r); return l.length ? l[0].ms : Infinity; };
+  // the "Leaving in 6 months" filter: confirmed or likely exits, the games the board would show
+  const SOON = new Date(T0).setUTCMonth(new Date(T0).getUTCMonth() + 6);
 
   // ── the three places, as a Venn ──────────────────────────────────
   // region id = gp*4 + ps*2 + steam; 0 is outside every circle (PlayStation purchases only)
@@ -210,7 +212,7 @@
   };
 
   // ── filters ──────────────────────────────────────────────────────
-  const ctl = { q: $("q"), sort: $("sort"), genre: $("genre"), rated: $("rated"), sp: $("sp") };
+  const ctl = { q: $("q"), sort: $("sort"), genre: $("genre"), rated: $("rated"), sp: $("sp"), soon: $("soon") };
   // played or dropped (your notes, or `harbinger played`): hidden until the switch shows them
   const done = (r) => r.mark === "played" || r.mark === "dropped";
   const MARK = { playing: "Playing", played: "Played", dropped: "Dropped" };
@@ -222,6 +224,7 @@
   if (ctl.genre.value !== store.get("genre", "")) ctl.genre.value = "";
   ctl.rated.checked = store.get("rated", "0") === "1";
   ctl.sp.checked = store.get("sp", "0") === "1";
+  ctl.soon.checked = store.get("soon", "0") === "1";
   if (!rows.some(done)) ctl.sp.parentElement.hidden = true;
   if (!hasPs) ctl.sort.querySelector('[value="us"]').remove();
 
@@ -242,6 +245,7 @@
     if (done(r) && !withDone) return false;
     if (q && !r.game.toLowerCase().includes(q)) return false;
     if (g && r.genre !== g) return false;
+    if (ctl.soon.checked && soonest(r) > SOON) return false;
     if (ctl.rated.checked && METRIC[ctl.sort.value] && METRIC[ctl.sort.value](r) == null) return false;
     if (ctl.sort.value === "leaves" && ctl.rated.checked && soonest(r) === Infinity) return false;
     return skipRegion || !sel.size || sel.has(region(r));
@@ -385,7 +389,7 @@
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = (keepPage) => {
-    $("fbtn").dataset.n = [ctl.sort.value !== "mc", ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [ctl.sort.value !== "mc", ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
     const out = rows.filter((r) => matches(r));
