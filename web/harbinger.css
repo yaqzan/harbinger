@@ -275,8 +275,8 @@ td .dots { margin-right: 2px; }
 .m-row { position: relative; display: grid; grid-template-columns: 66px minmax(0, 1fr) 11rem 13rem; align-items: center; gap: 1rem;
   padding: 3px .6rem 3px 1.4rem; border-radius: 8px; cursor: pointer; }  /* the plates stack end to end, the ring sits inside them */
 .m-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-/* the stop on the line is the console's mark; the row carries a faint wash of its colour and the poster sits
-   on a dark plate of it, so the fit glow never lands on a green (or blue) row */
+/* the stop on the line is the console's mark; the row carries a wash of its colour on the right, clear
+   behind the poster so the fit glow shows undisturbed */
 .m-row .stop { position: absolute; left: -17px; top: 50%; margin-top: -12px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
   border: 2.5px solid var(--bg); box-sizing: content-box; }
 .stop svg { width: 14px; height: 14px; fill: #fff; }
@@ -285,8 +285,6 @@ td .dots { margin-right: 2px; }
 .m-row.p-xbox { background: linear-gradient(270deg, rgba(16, 124, 16, .22), transparent 60%); }
 .m-row.p-ps { background: linear-gradient(270deg, rgba(0, 112, 209, .24), transparent 60%); }
 .m-plate { padding: 6px; border-radius: 12px; }
-.p-xbox .m-plate { background: linear-gradient(160deg, #0d3b0d, #071a07); }
-.p-ps .m-plate { background: linear-gradient(160deg, #0a2a5c, #06142e); }
 .m-cv { width: 54px; height: 81px; border-radius: 5px; overflow: hidden; }
 .m-cv.blank { font-size: .6rem; padding: 3px; }
 .m-info { min-width: 0; }
