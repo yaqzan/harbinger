@@ -1,7 +1,9 @@
 // The detail sheet: every close (x, backdrop, Esc, swipe) plays the opening animation backwards, and on
 // a touch screen the sheet follows your finger down and leaves when you let go past a short pull.
-// It also plays the game's Steam trailer (window.sheetTrailer): muted, started a quarter of the way in so
-// it opens on the action rather than the logos, and torn down on close so nothing keeps streaming.
+// It also plays the game's Steam trailer (window.sheetTrailer): no controls or overlays at all, muted,
+// started a quarter of the way in so it opens on the action rather than the logos, replayed from that
+// point when it ends, and torn down on close so nothing keeps streaming. A tap on the picture is the
+// only control: it plays a paused trailer, otherwise it toggles sound.
 (() => {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
   const nativeClose = HTMLDialogElement.prototype.close;
@@ -35,14 +37,22 @@
     stopTrailer(box);
     if (!t || typeof t.src !== "string" || !t.src.startsWith("https://")) return;
     const v = document.createElement("video");
-    v.muted = true; v.controls = true; v.playsInline = true; v.preload = "metadata";
+    v.muted = true; v.controls = false; v.playsInline = true; v.preload = "metadata";
     v.setAttribute("playsinline", "");
+    v.disablePictureInPicture = true;
+    v.setAttribute("controlslist", "nodownload nofullscreen noremoteplayback");
     if (typeof t.poster === "string" && t.poster.startsWith("https://")) v.poster = t.poster;
-    // reduced motion and Data Saver get the poster and a play button instead of autoplay
+    // reduced motion and Data Saver get the poster alone until you tap it
     v.autoplay = !reduce.matches && !(navigator.connection && navigator.connection.saveData);
+    let from = 0;
     v.addEventListener("loadedmetadata", () => {
-      if (v.duration > SKIP_MIN_LEN) v.currentTime = Math.min(v.duration * SKIP, SKIP_MAX);
+      if (v.duration > SKIP_MIN_LEN) from = v.currentTime = Math.min(v.duration * SKIP, SKIP_MAX);
     }, { once: true });
+    v.addEventListener("ended", () => { v.currentTime = from; v.play().catch(() => {}); });
+    v.addEventListener("click", () => {
+      if (v.paused) v.play().catch(() => {});
+      else v.muted = !v.muted;
+    });
     v.addEventListener("error", () => stopTrailer(box), { once: true });  // a dead file leaves no empty player
     v.src = t.src;
     box.hidden = false;

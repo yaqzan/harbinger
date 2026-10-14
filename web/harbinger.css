@@ -175,7 +175,7 @@ dialog .x { position: absolute; top: 8px; right: 12px; border: 0; background: no
 .d-top { display: grid; grid-template-columns: 96px 1fr; gap: 1rem; align-items: start; margin-bottom: 1rem; }
 .d-top .big { width: 96px; height: 144px; }
 .d-trailer { margin: 0 0 1rem; border-radius: 8px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; }
-.d-trailer video { display: block; width: 100%; height: 100%; }
+.d-trailer video { display: block; width: 100%; height: 100%; cursor: pointer; }
 .d-top h2 { font-size: 1.15rem; padding-right: 1.5rem; }
 .d-svc { color: var(--muted); font-size: .84rem; margin-top: .2rem; }
 .d-backup { font-size: .86rem; margin-top: .5rem; }

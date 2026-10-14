@@ -124,8 +124,10 @@ and re-imported on 2026-10-09 (`sheet.migrate`), so the change log starts again 
   Range-seekable, ~4 MB); a HEAD check keeps a dead file out. Movie order: gameplay, then others, teasers and
   announcements last (`rank_movies`). No hit is rechecked after `refresh_days`. Rows carry `trailer {src, poster}`
   (`attach_trailers`, board and library rows by key). `web/sheet.js` `sheetTrailer` plays it muted in the detail
-  sheet, seeks to 25% (max 30 s, clips under 15 s start at 0) on `loadedmetadata`, skips autoplay under reduced
-  motion / Data Saver, and drops the `src` on close. Nothing is downloaded or cached on this box.
+  sheet with no controls or overlays (owner's call: no scrubber, no play/pause chrome), seeks to 25% (max 30 s,
+  clips under 15 s start at 0) on `loadedmetadata`, restarts from that point when it ends, skips autoplay
+  under reduced motion / Data Saver (poster only), and drops the `src` on close. A tap plays a paused
+  trailer, else toggles sound; that is the only control. Nothing is downloaded or cached on this box.
 - **Backfill**: `py -3.11 -m harbinger steam --backfill` (or `ingest --backfill`) sets `retry_days` 0 and no
   budget for art and ratings and ignores the cooldown, so every miss is retried now; a push-back from Steam
   still ends the run early and stamps the cooldown. It prints what is still missing. `harbinger fill` is the
