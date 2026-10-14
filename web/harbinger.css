@@ -118,7 +118,7 @@ nav { align-items: center; gap: 1rem; }
 .ctl .count { font: inherit; font-size: .8rem; color: var(--muted); margin-left: auto; }
 /* the filters behind search: inline on a wide screen, folded behind the Filters button on a phone */
 .fmore { display: contents; }
-/* library: the filters (Venn, genre, switches) live in one panel under search, behind Filters on every width */
+/* library: the filters (places, genre, switches) live in one panel under search, behind Filters on every width */
 .lib-ctl .fmore { display: none; width: 100%; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: .9rem 1rem; }
 .lib-ctl.open .fmore { display: block; }
 .lib-ctl .fbtn { display: inline-flex; }
@@ -202,23 +202,21 @@ dialog dt { color: var(--muted); }
 .dot.steam { background: #8b93a1; }
 .dot.psn { background: transparent; box-shadow: inset 0 0 0 2px var(--ps); }
 .lib-head { padding: 1.5rem 0 .75rem; }
-.where { display: grid; grid-template-columns: 300px 1fr; gap: 1.25rem; align-items: center; }
-#venn { width: 100%; max-width: 300px; height: auto; cursor: pointer; user-select: none; }
-.vc { opacity: .22; }
-.vc.xbox { fill: var(--xbox); }
-.vc.ps { fill: var(--ps); }
-.vc.steam { fill: #8b93a1; }
-.vo { fill: none; stroke: var(--muted); stroke-width: 1; }
-.vsel { fill: var(--ink); opacity: .35; }
-.vt { font: 600 12px system-ui, sans-serif; fill: var(--ink); text-anchor: middle; pointer-events: none; }
-.vn { font: 600 11px system-ui, sans-serif; fill: var(--muted); pointer-events: none; }
-.regions { display: flex; flex-wrap: wrap; gap: .4rem; }
-.chip-r { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: .84rem; color: var(--ink); background: var(--bg);
-  border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
-.chip-r small { color: var(--muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
-.chip-r.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.chip-r.on small { color: inherit; opacity: .75; }
-.where .note { margin-top: .6rem; }
+.where { display: block; }
+.svcs { display: grid; gap: .5rem; }
+.svc { display: grid; grid-template-columns: minmax(9rem, 12rem) auto auto; gap: .6rem; align-items: center; justify-content: start; }
+.svc-n { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--bg); }
+.seg button { font: inherit; font-size: .84rem; color: var(--muted); background: none; border: 0; border-right: 1px solid var(--rule);
+  padding: 5px 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: baseline; }
+.seg button:last-child { border-right: 0; }
+.seg small { font-size: .72rem; font-variant-numeric: tabular-nums; opacity: .75; }
+.seg button.on { background: var(--ink); color: var(--bg); }
+.seg button.on.vn { background: var(--likely); color: #fff; }
+.seg button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.only, .mode { font: inherit; font-size: .8rem; color: var(--muted); background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 4px 2px; }
+.wfoot { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: baseline; margin-top: .6rem; }
+.wfoot .note { margin: 0; }
 
 .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 16px 12px; }
 .tile.lib { width: 100%; }
@@ -229,10 +227,6 @@ dialog dt { color: var(--muted); }
 .odds.sc-steam { color: #7fb0ff; }
 .odds.sc-ps { color: #7ee2a0; }
 td .dots { margin-right: 2px; }
-@media (max-width: 640px) {
-  .where { grid-template-columns: 1fr; }
-  #venn { max-width: 240px; margin: 0 auto; }
-}
 
 
 /* ── board: a metro line. Dates are stops down the left, each game's poster carries the shelf's
@@ -351,7 +345,8 @@ td .dots { margin-right: 2px; }
   /* 16px stops iOS Safari zooming in when a field takes focus */
   input, select { min-height: 44px; font-size: 16px; }
   .chk { min-height: 44px; }
-  .more, .chip-r, .fbtn, .clr { min-height: 44px; }
+  .more, .fbtn, .clr, .seg button, .only, .mode { min-height: 44px; }
+  .only { min-width: 44px; }
   dialog .x { top: 4px; right: 4px; min-width: 44px; min-height: 44px; }
   summary { padding: 9px 0; }
   .box tr[tabindex] td { padding-top: 10px; padding-bottom: 10px; }
@@ -390,9 +385,12 @@ td .dots { margin-right: 2px; }
   .exits div:last-child { flex-direction: row; gap: .4rem; align-items: baseline; }
   .exits .nm { font-size: .84rem; }
   .exits .lose { display: inline; font-size: .8rem; color: var(--likely); font-weight: 600; }
-  /* library: no title or Venn, the region chips scroll sideways on one line */
-  .lib-head, #venn, .where .note { display: none; }
-  .where { display: block; }
+  /* library: no title; the place switches stack under their name */
+  .lib-head { display: none; }
+  .svc { grid-template-columns: 1fr auto; }
+  .svc-n { grid-column: 1 / -1; }
+  .seg { flex: 1; }
+  .seg button { flex: 1; justify-content: center; }
   .lib-ctl .fmore { padding: .7rem .8rem; }
   .frow select { flex: 1 1 100%; }
 

@@ -176,7 +176,7 @@ Under 640px both pages keep only search + a **Filters** button above the content
 filters changed from the default; `.fmore` holds the rest and is `display: contents` on wider screens).
 The Board's Confirmed exits become a row of pills (date, service, "lose N"); the panel title, notice
 and Updated line hide; the legend shows only with the filters open. The Library hides its title,
-meta and Venn; the region chips scroll on one line. First content at 215px (Board) / 182px
+meta; every filter sits behind one Filters button. First content at 215px (Board) / 182px
 (Library) on a 390x844 phone, was 700 / 934. The Board's date heads its group and each row folds to
 the poster beside title, facts, then hours and remark (under 380px: "6 of 12 h" and no "Leaves"); tables with `class="stack"` become one block per row, labelled
 from `data-label` (copied from the header by the JS that fills them); the detail dialog docks to

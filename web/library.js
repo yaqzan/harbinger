@@ -147,68 +147,33 @@
   // the "Leaving in 6 months" filter: confirmed or likely exits, the games the board would show
   const SOON = new Date(T0).setUTCMonth(new Date(T0).getUTCMonth() + 6);
 
-  // ── the three places, as a Venn ──────────────────────────────────
-  // region id = gp*4 + ps*2 + steam; 0 is outside every circle (PlayStation purchases only)
-  const region = (r) => (r.gp ? 4 : 0) + (r.ps ? 2 : 0) + (r.steam ? 1 : 0);
-  const NAMES = { 4: "Game Pass only", 2: "PS Plus only", 1: "Steam only", 6: "Game Pass and PS Plus", 5: "Game Pass and Steam",
-    3: "PS Plus and Steam", 7: "All three", 0: "PlayStation library only" };
-  const ORDER = [4, 2, 1, 6, 5, 3, 7, 0];
-  const SETS = [{ bit: 4, name: "Game Pass", cls: "xbox", cx: 112, cy: 100 }, { bit: 2, name: "PS Plus", cls: "ps", cx: 188, cy: 100 },
-    { bit: 1, name: "Steam", cls: "steam", cx: 150, cy: 160 }];
-  const R = 70;
-  const sel = new Set((store.get("regions", "") || "").split(",").filter((x) => x !== "").map(Number).filter((n) => n >= 0 && n <= 7));
-  const setsOf = (id) => SETS.filter((s) => id & s.bit);
-
-  const venn = $("venn");
-  const defs = sv("defs");
-  SETS.forEach((s, i) => {
-    const cp = sv("clipPath", { id: `cp${i}` });
-    cp.appendChild(sv("circle", { cx: s.cx, cy: s.cy, r: R }));
-    defs.appendChild(cp);
+  // ── where it lives: one Any / Has / Not switch per place ─────────
+  // The old Venn was eight fixed regions; these compose into every one of them (and more).
+  // Has = the game is there, Not = it isn't, Any = don't care. Several Has: every one, or any one.
+  const PLACES = [
+    { k: "gp", name: "Game Pass", cls: "xbox", logo: "xbox" },
+    { k: "ps", name: "PS Plus", cls: "ps", logo: "playstation" },
+    { k: "steam", name: "Steam", cls: "steam", logo: "steam" },
+    { k: "psn", name: "PlayStation library", cls: "ps", logo: "playstation" },
+  ].filter((p) => p.k !== "ps" || hasPs);
+  const svc = Object.fromEntries(PLACES.map((p) => [p.k, 0]));
+  (store.get("svc", "") || "").split(",").forEach((x) => {
+    const [k, v] = x.split(":");
+    if (k in svc && (v === "1" || v === "-1")) svc[k] = Number(v);
   });
-  // one mask per region: white inside every circle it needs, black inside every circle it must not be in
-  ORDER.forEach((id) => {
-    const m = sv("mask", { id: `m${id}`, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 300, height: 250 });
-    m.appendChild(sv("rect", { x: 0, y: 0, width: 300, height: 250, fill: "#000" }));
-    // white where all needed circles overlap (nested clips), then black over the excluded circles
-    let g = m;
-    SETS.forEach((s, i) => {
-      if (id & s.bit) { const n = sv("g", { "clip-path": `url(#cp${i})` }); g.appendChild(n); g = n; }
-    });
-    g.appendChild(sv("rect", { x: 0, y: 0, width: 300, height: 250, fill: "#fff" }));
-    SETS.forEach((s) => { if (!(id & s.bit)) m.appendChild(sv("circle", { cx: s.cx, cy: s.cy, r: R, fill: "#000" })); });
-    defs.appendChild(m);
-  });
-  venn.appendChild(defs);
-  SETS.forEach((s) => venn.appendChild(sv("circle", { cx: s.cx, cy: s.cy, r: R, class: `vc ${s.cls}` })));
-  const hl = sv("g", { class: "vhl" });
-  venn.appendChild(hl);
-  SETS.forEach((s) => venn.appendChild(sv("circle", { cx: s.cx, cy: s.cy, r: R, class: "vo" })));
-  const labels = { 4: [88, 80], 2: [212, 80], 1: [150, 198], 6: [150, 74], 5: [124, 134], 3: [176, 134], 7: [150, 118], 0: [30, 232] };
-  const counts = {};
-  ORDER.forEach((id) => {
-    const tx = sv("text", { x: labels[id][0], y: labels[id][1], class: "vt" });
-    counts[id] = tx;
-    venn.appendChild(tx);
-  });
-  SETS.forEach((s) => {
-    const pos = { 4: [62, 36], 2: [238, 36], 1: [150, 244] }[s.bit];
-    const tx = sv("text", { x: pos[0], y: pos[1], class: "vn", "text-anchor": "middle" });
-    tx.textContent = s.name;
-    venn.appendChild(tx);
-  });
-  const regionAt = (x, y) => SETS.reduce((id, s) => ((x - s.cx) ** 2 + (y - s.cy) ** 2 <= R * R ? id | s.bit : id), 0);
-  venn.addEventListener("click", (e) => {
-    const p = venn.createSVGPoint();
-    p.x = e.clientX; p.y = e.clientY;
-    const q = p.matrixTransform(venn.getScreenCTM().inverse());
-    toggle(regionAt(q.x, q.y));
-  });
-
-  const toggle = (id) => {
-    sel.has(id) ? sel.delete(id) : sel.add(id);
-    store.set("regions", [...sel].join(","));
-    draw();
+  let mode = store.get("mode", "all") === "any" ? "any" : "all";
+  const saveSvc = () => store.set("svc", PLACES.filter((p) => svc[p.k]).map((p) => `${p.k}:${svc[p.k]}`).join(","));
+  const svcOn = () => PLACES.some((p) => svc[p.k]);
+  const inPlaces = (r, st = svc) => {
+    if (PLACES.some((p) => st[p.k] === -1 && r[p.k])) return false;
+    const has = PLACES.filter((p) => st[p.k] === 1);
+    return !has.length || (mode === "any" ? has.some((p) => r[p.k]) : has.every((p) => r[p.k]));
+  };
+  const setSvc = (k, v) => { svc[k] = v; saveSvc(); draw(); };
+  // one tap: this place only, every other place off
+  const only = (k) => {
+    PLACES.forEach((p) => { svc[p.k] = p.k === k ? 1 : -1; });
+    saveSvc(); draw();
   };
 
   // ── filters ──────────────────────────────────────────────────────
@@ -240,7 +205,7 @@
     leaves: (a, b) => soonest(a) - soonest(b),
     name: () => 0,
   };
-  const matches = (r, skipRegion, withDone = ctl.sp.checked) => {
+  const matches = (r, skipSvc, withDone = ctl.sp.checked) => {
     const q = ctl.q.value.trim().toLowerCase(), g = ctl.genre.value;
     if (done(r) && !withDone) return false;
     if (q && !r.game.toLowerCase().includes(q)) return false;
@@ -248,7 +213,7 @@
     if (ctl.soon.checked && soonest(r) > SOON) return false;
     if (ctl.rated.checked && METRIC[ctl.sort.value] && METRIC[ctl.sort.value](r) == null) return false;
     if (ctl.sort.value === "leaves" && ctl.rated.checked && soonest(r) === Infinity) return false;
-    return skipRegion || !sel.size || sel.has(region(r));
+    return skipSvc || inPlaces(r);
   };
 
   // ── drawing ──────────────────────────────────────────────────────
@@ -361,35 +326,46 @@
   };
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
-  const drawRegions = () => {
+  const drawPlaces = () => {
     const base = rows.filter((r) => matches(r, true));
-    const n = {};
-    base.forEach((r) => { n[region(r)] = (n[region(r)] || 0) + 1; });
-    const box = $("regions");
-    box.replaceChildren(...ORDER.filter((id) => (n[id] || 0) > 0 || sel.has(id)).filter((id) => hasPs || !(id & 2)).map((id) => {
-      const b = el("button", `chip-r${sel.has(id) ? " on" : ""}`);
-      b.type = "button";
-      b.setAttribute("aria-pressed", String(sel.has(id)));
-      setsOf(id).forEach((s) => b.appendChild(el("span", `dot ${s.cls}`)));
-      b.appendChild(document.createTextNode(`${NAMES[id]} `));
-      b.appendChild(el("small", null, String(n[id] || 0)));
-      b.addEventListener("click", () => toggle(id));
-      return b;
+    const n = (k, v) => base.filter((r) => inPlaces(r, { ...svc, [k]: v })).length;
+    $("svcs").replaceChildren(...PLACES.map((p) => {
+      const row = el("div", "svc");
+      const nm = el("span", "svc-n");
+      nm.append(el("span", `dot ${p.cls}`), p.name);
+      row.appendChild(nm);
+      const seg = el("span", "seg");
+      seg.setAttribute("role", "group");
+      seg.setAttribute("aria-label", p.name);
+      [["Any", 0], ["Has", 1], ["Not", -1]].forEach(([label, v]) => {
+        const b = el("button", `${svc[p.k] === v ? "on " : ""}v${v < 0 ? "n" : v}`);
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(svc[p.k] === v));
+        b.append(label, el("small", null, n(p.k, v).toLocaleString()));
+        b.addEventListener("click", () => setSvc(p.k, v));
+        seg.appendChild(b);
+      });
+      row.appendChild(seg);
+      const o = el("button", "only", "only");
+      o.type = "button";
+      o.title = `${p.name} and nothing else`;
+      o.addEventListener("click", () => only(p.k));
+      row.appendChild(o);
+      return row;
     }));
-    ORDER.forEach((id) => { counts[id].textContent = n[id] ? String(n[id]) : ""; });
-    hl.replaceChildren(...[...sel].map((id) => {
-      const g = sv("g", { mask: `url(#m${id})` });
-      g.appendChild(sv("rect", { x: 0, y: 0, width: 300, height: 250, class: "vsel" }));
-      return g;
-    }));
-    $("where-note").textContent = sel.size ? `Showing ${[...sel].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)).map((id) => NAMES[id]).join(", ")}.`
-      : "Pick one or more. Nothing picked shows every game.";
+    const hasN = PLACES.filter((p) => svc[p.k] === 1).length;
+    $("mode").hidden = hasN < 2;
+    $("mode").textContent = mode === "any" ? "Matching any of them" : "Matching all of them";
+    const yes = PLACES.filter((p) => svc[p.k] === 1).map((p) => p.name);
+    const no = PLACES.filter((p) => svc[p.k] === -1).map((p) => p.name);
+    $("where-note").textContent = !svcOn() ? "Any place. Set Has or Not on a place to narrow."
+      : `${yes.length ? `On ${yes.join(mode === "any" ? " or " : " and ")}` : "Anywhere"}${no.length ? `${yes.length ? ", but" : ","} not on ${no.join(" or ")}` : ""}.`;
   };
 
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = (keepPage) => {
-    $("fbtn").dataset.n = [sel.size > 0, ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [svcOn(), ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
     $("clr").hidden = $("fbtn").dataset.n === "0";
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
@@ -410,11 +386,12 @@
     $("more").textContent = `Show ${Math.min(STEP, out.length - shown)} more of ${out.length - shown}`;
     const page = out.slice(0, shown);
     $("grid").replaceChildren(...page.map(tile));
-    drawRegions();
+    drawPlaces();
   };
 
+  $("mode").addEventListener("click", () => { mode = mode === "any" ? "all" : "any"; store.set("mode", mode); draw(); });
   $("clr").addEventListener("click", () => {
-    sel.clear(); store.set("regions", "");
+    PLACES.forEach((p) => { svc[p.k] = 0; }); mode = "all"; saveSvc(); store.set("mode", "all");
     ctl.genre.value = ""; ctl.rated.checked = ctl.sp.checked = ctl.soon.checked = false;
     ["genre", "rated", "sp", "soon"].forEach((k) => store.set(k, ctl[k].type === "checkbox" ? "0" : ""));
     draw();

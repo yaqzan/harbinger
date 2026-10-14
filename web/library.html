@@ -9,12 +9,12 @@
 <title>Harbinger · Library</title>
 <meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=35">
+<link rel="stylesheet" href="/harbinger.css?v=36">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
 <script>addEventListener("pagereveal",(e)=>{if(!e.viewTransition)return;try{if(sessionStorage.getItem("harbinger.swiped")){sessionStorage.removeItem("harbinger.swiped");return}}catch(x){}e.viewTransition.skipTransition()})</script>
-<script src="/library.js?v=15" defer blocking="render"></script>
+<script src="/library.js?v=16" defer blocking="render"></script>
 </head>
 <body>
 <div class="wrap">
@@ -49,10 +49,10 @@
     <span class="count" id="count"></span>
     <div class="fmore" id="fmore">
       <section class="where" aria-label="Where a game lives">
-        <svg id="venn" viewBox="0 0 300 250" role="img" aria-label="Venn diagram of Game Pass, PS Plus and Steam. Click a region to filter."></svg>
-        <div>
-          <div class="regions" id="regions"></div>
-          <p class="note" id="where-note">Pick one or more. Nothing picked shows every game.</p>
+        <div class="svcs" id="svcs"></div>
+        <div class="wfoot">
+          <p class="note" id="where-note"></p>
+          <button type="button" class="mode" id="mode" hidden></button>
         </div>
       </section>
       <div class="frow">
