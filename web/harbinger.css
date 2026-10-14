@@ -282,8 +282,8 @@ td .dots { margin-right: 2px; }
 .stop svg { width: 14px; height: 14px; fill: #fff; }
 .stop.xbox { background: #107c10; }
 .stop.playstation { background: #0070d1; }
-.m-row.p-xbox { background: linear-gradient(90deg, rgba(16, 124, 16, .14), transparent 55%); }
-.m-row.p-ps { background: linear-gradient(90deg, rgba(0, 112, 209, .16), transparent 55%); }
+.m-row.p-xbox { background: linear-gradient(270deg, rgba(16, 124, 16, .22), transparent 60%); }
+.m-row.p-ps { background: linear-gradient(270deg, rgba(0, 112, 209, .24), transparent 60%); }
 .m-plate { padding: 6px; border-radius: 12px; }
 .p-xbox .m-plate { background: linear-gradient(160deg, #0d3b0d, #071a07); }
 .p-ps .m-plate { background: linear-gradient(160deg, #0a2a5c, #06142e); }
