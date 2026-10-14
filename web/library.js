@@ -151,10 +151,10 @@
   // The old Venn was eight fixed regions; these compose into every one of them (and more).
   // Has = the game is there, Not = it isn't, Any = don't care. Several Has: every one, or any one.
   const PLACES = [
-    { k: "gp", name: "Game Pass", cls: "xbox", logo: "xbox" },
-    { k: "ps", name: "PS Plus", cls: "ps", logo: "playstation" },
-    { k: "steam", name: "Steam", cls: "steam", logo: "steam" },
-    { k: "psn", name: "PlayStation library", cls: "ps", logo: "playstation" },
+    { k: "gp", name: "Game Pass", logo: "xbox", color: "#107c10" },
+    { k: "ps", name: "PS Plus", logo: "playstation", color: "#0070d1" },
+    { k: "steam", name: "Steam", logo: "steam", color: "#66c0f4" },
+    { k: "psn", name: "PlayStation library", logo: "playstation", color: "#0070d1" },
   ].filter((p) => p.k !== "ps" || hasPs);
   const svc = Object.fromEntries(PLACES.map((p) => [p.k, 0]));
   (store.get("svc", "") || "").split(",").forEach((x) => {
@@ -190,7 +190,7 @@
   ctl.rated.checked = store.get("rated", "0") === "1";
   ctl.sp.checked = store.get("sp", "0") === "1";
   ctl.soon.checked = store.get("soon", "0") === "1";
-  if (!rows.some(done)) ctl.sp.parentElement.hidden = true;
+  if (!rows.some(done)) ctl.sp.closest(".tg").hidden = true;
   if (!hasPs) ctl.sort.querySelector('[value="us"]').remove();
 
   const METRIC = { mc: (r) => r.mc, rating: (r) => r.rating, us: (r) => r.us, taste: (r) => r.taste, hours: (r) => r.hours, hoursd: (r) => r.hours, year: (r) => r.year };
@@ -330,35 +330,30 @@
     const base = rows.filter((r) => matches(r, true));
     const n = (k, v) => base.filter((r) => inPlaces(r, { ...svc, [k]: v })).length;
     $("svcs").replaceChildren(...PLACES.map((p) => {
-      const row = el("div", "svc");
-      const nm = el("span", "svc-n");
-      nm.append(el("span", `dot ${p.cls}`), p.name);
-      row.appendChild(nm);
-      const seg = el("span", "seg");
-      seg.setAttribute("role", "group");
-      seg.setAttribute("aria-label", p.name);
-      [["Any", 0], ["Has", 1], ["Not", -1]].forEach(([label, v]) => {
-        const b = el("button", `${svc[p.k] === v ? "on " : ""}v${v < 0 ? "n" : v}`);
-        b.type = "button";
-        b.setAttribute("aria-pressed", String(svc[p.k] === v));
-        b.append(label, el("small", null, n(p.k, v).toLocaleString()));
-        b.addEventListener("click", () => setSvc(p.k, v));
-        seg.appendChild(b);
-      });
-      row.appendChild(seg);
+      const st = svc[p.k], w = el("span", "plw");
+      const b = el("button", `pl s${st}`);
+      b.type = "button";
+      b.style.setProperty("--pc", p.color);
+      b.setAttribute("aria-label", `${p.name}: ${st === 1 ? "has" : st === -1 ? "not" : "any"}. Tap to change.`);
+      const badge = el("span", `plat ${p.logo}`), svg = document.createElementNS(NS, "svg"), path = document.createElementNS(NS, "path");
+      svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
+      path.setAttribute("d", LOGO[p.logo][1]); svg.appendChild(path); badge.appendChild(svg);
+      b.append(badge, el("span", "pn", p.name), el("small", null, n(p.k, st === -1 ? -1 : 1).toLocaleString()));
+      b.addEventListener("click", () => setSvc(p.k, st === 0 ? 1 : st === 1 ? -1 : 0));
+      w.appendChild(b);
       const o = el("button", "only", "only");
       o.type = "button";
       o.title = `${p.name} and nothing else`;
       o.addEventListener("click", () => only(p.k));
-      row.appendChild(o);
-      return row;
+      w.appendChild(o);
+      return w;
     }));
     const hasN = PLACES.filter((p) => svc[p.k] === 1).length;
     $("mode").hidden = hasN < 2;
-    $("mode").textContent = mode === "any" ? "Matching any of them" : "Matching all of them";
+    $("mode").textContent = mode === "any" ? "Matching any · switch to all" : "Matching all · switch to any";
     const yes = PLACES.filter((p) => svc[p.k] === 1).map((p) => p.name);
     const no = PLACES.filter((p) => svc[p.k] === -1).map((p) => p.name);
-    $("where-note").textContent = !svcOn() ? "Any place. Set Has or Not on a place to narrow."
+    $("where-note").textContent = !svcOn() ? "Tap a place once to require it, twice to exclude it. Hover for only."
       : `${yes.length ? `On ${yes.join(mode === "any" ? " or " : " and ")}` : "Anywhere"}${no.length ? `${yes.length ? ", but" : ","} not on ${no.join(" or ")}` : ""}.`;
   };
 
