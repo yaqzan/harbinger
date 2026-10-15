@@ -9,12 +9,12 @@
 <title>Harbinger · Library</title>
 <meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=40">
+<link rel="stylesheet" href="/harbinger.css?v=41">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
 <script>addEventListener("pagereveal",(e)=>{if(!e.viewTransition)return;try{if(sessionStorage.getItem("harbinger.swiped")){sessionStorage.removeItem("harbinger.swiped");return}}catch(x){}e.viewTransition.skipTransition()})</script>
-<script src="/library.js?v=18" defer blocking="render"></script>
+<script src="/library.js?v=19" defer blocking="render"></script>
 </head>
 <body>
 <div class="wrap">
@@ -52,7 +52,9 @@
     <div class="lrow" role="group" aria-label="Where a game lives">
       <span id="svcs" style="display:contents"></span>
       <button type="button" class="mode" id="mode" hidden></button>
+      <button type="button" class="tgl" id="tgl" aria-expanded="false" aria-controls="tiers" title="Break Game Pass and PS Plus down by tier">tiers</button>
     </div>
+    <div class="tiers" id="tiers" hidden></div>
     <p class="lsum"><span class="count" id="count"></span><span class="wnote" id="where-note"></span></p>
     <div class="fmore" id="fmore">
       <div class="fgroup">
@@ -71,7 +73,7 @@
     <p class="empty" id="empty" hidden>Nothing matches.</p>
   </main>
 
-  <footer>Metacritic and PlayStation user scores come from u/ABattleVet's Game Pass and PS Plus master lists. Steam reviews are the share of positive user reviews on the Steam store, shown from 10 reviews up. Game Pass means Ultimate on an Xbox console.</footer>
+  <footer>Metacritic and PlayStation user scores come from u/ABattleVet's Game Pass and PS Plus master lists. Steam reviews are the share of positive user reviews on the Steam store, shown from 10 reviews up. Game Pass is the Xbox console catalogue. A tier chip counts the games that tier adds: Essential's are in Premium, Premium's in Ultimate. Games above the tier set in your config are dimmed.</footer>
 </div>
 
 <dialog id="detail" aria-labelledby="d-name">

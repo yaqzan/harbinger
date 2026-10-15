@@ -156,6 +156,21 @@ nav { align-items: center; gap: 1rem; }
 .pl.s-1::after { content: "\2212"; background: var(--likely); }
 /* the two "you own it" places carry a small tag, so the two PlayStation icons differ */
 .pl.own::before { content: ""; position: absolute; left: 4px; bottom: 4px; width: 7px; height: 7px; border-radius: 2px; background: var(--muted); opacity: .8; }
+.tgl { font: inherit; font-size: .74rem; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 4px 6px; border-radius: 6px; opacity: .7; }
+.tgl::after { content: " BE"; }
+.tgl.on::after { content: " B4"; }
+.tgl:hover, .tgl.on { color: var(--ink); opacity: 1; }
+.tiers { flex: 1 1 100%; display: flex; flex-direction: column; gap: .35rem; }
+.tline { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.tline .tn { font-size: .72rem; color: var(--muted); min-width: 4.6rem; }
+.tchip { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: .78rem; font-weight: 600; color: var(--muted);
+  background: none; border: 1px solid var(--rule); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.tchip small { font-size: .68rem; font-variant-numeric: tabular-nums; opacity: .7; }
+.tchip.mine { border-style: dashed; }
+.tchip:hover { color: var(--ink); }
+.tchip.on { color: var(--ink); border-color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, var(--bg)); }
+.tchip:focus-visible, .tgl:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tile.offplan .cv { opacity: .6; }
 .pl:focus-visible, .tg input:focus-visible + span, .sortb:focus-within, .fbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .mode, .clr { font: inherit; font-size: .8rem; font-weight: 600; color: var(--ink); background: var(--card); border: 1px solid var(--rule); cursor: pointer;
   padding: 0 12px; min-height: 44px; border-radius: 14px; margin-left: .2rem; }
@@ -383,7 +398,7 @@ td .dots { margin-right: 2px; }
   /* 16px stops iOS Safari zooming in when a field takes focus */
   input, select { min-height: 44px; font-size: 16px; }
   .chk { min-height: 44px; }
-  .more, .fbtn, .tg span, .pl, .clr, .mode { min-height: 44px; }
+  .more, .fbtn, .tg span, .pl, .clr, .mode, .tchip, .tgl { min-height: 44px; }
   dialog .x { top: 4px; right: 4px; min-width: 44px; min-height: 44px; }
   summary { padding: 9px 0; }
   .box tr[tabindex] td { padding-top: 10px; padding-bottom: 10px; }

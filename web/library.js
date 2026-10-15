@@ -164,7 +164,36 @@
   let mode = store.get("mode", "all") === "any" ? "any" : "all";
   const saveSvc = () => store.set("svc", PLACES.filter((p) => svc[p.k]).map((p) => `${p.k}:${svc[p.k]}`).join(","));
   const svcOn = () => PLACES.some((p) => svc[p.k]);
+  // ── tiers under Game Pass and PS Plus: each chip is the games that tier adds ──
+  const TIERS = {
+    gp: { f: "gpt", name: "Game Pass", t: [["essential", "Essential"], ["premium", "Premium"], ["ultimate", "Ultimate"]], plan: (lib.gp_tier || "").toLowerCase() },
+    ps: { f: "pst", name: "PS Plus", t: [["essential", "Essential"], ["extra", "Extra"], ["premium", "Premium"]], plan: (lib.ps_tier || "").toLowerCase() },
+  };
+  if (!hasPs) delete TIERS.ps;
+  const tierSel = Object.fromEntries(Object.keys(TIERS).map((k) => [k, new Set()]));
+  (store.get("tiers", "") || "").split(",").forEach((x) => {
+    const [k, v] = x.split(":");
+    if (TIERS[k] && TIERS[k].t.some(([id]) => id === v)) tierSel[k].add(v);
+  });
+  let tierOpen = store.get("tiersopen", "0") === "1";
+  const saveTiers = () => {
+    store.set("tiers", Object.keys(TIERS).flatMap((k) => [...tierSel[k]].map((v) => `${k}:${v}`)).join(","));
+    store.set("tiersopen", tierOpen ? "1" : "0");
+  };
+  const tierOn = () => Object.values(tierSel).some((x) => x.size);
+  // a ticked tier keeps the games whose cheapest tier on that service is one of the ticked ones
+  const inTiers = (r, skip) => Object.keys(TIERS).every((k) => k === skip || !tierSel[k].size || (r[k] && tierSel[k].has(r[TIERS[k].f])));
+  // outside your plan: not in your Steam or PlayStation library and every service with it is above your tier
+  const inPlan = (r) => {
+    if (r.steam || r.psn) return true;
+    return Object.entries(TIERS).some(([k, T]) => {
+      if (!r[k]) return false;
+      const ids = T.t.map(([id]) => id), mine = ids.indexOf(r[T.f]);
+      return mine < 0 || !T.plan || mine <= ids.indexOf(T.plan);
+    });
+  };
   const inPlaces = (r, st = svc) => {
+    if (!inTiers(r)) return false;
     if (PLACES.some((p) => st[p.k] === -1 && r[p.k])) return false;
     const has = PLACES.filter((p) => st[p.k] === 1);
     return !has.length || (mode === "any" ? has.some((p) => r[p.k]) : has.every((p) => r[p.k]));
@@ -253,7 +282,7 @@
   };
 
   const tile = (r) => {
-    const b = el("button", `tile lib${done(r) ? " dim" : ""}${r.mark === "played" ? " played" : ""}`);
+    const b = el("button", `tile lib${done(r) ? " dim" : ""}${r.mark === "played" ? " played" : ""}${inPlan(r) ? "" : " offplan"}`);
     b.type = "button";
     b.title = r.game;
     const c = cover(r, "cv");
@@ -314,6 +343,10 @@
     if (r.played) facts.push(["You played", `${r.played} h`]);
     if (r.genre) facts.push(["Genre", r.genre]);
     if (r.year) facts.push(["Released", String(r.year)]);
+    ["gp", "ps"].forEach((k) => {
+      const T = TIERS[k], hit = T && r[k] && T.t.find(([id]) => id === r[T.f]);
+      if (hit) facts.push([`${T.name} tier`, `${hit[1]}${hit[0] === T.plan ? " (your tier)" : ""}`]);
+    });
     leaves(r).forEach((x) => facts.push([`On ${x.svc}`, leaveText(x)]));
     if (!facts.length) facts.push(["Scores", "None on file yet"]);
     $("d-facts").replaceChildren(...facts.flatMap(([k, v, cls]) => {
@@ -351,6 +384,28 @@
       b.addEventListener("click", () => { if (held) { held = false; return; } setSvc(p.k, st === 0 ? 1 : st === 1 ? -1 : 0); });
       return b;
     }));
+    // tier chips: counts follow every other filter, so a chip says what ticking it would leave
+    const box = $("tiers");
+    $("tgl").hidden = !Object.keys(TIERS).length;
+    $("tgl").classList.toggle("on", tierOpen || tierOn());
+    $("tgl").setAttribute("aria-expanded", String(tierOpen));
+    box.hidden = !(tierOpen || tierOn());
+    box.replaceChildren(...Object.entries(TIERS).map(([k, T]) => {
+      const line = el("div", "tline");
+      line.appendChild(el("span", "tn", T.name));
+      T.t.forEach(([id, label]) => {
+        const c = el("button", `tchip${tierSel[k].has(id) ? " on" : ""}${id === T.plan ? " mine" : ""}`);
+        c.type = "button";
+        c.title = id === T.plan ? "Your tier" : "";
+        c.append(el("span", null, label), el("small", null, base.filter((r) => inPlaces(r) && inTiers(r, k) && r[k] && r[T.f] === id).length.toLocaleString()));
+        c.addEventListener("click", () => {
+          tierSel[k].has(id) ? tierSel[k].delete(id) : tierSel[k].add(id);
+          saveTiers(); draw();
+        });
+        line.appendChild(c);
+      });
+      return line;
+    }));
     const hasN = PLACES.filter((p) => svc[p.k] === 1).length;
     $("mode").hidden = hasN < 2;
     $("mode").textContent = mode === "any" ? "Any" : "All";
@@ -363,9 +418,10 @@
   };
 
   // On a phone the filters fold behind one button; its badge counts the ones changed from the default.
+  $("tgl").addEventListener("click", () => { tierOpen = !tierOpen; saveTiers(); draw(true); });
   $("fbtn").addEventListener("click", () => $("fbtn").setAttribute("aria-expanded", String($("ctl").classList.toggle("open"))));
   const draw = (keepPage) => {
-    $("fbtn").dataset.n = [svcOn(), ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
+    $("fbtn").dataset.n = [svcOn() || tierOn(), ctl.genre.value !== "", ctl.rated.checked, ctl.sp.checked, ctl.soon.checked].filter(Boolean).length;
     $("clr").hidden = $("fbtn").dataset.n === "0";
     if (!keepPage) shown = STEP;
     const sort = ctl.sort.value;
@@ -392,6 +448,7 @@
   $("mode").addEventListener("click", () => { mode = mode === "any" ? "all" : "any"; store.set("mode", mode); draw(); });
   $("clr").addEventListener("click", () => {
     PLACES.forEach((p) => { svc[p.k] = 0; }); mode = "all"; saveSvc(); store.set("mode", "all");
+    Object.values(tierSel).forEach((x) => x.clear()); saveTiers();
     ctl.genre.value = ""; ctl.rated.checked = ctl.sp.checked = ctl.soon.checked = false;
     ["genre", "rated", "sp", "soon"].forEach((k) => store.set(k, ctl[k].type === "checkbox" ? "0" : ""));
     draw();

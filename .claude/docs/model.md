@@ -23,7 +23,9 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   arrivals); removed rows stay for history. An import with no tier data (no Premium/Essential rows)
   filters nothing. The **library** is built from the unfiltered sheet and the whole PS catalogue
   (`ps["all"]`): rows carry `gpt` / `pst` (cheapest tier), `library.json` carries `gp_tier` / `ps_tier`.
-  Leave dates exist only for games in your tiers.
+  Leave dates exist only for games in your tiers. Library page: a "tiers" toggle by the place icons opens
+  Essential / Premium / Ultimate (Essential / Extra / Premium) chips with counts, ticked tiers filter by
+  `gpt` / `pst`; tiles above your plan dim (`.offplan`).
 - **Exclusions**: "Xbox Game Studios" tab (Microsoft, Bethesda, Activision Blizzard) and the
   "EA Play" tab, plus Owner Notes markers for EA Play and Retro Classics. Ubisoft+ Classics
   (Owner Notes "Ubisoft games joining with price increase", ~50 games added Oct 1, 2025) are
