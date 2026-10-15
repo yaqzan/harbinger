@@ -15,6 +15,15 @@ numbers in `harbinger/config.toml`, assembly in `harbinger/build.py`.
   page; "Xbox / PC" stays. A title with a PC row and a console row keeps the console row. A
   forecast or watched title that only exists as PC is turned away ("PC only"), never matched to a
   lookalike. Removing PC moved the measured rates by a point at most (12-mo 47%, 2025 adds 40%).
+- **Tiers** (owner, 2026-10-15): `[gamepass] tier` = essential | premium | ultimate (default premium),
+  `[playstation] tier` default extra; each includes the ones below. Game Pass: the Master List is
+  Ultimate, the "Game Pass Premium" tab is Premium, "Game Pass Essential" is Essential, and Essential's
+  games are in Premium (`Sheet.tier_of` = the cheapest tier with a game). `Sheet.in_plan(tier)` drops
+  live games above your tier before the board is built (watchlist, confirmed, one-service list, queue,
+  arrivals); removed rows stay for history. An import with no tier data (no Premium/Essential rows)
+  filters nothing. The **library** is built from the unfiltered sheet and the whole PS catalogue
+  (`ps["all"]`): rows carry `gpt` / `pst` (cheapest tier), `library.json` carries `gp_tier` / `ps_tier`.
+  Leave dates exist only for games in your tiers.
 - **Exclusions**: "Xbox Game Studios" tab (Microsoft, Bethesda, Activision Blizzard) and the
   "EA Play" tab, plus Owner Notes markers for EA Play and Retro Classics. Ubisoft+ Classics
   (Owner Notes "Ubisoft games joining with price increase", ~50 games added Oct 1, 2025) are

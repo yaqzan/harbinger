@@ -18,7 +18,7 @@ import unicodedata
 import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from io import BytesIO
 
@@ -521,6 +521,15 @@ def game(r: dict) -> Game:
     )
 
 
+GP_TIERS = {"essential": 1, "premium": 2, "ultimate": 3}  # each includes the ones below it
+LIVE = ("Active", "Leaving Soon")
+
+
+def gp_rank(tier: str | None) -> int:
+    """[gamepass] tier -> rank; anything unknown counts as premium."""
+    return GP_TIERS.get(str(tier or "").lower(), GP_TIERS["premium"])
+
+
 @dataclass
 class Sheet:
     games: list[Game]
@@ -531,6 +540,34 @@ class Sheet:
     premium: set[str]
     fetched: str
     out_of_scope: set[str] = field(default_factory=set)  # keys whose every row is a skipped system
+    essential: set[str] = field(default_factory=set)     # live on the Game Pass Essential tab
+    out_of_plan: set[str] = field(default_factory=set)   # live games above your tier (set by in_plan)
+
+    def tier_of(self, g: Game) -> str:
+        """The lowest Game Pass tier with the game: Essential's games are in Premium, and
+        Premium's are in Ultimate, so a game's tier is the cheapest one that has it."""
+        if g.key in self.essential:
+            return "essential"
+        if g.key in self.premium or g.premium_status in LIVE:
+            return "premium"
+        return "ultimate"
+
+    def in_plan(self, tier: str | None) -> "Sheet":
+        """The sheet as your tier sees it: live games only a higher tier has are dropped (removed
+        and upcoming rows stay, they carry history), and their keys go in `out_of_plan`."""
+        rank = gp_rank(tier)
+        if not (self.premium or self.essential or any(g.premium_status in LIVE for g in self.games)):
+            return self  # no tier data in this import: keep everything rather than blank the board
+        over = {g.key for g in self.games + self.leaving
+                if g.status in LIVE and GP_TIERS[self.tier_of(g)] > rank}
+        # a title is out of plan only when no live row of it is in plan
+        over -= {g.key for g in self.games + self.leaving
+                 if g.status in LIVE and GP_TIERS[self.tier_of(g)] <= rank}
+        if not over:
+            return self
+        drop = lambda g: g.key in over and g.status in LIVE
+        return replace(self, games=[g for g in self.games if not drop(g)],
+                       leaving=[g for g in self.leaving if g.key not in over], out_of_plan=over)
 
 
 def parse(tabs: dict[str, list[dict]], fetched: str, skip_systems=()) -> Sheet:
@@ -550,6 +587,7 @@ def parse(tabs: dict[str, list[dict]], fetched: str, skip_systems=()) -> Sheet:
         removed=games("removed"),
         first_party={r["key"] for r in tabs.get("first_party", [])},
         ea_play={r["key"] for r in tabs.get("ea_play", [])},
-        premium={g.key for g in games("premium") if g.status in ("Active", "Leaving Soon")},
+        premium={g.key for g in games("premium") if g.status in LIVE},
+        essential={g.key for g in games("essential") if g.status in LIVE},
         fetched=fetched,
     )

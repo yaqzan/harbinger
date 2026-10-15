@@ -10,7 +10,7 @@ from datetime import date
 
 from . import library, model, played, plus
 from .forecast import for_model
-from .sheet import PREFERRED, Game, Sheet, norm, sequel_gap
+from .sheet import PREFERRED, Game, Sheet, gp_rank, norm, sequel_gap
 from .titles import Matcher, ps_matcher
 
 BANDS = ("Confirmed", "Likely", "Possible", "Thin")
@@ -144,14 +144,14 @@ def confirmed_rows(cx: Context) -> list[dict]:
         entries[g.key] = {"g": g, "name": g.name, "wave": wave, "source": src, "verified": True}
     trusted = {t.lower() for t in cx.cfg["waves"].get("trusted_sources", [])}
     for key, (wave, src) in fc_dates.items():
-        if key not in entries:
+        if key not in entries and key not in cx.sheet.out_of_plan:
             g = cx.by_key.get(key)
             ok = any(t in src.lower() for t in trusted)
             entries[key] = {"g": g, "name": g.name if g else key.title(), "wave": wave,
                             "source": src if ok else f"{src} only; not on the sheet", "verified": ok}
     for m in cx.cfg.get("manual_confirmed", []):
         key = norm(m["game"])
-        if cx.pc_only(m["game"]):
+        if cx.pc_only(m["game"]) or key in cx.sheet.out_of_plan:
             continue
         e = entries.get(key)
         if e is None:
@@ -638,18 +638,19 @@ def new_leavers(confirmed: list[dict], before: set[str] | None, beaten=frozenset
 
 
 def new_arrivals(rows: list[dict], cfg: dict, owned=frozenset(), beaten=frozenset()) -> list[dict]:
-    """Games that just joined Game Pass Premium or PS Plus Extra and Premium (the Essential monthly
-    games and discontinued tiers are left out): the push's third kind. `rows` are store.arrivals().
-    Active only, console Game Pass only ([scope]), PS Plus only at tiers your tier includes,
-    and nothing you own or have beaten."""
+    """Games that just joined the Game Pass Premium tab (Premium or Ultimate; not on Essential) or PS Plus
+    Extra and Premium (the Essential monthly games and discontinued tiers are left out): the push's
+    third kind. `rows` are store.arrivals(). Active only, console Game Pass only ([scope]), PS Plus only
+    at tiers your tier includes, and nothing you own or have beaten."""
     skip = set(cfg.get("scope", {}).get("skip_systems", ()))
     rank = plus.TIERS.get(cfg["playstation"]["tier"].lower(), 0)
+    gp_ok = gp_rank(cfg.get("gamepass", {}).get("tier")) >= 2
     out, seen = [], set()
     for r in rows:
         if r["status"] != "Active" or r["key"] in owned or r["key"] in beaten or (r["service"], r["key"]) in seen:
             continue
         if r["service"] == "xbox":
-            if (r["system"] or "") in skip:
+            if (r["system"] or "") in skip or not gp_ok:
                 continue
             service = "Game Pass Premium"
         else:
@@ -737,10 +738,16 @@ def queue_alert(rows: list[dict], today: date, show: int = 4) -> tuple[str, str]
 def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, as_of: date,
              ps: dict | None = None, psn: dict | None = None, arrivals: list[dict] | None = None,
              scores: dict | None = None, marks: list[dict] | None = None) -> dict:
-    cx = Context(cfg, sheet, forecast, steam, today, as_of, psn)
+    # The board and the leaving list see your tiers only; the library keeps every tier (`cx_all`)
+    # and labels each game with the tier that has it.
+    gp_tier = str(cfg.get("gamepass", {}).get("tier", "premium")).lower()
+    cx = Context(cfg, sheet.in_plan(gp_tier), forecast, steam, today, as_of, psn)
+    cx_all = Context(cfg, sheet, forecast, steam, today, as_of, psn) if cx.sheet is not sheet else cx
     confirmed = confirmed_rows(cx)
     cx.announced = {date.fromisoformat(r["wave"]) for r in confirmed if r["verified"]}
     side = PsSide(cx, ps)
+    # every PS Plus tier for the library (the board's `side` holds only yours)
+    side_all = PsSide(cx_all, {**ps, "games": ps["all"]}) if ps and ps.get("all") else side
     cx.beaten = set()
     beaten_cfg = cfg.get("queue", {}).get("beaten", [])
     for n in beaten_cfg:
@@ -779,9 +786,10 @@ def assemble(cfg: dict, sheet: Sheet, forecast: dict, steam: dict, today: date, 
         "ubisoft": ubisoft,
         "calibration": calibration_rows(cx),
         "one_service": one,
-        "library": library.rows(cx, side, steam, psn, one, scores, marks, unmatched),
+        "library": library.rows(cx_all, side_all, steam, psn, one, scores, marks, unmatched),
         "played_unmatched": unmatched,  # marks on no game here; run() prints them, never writes them
         "sources": {
+            "gp_tier": gp_tier,
             "sheet_fetched": sheet.fetched,
             "forecast_checked": forecast.get("checked_at"),
             "forecast_covers": forecast.get("covers", []),

@@ -2,7 +2,9 @@
 you own on Steam or PlayStation, merged into one row per game.
 
 A row says which of four places has it (`gp`, `ps`, `steam`, `psn`) so the page can filter by
-overlap: Game Pass only, PS Plus only, Steam only, on both services, and so on. Scores: the sheets'
+overlap: Game Pass only, PS Plus only, Steam only, on both services, and so on. `gpt` / `pst` name
+the lowest Game Pass / PS Plus tier with the game, for the page's tier breakdown (every tier is
+listed, not only yours). Scores: the sheets'
 Metacritic and PlayStation user score, and Steam user reviews (`ratings.py`, attached after).
 Pure: libraries in, rows out; no network, no database.
 """
@@ -10,6 +12,7 @@ Pure: libraries in, rows out; no network, no database.
 from __future__ import annotations
 
 from . import played as played_mod
+from .plus import family
 from .sheet import Index, norm
 
 OWNED_ON_PSN = ("PlayStation", "PS disc")  # a PS Plus claim is membership, not ownership
@@ -43,7 +46,7 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None
         if g.status not in ("Active", "Leaving Soon"):
             continue
         r = out.setdefault(k, blank(k, g.name))
-        r.update(gp=1, mc=g.metacritic, hours=g.hours, genre=g.genre, year=_year(g.release))
+        r.update(gp=1, gpt=cx.sheet.tier_of(g), mc=g.metacritic, hours=g.hours, genre=g.genre, year=_year(g.release))
     # the same game on PS Plus joins the Game Pass row; the rest get their own
     ps_to_row: dict[str, str] = {}
     if pm:
@@ -55,6 +58,7 @@ def rows(cx, side, steam: dict, psn: dict | None, one: dict, scores: dict | None
         k = ps_to_row.get(g.key, g.key)
         r = out.setdefault(k, blank(k, g.name))
         r["ps"] = g.tier or "PS Plus"
+        r["pst"] = family(g.tier) or ""  # essential | extra | premium: the tier that has it
         for f, v in (("mc", g.metacritic), ("hours", g.hours), ("genre", g.genre), ("year", _year(g.release))):
             if r.get(f) in (None, "") and v not in (None, ""):
                 r[f] = v

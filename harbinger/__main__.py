@@ -58,9 +58,12 @@ def _ps(db, cfg: dict) -> dict | None:
     tabs, fetched = sheet_mod.load_rows(db, "playstation")
     if not fetched:
         return None
-    games = plus.catalogue(tabs, tier, plus.first_party(cfg), hide_vr=not cfg["playstation"].get("vr", False),
-                           vr_only=plus.vr_only(cfg))
-    return {"games": games, "fetched": fetched, "tier": tier.title()}
+    kw = dict(first_party=plus.first_party(cfg), hide_vr=not cfg["playstation"].get("vr", False),
+              vr_only=plus.vr_only(cfg))
+    games = plus.catalogue(tabs, tier, **kw)
+    # every tier, for the library's tier breakdown; the board uses only yours
+    every = games if tier == "premium" else plus.catalogue(tabs, "premium", **kw)
+    return {"games": games, "all": every, "fetched": fetched, "tier": tier.title()}
 
 
 def paced(cfg: dict, *, backfill: bool = False, fill: bool = False) -> dict:
@@ -150,6 +153,7 @@ def run(kind: str, *, fetch: bool, refresh_forecast: bool, sync_steam: bool, tod
     lib = data.pop("library")
     unmatched = data.pop("played_unmatched")  # your notes' titles: printed by `played`, never published
     for path, body, indent in ((LIBRARY_FILE, {"generated_at": data["generated_at"], "ps_tier": data["one_service"]["ps_tier"],
+                                               "gp_tier": data["sources"]["gp_tier"].title(),
                                                "play": data["play"], "taste": data["taste"], "rows": lib}, None), (OUTPUT_FILE, data, 1)):
         tmp = path.with_suffix(".tmp")
         tmp.write_text(json.dumps(body, indent=indent, separators=(",", ":") if indent is None else None), encoding="utf-8")
