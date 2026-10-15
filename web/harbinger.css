@@ -120,11 +120,10 @@ nav { align-items: center; gap: 1rem; }
 .fmore { display: contents; }
 /* ── library filters: pill controls, one folded panel ── */
 .lib-ctl { gap: .55rem; }
-.lib-ctl input[type=search], .lib-ctl select { border-radius: 999px; padding: 7px 14px; background: var(--card); }
-.lib-ctl input[type=search] { max-width: 22rem; }
-.lib-ctl select { cursor: pointer; }
-.lib-ctl .fbtn { display: inline-flex; gap: 8px; border-radius: 999px; padding: 6px 14px 6px 12px; background: var(--card); transition: background .15s, border-color .15s; }
-.lib-ctl .fbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lib-ctl input[type=search], .lib-ctl select { border-radius: 14px; padding: 7px 14px; background: var(--card); }
+.lib-ctl input[type=search] { flex: 1 1 0; max-width: 24rem; min-width: 0; min-height: 44px; }
+.lib-ctl .fbtn { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 14px; background: var(--card); transition: background .15s, border-color .15s; }
+.lib-ctl .fbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .lib-ctl .fbtn:hover { border-color: var(--thin); }
 .lib-ctl .fmore { display: none; width: 100%; padding: 1rem 1.1rem 1.05rem; border-radius: 18px; border: 1px solid var(--rule);
   background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 5%, var(--card)), var(--card));
@@ -134,32 +133,39 @@ nav { align-items: center; gap: 1rem; }
 @media (prefers-reduced-motion: reduce) { .lib-ctl.open .fmore { animation: none; } }
 .fgroup { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .fgroup + .fgroup { margin-top: .95rem; }
-.fh { flex: 1 1 100%; display: flex; align-items: center; justify-content: space-between; font: 700 .68rem/1 system-ui, sans-serif;
-  letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
-/* a place: tap cycles Any, Has, Not. The badge is the platform's own and glows when it's required. */
-.plw { display: inline-flex; align-items: center; gap: 2px; }
-.pl { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: .86rem; font-weight: 600; color: var(--muted); cursor: pointer;
-  background: var(--bg); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px 4px 5px;
-  transition: color .15s, border-color .15s, background .15s, box-shadow .2s; }
-.pl:hover { border-color: var(--thin); color: var(--ink); }
-.pl .plat { width: 24px; height: 24px; box-shadow: none; transition: opacity .15s, filter .15s; }
-.pl .plat svg { width: 14px; height: 14px; }
-.pl .plat.steam svg { width: 16px; height: 16px; }
-.pl:not(.s1) .plat { opacity: .55; filter: saturate(.6); }
-.pl small { font-size: .72rem; font-weight: 600; font-variant-numeric: tabular-nums; opacity: .7; }
-.pl.s1 { color: var(--ink); border-color: var(--pc); background: color-mix(in srgb, var(--pc) 14%, var(--bg));
+/* a place: icon only, tap cycles Any, Has, Not, hold for only. +/- corner mark so state is not colour alone */
+.lrow { flex: 1 1 100%; display: flex; align-items: center; gap: .4rem; }
+.lsum { flex: 1 1 100%; margin: 0; font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0 .5rem; }
+.lsum .count { margin-left: 0; }
+.wnote { margin: 0; font-size: .8rem; color: var(--muted); }
+.pl { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--rule); border-radius: 14px;
+  transition: border-color .15s, background .15s, box-shadow .2s; }
+.pl:hover { border-color: var(--thin); }
+.pl .plat { width: 28px; height: 28px; box-shadow: none; transition: opacity .15s, filter .15s; }
+.pl .plat svg { width: 16px; height: 16px; }
+.pl .plat.steam svg { width: 18px; height: 18px; }
+.pl:not(.s1):not(.s-1) .plat { opacity: .55; filter: saturate(.6); }
+.pl.s1 { border-color: var(--pc); background: color-mix(in srgb, var(--pc) 14%, var(--bg));
   box-shadow: 0 0 0 1px var(--pc), 0 0 14px -2px color-mix(in srgb, var(--pc) 55%, transparent); }
-.pl.s1 .plat { opacity: 1; filter: none; }
-.pl.s-1 { color: var(--likely); border-color: color-mix(in srgb, var(--likely) 55%, transparent); background: color-mix(in srgb, var(--likely) 9%, var(--bg)); }
-.pl.s-1 .pn { text-decoration: line-through; text-decoration-thickness: 1.5px; }
-.pl:focus-visible, .tg input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
-.only, .mode, .clr { font: inherit; font-size: .76rem; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
-.only { opacity: 0; transition: opacity .15s; }
-.plw:hover .only, .plw:focus-within .only { opacity: 1; }
-@media (pointer: coarse) { .only { opacity: .7; } }
-.only:hover, .mode:hover, .clr:hover { color: var(--ink); text-decoration: underline; }
-.mode { font-weight: 600; text-transform: none; letter-spacing: 0; }
-.wnote { flex: 1 1 100%; margin: .1rem 0 0; font-size: .82rem; color: var(--muted); }
+.pl.s-1 { border-color: color-mix(in srgb, var(--likely) 55%, transparent); background: color-mix(in srgb, var(--likely) 9%, var(--bg)); }
+.pl.s-1 .plat { opacity: .45; filter: grayscale(.6); }
+.pl.s1::after, .pl.s-1::after { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center; font: 700 12px/1 system-ui, sans-serif; color: #fff; }
+.pl.s1::after { content: "+"; background: var(--pc); }
+.pl.s-1::after { content: "\2212"; background: var(--likely); }
+/* the two "you own it" places carry a small tag, so the two PlayStation icons differ */
+.pl.own::before { content: ""; position: absolute; left: 4px; bottom: 4px; width: 7px; height: 7px; border-radius: 2px; background: var(--muted); opacity: .8; }
+.pl:focus-visible, .tg input:focus-visible + span, .sortb:focus-within, .fbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mode, .clr { font: inherit; font-size: .8rem; font-weight: 600; color: var(--ink); background: var(--card); border: 1px solid var(--rule); cursor: pointer;
+  padding: 0 12px; min-height: 44px; border-radius: 14px; margin-left: .2rem; }
+.clr { background: none; border: 0; color: var(--muted); }
+.mode:hover, .clr:hover { border-color: var(--thin); }
+.clr:hover { color: var(--ink); text-decoration: underline; }
+/* sort: an icon button over a native select, so the OS picker still opens */
+.sortb { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--rule); border-radius: 14px; background: var(--card); cursor: pointer; }
+.sortb svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.sortb select { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); min-width: 0; opacity: 0; cursor: pointer; font-size: 16px; }
 /* the narrowing toggles: the same pill family as the places */
 .tg { position: relative; display: inline-flex; cursor: pointer; }
 .tg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
@@ -176,7 +182,7 @@ nav { align-items: center; gap: 1rem; }
 .fbtn { display: none; align-items: center; gap: 6px; font: inherit; font-size: .84rem; color: var(--ink); background: var(--bg);
   border: 1px solid var(--rule); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
 .fbtn[aria-expanded="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.fbtn:not([data-n="0"])::after { content: attr(data-n); min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; font-size: .72rem; font-weight: 700;
+.fbtn:not([data-n="0"])::after { content: attr(data-n); position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; font-size: .72rem; font-weight: 700;
   display: inline-grid; place-items: center; background: var(--likely); color: #fff; }
 .exits .lose { display: none; }
 main { margin-bottom: 1.5rem; }
@@ -377,8 +383,7 @@ td .dots { margin-right: 2px; }
   /* 16px stops iOS Safari zooming in when a field takes focus */
   input, select { min-height: 44px; font-size: 16px; }
   .chk { min-height: 44px; }
-  .more, .fbtn, .tg span, .pl, .clr, .mode, .only { min-height: 44px; }
-  .only { min-width: 44px; }
+  .more, .fbtn, .tg span, .pl, .clr, .mode { min-height: 44px; }
   dialog .x { top: 4px; right: 4px; min-width: 44px; min-height: 44px; }
   summary { padding: 9px 0; }
   .box tr[tabindex] td { padding-top: 10px; padding-bottom: 10px; }
@@ -401,9 +406,6 @@ td .dots { margin-right: 2px; }
   .fmore { display: none; }
   .ctl.open .fmore { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; width: 100%; }
   .lib-ctl.open .fmore { display: block; }
-  .lib-ctl select#sort { flex: 0 1 auto; }
-  .lib-ctl input[type=search] { flex: 1 1 7rem; }
-  .lib-ctl .count { flex: 1 1 100%; order: 6; margin-left: 0; }
   .lib-ctl .fmore { order: 5; }
   .ctl:not(.open) + .legend { display: none; }
   /* board: the confirmed exits shrink to a row of pills */

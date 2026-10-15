@@ -326,34 +326,39 @@
   };
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
+  // Icon-only places. Tap cycles Any, Has, Not; a long press (or right click) means "only this one".
+  const OWNED = { steam: 1, psn: 1 };
   const drawPlaces = () => {
     const base = rows.filter((r) => matches(r, true));
     const n = (k, v) => base.filter((r) => inPlaces(r, { ...svc, [k]: v })).length;
     $("svcs").replaceChildren(...PLACES.map((p) => {
-      const st = svc[p.k], w = el("span", "plw");
-      const b = el("button", `pl s${st}`);
+      const st = svc[p.k];
+      const b = el("button", `pl s${st}${OWNED[p.k] ? " own" : ""}`);
       b.type = "button";
       b.style.setProperty("--pc", p.color);
-      b.setAttribute("aria-label", `${p.name}: ${st === 1 ? "has" : st === -1 ? "not" : "any"}. Tap to change.`);
+      const count = n(p.k, st === -1 ? -1 : 1).toLocaleString();
+      b.title = `${p.name}: ${st === 1 ? "has" : st === -1 ? "not" : "any"}, ${count} games. Tap to change, hold for only.`;
+      b.setAttribute("aria-label", `${p.name}: ${st === 1 ? "has" : st === -1 ? "not" : "any"}, ${count} games`);
       const badge = el("span", `plat ${p.logo}`), svg = document.createElementNS(NS, "svg"), path = document.createElementNS(NS, "path");
       svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
       path.setAttribute("d", LOGO[p.logo][1]); svg.appendChild(path); badge.appendChild(svg);
-      b.append(badge, el("span", "pn", p.name), el("small", null, n(p.k, st === -1 ? -1 : 1).toLocaleString()));
-      b.addEventListener("click", () => setSvc(p.k, st === 0 ? 1 : st === 1 ? -1 : 0));
-      w.appendChild(b);
-      const o = el("button", "only", "only");
-      o.type = "button";
-      o.title = `${p.name} and nothing else`;
-      o.addEventListener("click", () => only(p.k));
-      w.appendChild(o);
-      return w;
+      b.appendChild(badge);
+      let timer = null, held = false;
+      const stop = () => { clearTimeout(timer); timer = null; };
+      b.addEventListener("pointerdown", () => { held = false; stop(); timer = setTimeout(() => { held = true; only(p.k); }, 500); });
+      ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => b.addEventListener(ev, stop));
+      b.addEventListener("contextmenu", (e) => { e.preventDefault(); stop(); only(p.k); });
+      b.addEventListener("click", () => { if (held) { held = false; return; } setSvc(p.k, st === 0 ? 1 : st === 1 ? -1 : 0); });
+      return b;
     }));
     const hasN = PLACES.filter((p) => svc[p.k] === 1).length;
     $("mode").hidden = hasN < 2;
-    $("mode").textContent = mode === "any" ? "Matching any · switch to all" : "Matching all · switch to any";
+    $("mode").textContent = mode === "any" ? "Any" : "All";
+    $("mode").title = `Matching ${mode} of the places you require. Tap to switch.`;
+    $("mode").setAttribute("aria-label", $("mode").title);
     const yes = PLACES.filter((p) => svc[p.k] === 1).map((p) => p.name);
     const no = PLACES.filter((p) => svc[p.k] === -1).map((p) => p.name);
-    $("where-note").textContent = !svcOn() ? "Tap a place once to require it, twice to exclude it. Hover for only."
+    $("where-note").textContent = !svcOn() ? "Tap a place to require it, again to exclude it, hold for only."
       : `${yes.length ? `On ${yes.join(mode === "any" ? " or " : " and ")}` : "Anywhere"}${no.length ? `${yes.length ? ", but" : ","} not on ${no.join(" or ")}` : ""}.`;
   };
 

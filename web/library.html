@@ -9,12 +9,12 @@
 <title>Harbinger · Library</title>
 <meta name="description" content="Every game on Game Pass, on your PS Plus tier, or in your Steam and PlayStation libraries, sorted by score and filtered by where it lives.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/harbinger.css?v=38">
+<link rel="stylesheet" href="/harbinger.css?v=40">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>try{const t=localStorage.getItem("theme");if(t){document.documentElement.dataset.theme=t;document.querySelectorAll("meta[name=theme-color]").forEach((m)=>{m.content=t==="dark"?"#131311":"#fcfcfa"})}}catch(e){}</script>
 <script>addEventListener("pagereveal",(e)=>{if(!e.viewTransition)return;try{if(sessionStorage.getItem("harbinger.swiped")){sessionStorage.removeItem("harbinger.swiped");return}}catch(x){}e.viewTransition.skipTransition()})</script>
-<script src="/library.js?v=17" defer blocking="render"></script>
+<script src="/library.js?v=18" defer blocking="render"></script>
 </head>
 <body>
 <div class="wrap">
@@ -34,27 +34,28 @@
 
   <div class="ctl lib-ctl" id="ctl">
     <input id="q" type="search" placeholder="Search games" aria-label="Search games">
-    <select id="sort" aria-label="Sort by">
-      <option value="mc">Metacritic</option>
-      <option value="rating">Steam reviews</option>
-      <option value="us">PlayStation user score</option>
-      <option value="taste">For you</option>
-      <option value="hours">Shortest to 100%</option>
-      <option value="hoursd">Longest to 100%</option>
-      <option value="year">Newest release</option>
-      <option value="leaves">Leaving soonest</option>
-      <option value="name">A to Z</option>
-    </select>
-    <button type="button" class="fbtn" id="fbtn" aria-expanded="false" aria-controls="fmore" data-n="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6.5 12h11M10 19h4"/></svg>Filters</button>
-    <span class="count" id="count"></span>
+    <label class="sortb" title="Sort">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>
+      <select id="sort" aria-label="Sort by">
+        <option value="mc">Metacritic</option>
+        <option value="rating">Steam reviews</option>
+        <option value="us">PlayStation user score</option>
+        <option value="taste">For you</option>
+        <option value="hours">Shortest to 100%</option>
+        <option value="hoursd">Longest to 100%</option>
+        <option value="year">Newest release</option>
+        <option value="leaves">Leaving soonest</option>
+        <option value="name">A to Z</option>
+      </select>
+    </label>
+    <button type="button" class="fbtn" id="fbtn" aria-expanded="false" aria-controls="fmore" aria-label="More filters" title="More filters" data-n="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6.5 12h11M10 19h4"/></svg></button>
+    <div class="lrow" role="group" aria-label="Where a game lives">
+      <span id="svcs" style="display:contents"></span>
+      <button type="button" class="mode" id="mode" hidden></button>
+    </div>
+    <p class="lsum"><span class="count" id="count"></span><span class="wnote" id="where-note"></span></p>
     <div class="fmore" id="fmore">
-      <div class="fgroup" role="group" aria-label="Where a game lives">
-        <div class="fh">Where it lives<button type="button" class="mode" id="mode" hidden></button></div>
-        <span id="svcs" style="display:contents"></span>
-        <p class="wnote" id="where-note"></p>
-      </div>
       <div class="fgroup">
-        <div class="fh">Narrow to</div>
         <label class="tg soon"><input type="checkbox" id="soon"><span>Leaving in 6 months</span></label>
         <label class="tg"><input type="checkbox" id="rated"><span>Has that score</span></label>
         <label class="tg"><input type="checkbox" id="sp"><span>Played</span></label>
